@@ -310,6 +310,7 @@
     .imdb-score { font-weight: 700; }
     .imdb-votes { color: var(--muted); font-size: 11px; }
 
+    .card-info  { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .card-credit { font-size: 11px; color: var(--muted); }
     .card-credit span { color: var(--text); }
 
@@ -420,20 +421,13 @@
     </div>
 
     <div class="filter-section">
-      <h3>Language</h3>
-      <select id="lang-select">
-        <option value="">All languages</option>
-      </select>
-    </div>
-
-    <div class="filter-section">
       <h3>Sort by</h3>
-      <div class="type-btns" style="flex-wrap:wrap;gap:4px;">
-        <button class="type-btn active" data-sort="popular">Popular</button>
-        <button class="type-btn" data-sort="newest">Newest</button>
-        <button class="type-btn" data-sort="oldest">Oldest</button>
-        <button class="type-btn" data-sort="rating">Top Rated</button>
-      </div>
+      <select id="sort-select">
+        <option value="popular">Popular</option>
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="rating">Top Rated</option>
+      </select>
     </div>
 
     <div class="filter-section">
@@ -483,7 +477,6 @@ const filters = {
   yearFrom:    1900,
   yearTo:      2025,
   genres:      new Set(),
-  language:    '',
   hideSeen:    false,
   searchQuery: '',
   sortBy:      'popular',
@@ -537,14 +530,12 @@ async function loadData() {
 
 // ── Build dynamic filter UI ────────────────────────────────────────────────────
 function buildFiltersUI() {
-  const genreSet    = new Set();
-  const langSet     = new Set();
-  let   minYear     = Infinity;
-  let   maxYear     = -Infinity;
+  const genreSet = new Set();
+  let   minYear  = Infinity;
+  let   maxYear  = -Infinity;
 
   Object.values(allTitles).forEach(t => {
     (t.genres || []).forEach(g => genreSet.add(g));
-    if (t.originalLanguage) langSet.add(t.originalLanguage);
     if (t.year) { minYear = Math.min(minYear, t.year); maxYear = Math.max(maxYear, t.year); }
   });
 
@@ -578,15 +569,6 @@ function buildFiltersUI() {
     })
   );
 
-  // Language dropdown
-  const langSelect = document.getElementById('lang-select');
-  langSelect.innerHTML = '<option value="">All languages</option>';
-  [...langSet].sort().forEach(l => {
-    const opt = document.createElement('option');
-    opt.value       = l;
-    opt.textContent = langLabel(l);
-    langSelect.appendChild(opt);
-  });
 }
 
 // ── Filter logic ───────────────────────────────────────────────────────────────
@@ -602,7 +584,6 @@ function getFiltered() {
       const tGenres = t.genres || [];
       if (!tGenres.some(g => filters.genres.has(g))) return false;
     }
-    if (filters.language && t.originalLanguage !== filters.language) return false;
     if (filters.hideSeen && seenMap[String(t.id)]) return false;
     if (filters.searchQuery) {
       const q       = filters.searchQuery.toLowerCase();
@@ -661,10 +642,6 @@ function makeCard(t) {
     .map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`)
     .join('');
 
-  const genreChips = (t.genres || []).slice(0, 3)
-    .map(g => `<span class="meta-chip">${escHtml(g)}</span>`)
-    .join('');
-
   const imdbBlock = t.imdbRating
     ? `<div class="card-imdb">
          <span class="imdb-star">★</span>
@@ -673,10 +650,13 @@ function makeCard(t) {
        </div>`
     : '';
 
-  const runtime = t.runtime ? `${t.runtime} min` : null;
-  const lang    = t.originalLanguage ? langLabel(t.originalLanguage) : null;
-  const metaParts = [runtime, lang, t.ageRating].filter(Boolean)
-    .map(v => `<span class="meta-chip">${escHtml(v)}</span>`).join('');
+  const infoParts = [
+    t.runtime  ? `⏱ ${t.runtime} min` : null,
+    t.ageRating ? t.ageRating : null,
+  ].filter(Boolean).join(' · ');
+
+  const genreChipsMeta = (t.genres || []).slice(0, 3)
+    .map(g => `<span class="meta-chip">${escHtml(g)}</span>`).join('');
 
   const creditsBlock = [
     t.director              ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '',
@@ -691,10 +671,11 @@ function makeCard(t) {
     <div>
       <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
       <div class="card-year">${t.year || '—'} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+      ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
     </div>
     <div class="provider-badges">${provBadges}</div>
     ${imdbBlock}
-    <div class="card-meta">${genreChips}${metaParts}</div>
+    <div class="card-meta">${genreChipsMeta}</div>
     ${creditsBlock}
     <div class="card-footer">
       <button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
@@ -781,21 +762,15 @@ document.querySelectorAll('.provider-cb').forEach(cb => {
 
 document.querySelectorAll('.type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    if (btn.dataset.sort !== undefined) {
-      document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      filters.sortBy = btn.dataset.sort;
-    } else {
-      document.querySelectorAll('[data-value]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      filters.type = btn.dataset.value;
-    }
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filters.type = btn.dataset.value;
     applyAndRender();
   });
 });
 
-document.getElementById('lang-select').addEventListener('change', e => {
-  filters.language = e.target.value;
+document.getElementById('sort-select').addEventListener('change', e => {
+  filters.sortBy = e.target.value;
   applyAndRender();
 });
 
