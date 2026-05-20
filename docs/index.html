@@ -33,6 +33,7 @@
       --snl: #cc0f16;
       --snx: #e8620a;
       --zee: #6b21d6;
+      --vim: #8e44ad;
     }
 
     body {
@@ -121,6 +122,7 @@
     .badge-snl { color: var(--snl); }
     .badge-snx { color: var(--snx); }
     .badge-zee { color: var(--zee); }
+    .badge-vim { color: var(--vim); }
 
     /* Content type buttons */
     .type-btns { display: flex; gap: 4px; }
@@ -287,6 +289,7 @@
     .badge-snl-card { background: #4a0305; color: #ff6b70; }
     .badge-snx-card { background: #4a1e00; color: #ff9050; }
     .badge-zee-card { background: #2a0d5e; color: #c084fc; }
+    .badge-vim-card { background: #3d1a54; color: #c084fc; }
     .badge-other    { background: var(--surface2); color: var(--muted); }
 
     .card-meta {
@@ -644,6 +647,8 @@
           <span class="badge-snx">Sun NXT</span></label>
         <label><input type="checkbox" class="provider-cb" value="zee" checked>
           <span class="badge-zee">ZEE5</span></label>
+        <label><input type="checkbox" class="provider-cb" value="vim" checked>
+          <span class="badge-vim">Voot</span></label>
       </div>
     </div>
 
@@ -759,7 +764,7 @@ let watchlistMap = {};   // id → true
 let trackingMap  = {};   // id → { name, year, posterUrl, contentType, addedAt }
 
 const filters = {
-  providers:   new Set(['jhs','prv','lgp','snl','snx','zee']),
+  providers:   new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
   type:        'both',
   yearFrom:    1900,
   yearTo:      2025,
@@ -1430,11 +1435,11 @@ function escHtml(str) {
 }
 
 function provLabel(code) {
-  return { jhs: 'JioHotstar', prv: 'Prime', lgp: 'Lionsgate', snl: 'SonyLIV', snx: 'Sun NXT', zee: 'ZEE5' }[code] || code.toUpperCase();
+  return { jhs: 'JioHotstar', prv: 'Prime', lgp: 'Lionsgate', snl: 'SonyLIV', snx: 'Sun NXT', zee: 'ZEE5', vim: 'Voot' }[code] || code.toUpperCase();
 }
 
 function provBadgeClass(code) {
-  return { jhs: 'badge-jhs-card', prv: 'badge-prv-card', lgp: 'badge-lgp-card', snl: 'badge-snl-card', snx: 'badge-snx-card', zee: 'badge-zee-card' }[code] || 'badge-other';
+  return { jhs: 'badge-jhs-card', prv: 'badge-prv-card', lgp: 'badge-lgp-card', snl: 'badge-snl-card', snx: 'badge-snx-card', zee: 'badge-zee-card', vim: 'badge-vim-card' }[code] || 'badge-other';
 }
 
 const LANG_NAMES = {

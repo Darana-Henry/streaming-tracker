@@ -21,7 +21,7 @@ public class Config {
     }
 
     public static Config parse(String[] args) {
-        List<String> providers = Arrays.asList("jhs", "prv", "lgp", "snl", "snx", "zee");
+        List<String> providers = Arrays.asList("jhs", "prv", "lgp", "snl", "snx", "zee", "vim");
         int yearFrom = 1900;
         int yearTo = Calendar.getInstance().get(Calendar.YEAR);
         List<String> contentTypes = Arrays.asList("movie", "show");

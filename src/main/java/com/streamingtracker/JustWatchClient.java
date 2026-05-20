@@ -15,7 +15,9 @@ import okhttp3.Response;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class JustWatchClient {
@@ -53,10 +55,6 @@ public class JustWatchClient {
         "          posterUrl" +
         "          externalIds { imdbId }" +
         "          originalReleaseYear" +
-        "          releases {" +
-        "            releaseDate" +
-        "            releaseCountry" +
-        "          }" +
         "          runtime" +
         "          ... on MovieOrShowContent {" +
         "            ageCertification" +
@@ -95,13 +93,24 @@ public class JustWatchClient {
     }
 
     public List<Title> fetchAllTitles() throws IOException, InterruptedException {
-        List<Title> all = new ArrayList<>();
+        // Query one provider at a time — JustWatch caps multi-provider queries at ~2000 results
+        Map<Integer, Title> merged = new LinkedHashMap<>();
+        for (String provider : config.providers) {
+            if ("pva".equals(provider)) continue;  // covered by prv via offer normalisation
+            System.out.printf("%n  --- Fetching provider: %s ---%n", provider);
+            fetchForProvider(provider, merged);
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private void fetchForProvider(String provider, Map<Integer, Title> merged)
+            throws IOException, InterruptedException {
         int offset     = 0;
         int totalCount = Integer.MAX_VALUE;
 
         while (offset < totalCount) {
-            System.out.printf("  Offset %d — fetched %d titles so far…%n", offset, all.size());
-            JsonObject data = fetchPage(offset);
+            System.out.printf("  Offset %d — total merged so far: %d%n", offset, merged.size());
+            JsonObject data = fetchPage(offset, provider);
 
             JsonObject popularTitles = data.getAsJsonObject("popularTitles");
             totalCount = popularTitles.get("totalCount").getAsInt();
@@ -112,18 +121,24 @@ public class JustWatchClient {
             for (JsonElement el : edges) {
                 JsonObject node = el.getAsJsonObject().getAsJsonObject("node");
                 Title t = parseTitle(node);
-                if (t != null) all.add(t);
+                if (t == null) continue;
+                Title existing = merged.get(t.id);
+                if (existing != null) {
+                    // title is on multiple providers — merge the providers lists
+                    for (String p : t.providers) {
+                        if (!existing.providers.contains(p)) existing.providers.add(p);
+                    }
+                } else {
+                    merged.put(t.id, t);
+                }
             }
 
             offset += edges.size();
-            if (edges.size() < PAGE_SIZE) break;
             Thread.sleep(400);
         }
-
-        return all;
     }
 
-    private JsonObject fetchPage(int offset) throws IOException {
+    private JsonObject fetchPage(int offset, String provider) throws IOException {
         JsonObject variables = new JsonObject();
         variables.addProperty("country",  COUNTRY);
         variables.addProperty("language", LANGUAGE);
@@ -132,7 +147,7 @@ public class JustWatchClient {
 
         JsonObject titleFilter = new JsonObject();
         JsonArray packages = new JsonArray();
-        config.providers.forEach(packages::add);
+        packages.add(provider);
         titleFilter.add("packages", packages);
         titleFilter.addProperty("includeTitlesWithoutUrl", true);
         JsonArray objectTypes = new JsonArray();
@@ -198,15 +213,6 @@ public class JustWatchClient {
                 t.imdbId = str(content.getAsJsonObject("externalIds"), "imdbId");
             }
             t.year             = intOrNull(content, "originalReleaseYear");
-            if (hasArray(content, "releases")) {
-                String earliest = null;
-                for (JsonElement rel : content.getAsJsonArray("releases")) {
-                    String rd = str(rel.getAsJsonObject(), "releaseDate");
-                    if (rd != null && (earliest == null || rd.compareTo(earliest) < 0))
-                        earliest = rd;
-                }
-                t.releaseDate = earliest;
-            }
             t.runtime          = intOrNull(content, "runtime");
             t.ageRating        = str(content, "ageCertification");
 
@@ -247,14 +253,15 @@ public class JustWatchClient {
         Set<String> seen             = new HashSet<>();
         Set<String> allowedProviders = new HashSet<>(config.providers);
         Set<String> streamingTypes   = Set.of("FLATRATE", "FREE", "ADS");
-
         if (hasArray(node, "offers")) {
             for (JsonElement el : node.getAsJsonArray("offers")) {
                 JsonObject offer = el.getAsJsonObject();
                 if (!streamingTypes.contains(str(offer, "monetizationType"))) continue;
                 if (!offer.has("package") || offer.get("package").isJsonNull()) continue;
                 String shortName = str(offer.getAsJsonObject("package"), "shortName");
-                if (shortName != null && allowedProviders.contains(shortName) && seen.add(shortName))
+                if (shortName == null) continue;
+                if ("pva".equals(shortName)) shortName = "prv";  // Prime Video (ad-tier) → Prime
+                if (allowedProviders.contains(shortName) && seen.add(shortName))
                     t.providers.add(shortName);
             }
         }
