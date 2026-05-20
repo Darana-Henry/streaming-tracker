@@ -141,63 +141,22 @@
       color: #fff;
     }
 
-    /* Dual year slider */
-    .range-wrap {
-      position: relative;
-      height: 22px;
-      margin-top: 4px;
+    /* Year range inputs */
+    .year-inputs { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .year-inputs input[type="number"] {
+      width: 64px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 4px 6px;
+      -moz-appearance: textfield;
     }
-    .range-wrap input[type="range"] {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 4px;
-      top: 50%;
-      transform: translateY(-50%);
-      -webkit-appearance: none;
-      appearance: none;
-      background: transparent;
-      outline: none;
-      pointer-events: none;
-    }
-    .range-wrap input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid var(--bg);
-      cursor: pointer;
-      pointer-events: all;
-    }
-    .range-wrap input[type="range"]::-moz-range-thumb {
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid var(--bg);
-      cursor: pointer;
-      pointer-events: all;
-      border: none;
-    }
-    #range-track {
-      position: absolute;
-      height: 4px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: var(--accent-dim);
-      border-radius: 2px;
-      pointer-events: none;
-    }
-    .range-bg {
-      position: absolute;
-      inset: 0;
-      height: 4px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: var(--border);
-      border-radius: 2px;
-      pointer-events: none;
-    }
-    #year-label { font-size: 12px; color: var(--muted); margin-top: 2px; display: block; }
+    .year-inputs input[type="number"]::-webkit-inner-spin-button,
+    .year-inputs input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .year-inputs input[type="number"]:focus { outline: none; border-color: var(--accent); }
+    .year-sep { font-size: 12px; color: var(--muted); }
 
     /* Genre list (scrollable) */
     .genre-list {
@@ -674,13 +633,11 @@
 
     <div class="filter-section">
       <h3>Year</h3>
-      <div class="range-wrap" id="range-wrap">
-        <div class="range-bg"></div>
-        <div id="range-track"></div>
-        <input type="range" id="year-from" min="1900" max="2025" value="1900">
-        <input type="range" id="year-to"   min="1900" max="2025" value="2025">
+      <div class="year-inputs">
+        <input type="number" id="year-from" min="1900" max="2099" value="1900" placeholder="From">
+        <span class="year-sep">–</span>
+        <input type="number" id="year-to"   min="1900" max="2099" value="2025" placeholder="To">
       </div>
-      <span id="year-label">1900 – 2025</span>
     </div>
 
     <div class="filter-section">
@@ -850,18 +807,14 @@ function buildFiltersUI() {
     if (t.year) { minYear = Math.min(minYear, t.year); maxYear = Math.max(maxYear, t.year); }
   });
 
-  // Year slider bounds
+  // Year input bounds
   if (isFinite(minYear)) {
-    ['year-from','year-to'].forEach(id => {
-      const el = document.getElementById(id);
-      el.min = minYear; el.max = maxYear;
-    });
-    document.getElementById('year-from').value = minYear;
-    document.getElementById('year-to').value   = maxYear;
+    const fromEl = document.getElementById('year-from');
+    const toEl   = document.getElementById('year-to');
+    fromEl.min = minYear; fromEl.max = maxYear; fromEl.value = minYear;
+    toEl.min   = minYear; toEl.max   = maxYear; toEl.value   = maxYear;
     filters.yearFrom = minYear;
     filters.yearTo   = maxYear;
-    updateYearLabel();
-    updateRangeTrack();
   }
 
   // Genre checkboxes
@@ -1139,13 +1092,18 @@ function renderTrackingList() {
 }
 
 function makeTrackingCard(id, meta) {
-  const isAvailable = !!allTitles[id];
+  const matchedTitle = Object.values(allTitles).find(
+    t => t.name && t.name.toLowerCase() === (meta.name || '').toLowerCase()
+      && t.contentType === meta.contentType
+  );
+  const isAvailable = !!matchedTitle;
   const div = document.createElement('div');
   div.className = 'tracking-card' + (isAvailable ? ' is-available' : '');
 
   const initial    = escHtml((meta.name || '?')[0].toUpperCase());
-  const posterHtml = meta.posterUrl
-    ? `<img class="tracking-poster" src="${escHtml(meta.posterUrl)}" alt="" loading="lazy"
+  const posterSrc  = matchedTitle?.posterUrl || null;
+  const posterHtml = posterSrc
+    ? `<img class="tracking-poster" src="${escHtml(posterSrc)}" alt="" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
 
@@ -1154,7 +1112,7 @@ function makeTrackingCard(id, meta) {
   const availSection = isAvailable
     ? `<div class="available-badge">Now on streaming ✓</div>
        <div class="provider-badges">
-         ${(allTitles[id].providers || []).map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}
+         ${(matchedTitle.providers || []).map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}
        </div>`
     : `<div class="tracking-meta">Not yet on your platforms</div>`;
 
@@ -1165,11 +1123,11 @@ function makeTrackingCard(id, meta) {
   div.innerHTML = `
     <div class="tracking-poster-wrap">
       ${posterHtml}
-      <div class="tracking-poster-fallback" style="${meta.posterUrl ? '' : 'display:flex'}">${initial}</div>
+      <div class="tracking-poster-fallback" style="${posterSrc ? '' : 'display:flex'}">${initial}</div>
     </div>
     <div class="tracking-body">
       <div class="tracking-title">${escHtml(meta.name || 'Unknown')}</div>
-      <div class="tracking-meta">${meta.year || '—'} · ${meta.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+      <div class="tracking-meta">${meta.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
       ${availSection}
       ${addedDate ? `<div class="tracking-meta">Added ${addedDate}</div>` : ''}
       <div class="tracking-footer">
@@ -1180,7 +1138,7 @@ function makeTrackingCard(id, meta) {
   `;
 
   if (isAvailable) {
-    div.querySelector('.add-to-watchlist-btn')?.addEventListener('click', () => toggleWatchlist(id, true));
+    div.querySelector('.add-to-watchlist-btn')?.addEventListener('click', () => toggleWatchlist(matchedTitle.id, true));
   }
   div.querySelector('.remove-tracking-btn').addEventListener('click', async () => {
     try { await db.ref('/tracking/' + id).remove(); }
@@ -1189,127 +1147,52 @@ function makeTrackingCard(id, meta) {
   return div;
 }
 
-// ── JustWatch search (for tracking) ───────────────────────────────────────────
-const JW_SEARCH_QUERY = `
-  query GetSearchTitles($country: Country!, $language: Language!, $first: Int!, $searchQuery: String!) {
-    searchTitles(country: $country, searchTitlesSearchQuery: $searchQuery, first: $first) {
-      edges {
-        node {
-          objectId
-          objectType
-          content(country: $country, language: $language) {
-            title
-            posterUrl
-            originalReleaseYear
-          }
-        }
-      }
-    }
-  }
-`;
-
-async function jwSearchTitles(query) {
-  const body = JSON.stringify({
-    operationName: 'GetSearchTitles',
-    query: JW_SEARCH_QUERY,
-    variables: { country: 'IN', language: 'en', first: 5, searchQuery: query },
-  });
-  const resp = await fetch('https://apis.justwatch.com/graphql', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body,
-  });
-  if (!resp.ok) throw new Error('Search request failed (' + resp.status + ')');
-  const json = await resp.json();
-  if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
-  const edges = json.data?.searchTitles?.edges || [];
-  return edges.map(e => {
-    const node = e.node, content = node.content || {};
-    let posterUrl = null;
-    if (content.posterUrl) {
-      posterUrl = 'https://images.justwatch.com' +
-        content.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
-    }
-    return {
-      id:          String(node.objectId),
-      contentType: node.objectType === 'MOVIE' ? 'movie' : 'show',
-      name:        content.title,
-      year:        content.originalReleaseYear,
-      posterUrl,
-    };
-  });
-}
+// ── Tracking URL parser ────────────────────────────────────────────────────────
 
 function extractSlugAndType(url) {
   const m = url.match(/justwatch\.com\/[a-z]+\/(movie|show)\/([^?#/]+)/i);
   return m ? { type: m[1], slug: m[2] } : null;
 }
 
-function renderSearchResults(results) {
+document.getElementById('tracking-search-btn').addEventListener('click', () => {
+  const urlVal    = document.getElementById('tracking-url').value.trim();
+  const parsed    = extractSlugAndType(urlVal);
   const container = document.getElementById('tracking-results');
-  if (!results.length) {
-    container.innerHTML = '<div style="padding:12px 14px;color:var(--muted)">No results found. Try a different URL.</div>';
-    container.hidden = false;
-    return;
-  }
-  container.innerHTML = results.map((r, i) => {
-    const thumbHtml = r.posterUrl
-      ? `<img class="search-result-thumb" src="${escHtml(r.posterUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-      : `<div class="search-result-thumb-fallback">${escHtml((r.name || '?')[0].toUpperCase())}</div>`;
-    return `
-      <div class="search-result-item" data-idx="${i}">
-        ${thumbHtml}
-        <div class="search-result-info">
-          <div class="search-result-title">${escHtml(r.name || 'Unknown')}</div>
-          <div class="search-result-meta">${r.year || '—'} · ${r.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
-        </div>
-        <button class="search-result-btn">Track this</button>
-      </div>
-    `;
-  }).join('');
-  container.hidden = false;
-
-  container.querySelectorAll('.search-result-item').forEach((el, i) => {
-    el.querySelector('.search-result-btn').addEventListener('click', async () => {
-      const r = results[i];
-      try {
-        await db.ref('/tracking/' + r.id).set({
-          name:        r.name,
-          year:        r.year,
-          posterUrl:   r.posterUrl,
-          contentType: r.contentType,
-          addedAt:     Date.now(),
-        });
-        document.getElementById('tracking-url').value = '';
-        container.hidden = true;
-        container.innerHTML = '';
-      } catch (err) {
-        alert('Could not save to tracking: ' + err.message);
-      }
-    });
-  });
-}
-
-document.getElementById('tracking-search-btn').addEventListener('click', async () => {
-  const btn    = document.getElementById('tracking-search-btn');
-  const urlVal = document.getElementById('tracking-url').value.trim();
-  const parsed = extractSlugAndType(urlVal);
   if (!parsed) {
     alert('Paste a valid JustWatch URL (e.g. https://www.justwatch.com/in/movie/project-hail-mary)');
     return;
   }
-  btn.disabled    = true;
-  btn.textContent = 'Searching…';
-  try {
-    const results = await jwSearchTitles(parsed.slug.replace(/-/g, ' '));
-    renderSearchResults(results);
-  } catch (err) {
-    console.error('JW search error:', err);
-    alert('Search failed: ' + err.message + '\nCheck the browser console for details.');
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Find';
-  }
+  const displayName = parsed.slug.split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const typeLabel = parsed.type === 'movie' ? 'Movie' : 'TV Show';
+
+  container.innerHTML = `
+    <div class="search-result-item">
+      <div class="search-result-thumb-fallback">${escHtml(displayName[0] || '?')}</div>
+      <div class="search-result-info">
+        <div class="search-result-title">${escHtml(displayName)}</div>
+        <div class="search-result-meta">${typeLabel}</div>
+      </div>
+      <button class="search-result-btn" id="confirm-track-btn">Track this</button>
+    </div>
+  `;
+  container.hidden = false;
+
+  document.getElementById('confirm-track-btn').addEventListener('click', async () => {
+    const key = parsed.type + '_' + parsed.slug;
+    try {
+      await db.ref('/tracking/' + key).set({
+        name:        displayName,
+        contentType: parsed.type,
+        addedAt:     Date.now(),
+      });
+      document.getElementById('tracking-url').value = '';
+      container.hidden = true;
+      container.innerHTML = '';
+    } catch (err) {
+      alert('Could not save: ' + err.message);
+    }
+  });
 });
 
 // ── Tab switching ──────────────────────────────────────────────────────────────
@@ -1324,33 +1207,22 @@ document.querySelectorAll('.tab').forEach(btn => {
   });
 });
 
-// ── Dual year range slider ─────────────────────────────────────────────────────
-const yearFrom  = document.getElementById('year-from');
-const yearTo    = document.getElementById('year-to');
-const yearLabel = document.getElementById('year-label');
-const rangeTrk  = document.getElementById('range-track');
-const rangeWrap = document.getElementById('range-wrap');
-
-function updateYearLabel() {
-  yearLabel.textContent = `${yearFrom.value} – ${yearTo.value}`;
-}
-function updateRangeTrack() {
-  const min   = +yearFrom.min, max = +yearFrom.max;
-  const left  = ((+yearFrom.value - min) / (max - min)) * 100;
-  const right = ((+yearTo.value - min)   / (max - min)) * 100;
-  rangeTrk.style.left  = left  + '%';
-  rangeTrk.style.width = (right - left) + '%';
-}
-
-yearFrom.addEventListener('input', () => {
-  if (+yearFrom.value > +yearTo.value) yearTo.value = yearFrom.value;
-  filters.yearFrom = +yearFrom.value;
-  updateYearLabel(); updateRangeTrack(); applyAndRender();
+// ── Year number inputs ─────────────────────────────────────────────────────────
+document.getElementById('year-from').addEventListener('change', function() {
+  const v = parseInt(this.value, 10);
+  if (isNaN(v)) return;
+  const toEl = document.getElementById('year-to');
+  if (v > +toEl.value) toEl.value = v;
+  filters.yearFrom = v;
+  applyAndRender();
 });
-yearTo.addEventListener('input', () => {
-  if (+yearTo.value < +yearFrom.value) yearFrom.value = yearTo.value;
-  filters.yearTo = +yearTo.value;
-  updateYearLabel(); updateRangeTrack(); applyAndRender();
+document.getElementById('year-to').addEventListener('change', function() {
+  const v = parseInt(this.value, 10);
+  if (isNaN(v)) return;
+  const fromEl = document.getElementById('year-from');
+  if (v < +fromEl.value) fromEl.value = v;
+  filters.yearTo = v;
+  applyAndRender();
 });
 
 // ── Other filter event listeners ───────────────────────────────────────────────
