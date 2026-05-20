@@ -27,9 +27,12 @@
       --seen-border: #1e3345;
 
       /* provider colours */
-      --hst: #1c6fb5;
+      --jhs: #7b2ff7;
       --prv: #00a8e0;
-      --lgy: #d4860a;
+      --lgp: #d4860a;
+      --snl: #cc0f16;
+      --snx: #e8620a;
+      --zee: #6b21d6;
     }
 
     body {
@@ -112,9 +115,12 @@
     }
 
     /* Provider badges in filter */
-    .badge-hst { color: var(--hst); }
+    .badge-jhs { color: var(--jhs); }
     .badge-prv { color: var(--prv); }
-    .badge-lgy { color: var(--lgy); }
+    .badge-lgp { color: var(--lgp); }
+    .badge-snl { color: var(--snl); }
+    .badge-snx { color: var(--snx); }
+    .badge-zee { color: var(--zee); }
 
     /* Content type buttons */
     .type-btns { display: flex; gap: 4px; }
@@ -238,7 +244,7 @@
     /* ── Card grid ───────────────────────────────────────────────────────── */
     #grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 14px;
     }
 
@@ -246,10 +252,9 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 14px;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 8px;
       transition: border-color .15s, transform .1s;
     }
     .card:hover { border-color: var(--accent-dim); transform: translateY(-1px); }
@@ -259,6 +264,41 @@
       opacity: .65;
     }
     .card.is-seen:hover { opacity: .85; }
+
+    /* Poster */
+    .card-poster-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: var(--surface2);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .card-poster {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .card-poster-fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--border);
+    }
+
+    /* Card body (text below poster) */
+    .card-body {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
 
     .card-title {
       font-size: 14px;
@@ -282,9 +322,12 @@
       border-radius: 4px;
       letter-spacing: .3px;
     }
-    .badge-hst-card { background: #0d3f6e; color: #60b0ff; }
+    .badge-jhs-card { background: #2d1060; color: #b07aff; }
     .badge-prv-card { background: #003a52; color: #41c6f5; }
-    .badge-lgy-card { background: #4a2e00; color: #f0a830; }
+    .badge-lgp-card { background: #4a2e00; color: #f0a830; }
+    .badge-snl-card { background: #4a0305; color: #ff6b70; }
+    .badge-snx-card { background: #4a1e00; color: #ff9050; }
+    .badge-zee-card { background: #2a0d5e; color: #c084fc; }
     .badge-other    { background: var(--surface2); color: var(--muted); }
 
     .card-meta {
@@ -329,7 +372,6 @@
     #search-input:focus { border-color: var(--accent); }
     #search-input::placeholder { color: var(--muted); }
 
-    .card-footer { margin-top: auto; }
     .seen-btn {
       width: 100%;
       padding: 6px;
@@ -384,12 +426,18 @@
     <div class="filter-section">
       <h3>Provider</h3>
       <div class="cb-list">
-        <label><input type="checkbox" class="provider-cb" value="hst" checked>
-          <span class="badge-hst">Hotstar</span></label>
+        <label><input type="checkbox" class="provider-cb" value="jhs" checked>
+          <span class="badge-jhs">JioHotstar</span></label>
         <label><input type="checkbox" class="provider-cb" value="prv" checked>
           <span class="badge-prv">Prime Video</span></label>
-        <label><input type="checkbox" class="provider-cb" value="lgy" checked>
-          <span class="badge-lgy">Lionsgate Play</span></label>
+        <label><input type="checkbox" class="provider-cb" value="lgp" checked>
+          <span class="badge-lgp">Lionsgate Play</span></label>
+        <label><input type="checkbox" class="provider-cb" value="snl" checked>
+          <span class="badge-snl">SonyLIV</span></label>
+        <label><input type="checkbox" class="provider-cb" value="snx" checked>
+          <span class="badge-snx">Sun NXT</span></label>
+        <label><input type="checkbox" class="provider-cb" value="zee" checked>
+          <span class="badge-zee">ZEE5</span></label>
       </div>
     </div>
 
@@ -472,7 +520,7 @@ let allTitles    = {};   // id → title object
 let seenMap      = {};   // id → true
 
 const filters = {
-  providers:   new Set(['hst','prv','lgy']),
+  providers:   new Set(['jhs','prv','lgp','snl','snx','zee']),
   type:        'both',
   yearFrom:    1900,
   yearTo:      2025,
@@ -663,22 +711,33 @@ function makeCard(t) {
     t.actors && t.actors.length ? `<div class="card-credit">Cast: <span>${t.actors.map(escHtml).join(', ')}</span></div>` : '',
   ].join('');
 
-  const btnLabel = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
-  const btnClass = 'seen-btn' + (isSeen ? ' is-seen' : '');
+  const initial  = escHtml((t.name || '?')[0].toUpperCase());
   const disabled = currentUser ? '' : 'disabled title="Sign in to track"';
+  const btnLabel = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
+
+  const posterBlock = t.posterUrl
+    ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
 
   div.innerHTML = `
-    <div>
-      <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
-      <div class="card-year">${t.year || '—'} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
-      ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
+    <div class="card-poster-wrap">
+      ${posterBlock}
+      <div class="card-poster-fallback" style="${t.posterUrl ? '' : 'display:flex'}">${initial}</div>
     </div>
-    <div class="provider-badges">${provBadges}</div>
-    ${imdbBlock}
-    <div class="card-meta">${genreChipsMeta}</div>
-    ${creditsBlock}
-    <div class="card-footer">
-      <button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
+    <div class="card-body">
+      <div>
+        <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
+        <div class="card-year">${t.year || '—'} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+        ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
+      </div>
+      <div class="provider-badges">${provBadges}</div>
+      ${imdbBlock}
+      <div class="card-meta">${genreChipsMeta}</div>
+      ${creditsBlock}
+      <div class="card-footer" style="margin-top:auto">
+        <button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
+      </div>
     </div>
   `;
 
@@ -792,11 +851,11 @@ function escHtml(str) {
 }
 
 function provLabel(code) {
-  return { hst: 'Hotstar', prv: 'Prime', lgy: 'Lionsgate' }[code] || code.toUpperCase();
+  return { jhs: 'JioHotstar', prv: 'Prime', lgp: 'Lionsgate', snl: 'SonyLIV', snx: 'Sun NXT', zee: 'ZEE5' }[code] || code.toUpperCase();
 }
 
 function provBadgeClass(code) {
-  return { hst: 'badge-hst-card', prv: 'badge-prv-card', lgy: 'badge-lgy-card' }[code] || 'badge-other';
+  return { jhs: 'badge-jhs-card', prv: 'badge-prv-card', lgp: 'badge-lgp-card', snl: 'badge-snl-card', snx: 'badge-snx-card', zee: 'badge-zee-card' }[code] || 'badge-other';
 }
 
 const LANG_NAMES = {

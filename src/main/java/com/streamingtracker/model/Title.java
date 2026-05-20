@@ -4,6 +4,8 @@ import java.util.List;
 
 public class Title {
     public int id;
+    public String imdbId;
+    public String posterUrl;
     public String name;
     public Integer year;
     public Integer runtime;

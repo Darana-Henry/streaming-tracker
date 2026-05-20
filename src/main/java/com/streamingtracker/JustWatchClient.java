@@ -50,9 +50,10 @@ public class JustWatchClient {
         "        objectType" +
         "        content(country: $country, language: $language) {" +
         "          title" +
+        "          posterUrl" +
+        "          externalIds { imdbId }" +
         "          originalReleaseYear" +
         "          runtime" +
-        "          originalLanguage" +
         "          ... on MovieOrShowContent {" +
         "            ageCertification" +
         "          }" +
@@ -178,14 +179,23 @@ public class JustWatchClient {
         t.id          = node.get("objectId").getAsInt();
         t.contentType = "MOVIE".equals(str(node, "objectType")) ? "movie" : "show";
 
+
+
         JsonObject content = node.has("content") && !node.get("content").isJsonNull()
                 ? node.getAsJsonObject("content") : null;
         if (content != null) {
             t.name             = str(content, "title");
+            String rawPoster   = str(content, "posterUrl");
+            if (rawPoster != null) {
+                t.posterUrl = "https://images.justwatch.com" +
+                    rawPoster.replace("{profile}", "s332").replace("{format}", "webp");
+            }
+            if (content.has("externalIds") && !content.get("externalIds").isJsonNull()) {
+                t.imdbId = str(content.getAsJsonObject("externalIds"), "imdbId");
+            }
             t.year             = intOrNull(content, "originalReleaseYear");
             t.runtime          = intOrNull(content, "runtime");
             t.ageRating        = str(content, "ageCertification");
-            t.originalLanguage = str(content, "originalLanguage");
 
             t.genres = new ArrayList<>();
             if (hasArray(content, "genres")) {
