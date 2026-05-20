@@ -372,10 +372,10 @@
     #search-input:focus { border-color: var(--accent); }
     #search-input::placeholder { color: var(--muted); }
 
-    .card-footer { display: flex; gap: 6px; }
+    .card-footer { display: flex; flex-direction: column; gap: 5px; }
 
     .seen-btn {
-      flex: 1;
+      width: 100%;
       padding: 6px;
       border-radius: 6px;
       border: 1px solid var(--border);
@@ -403,7 +403,7 @@
 
     /* ── Watchlist button ───────────────────────────────────────────────────── */
     .watch-btn {
-      flex: 1;
+      width: 100%;
       padding: 6px;
       border-radius: 6px;
       border: 1px solid var(--border);
