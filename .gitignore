@@ -1,1 +1,20 @@
+# Service account — NEVER commit this
 firebase-service-account.json
+
+# Gradle build artefacts
+.gradle/
+build/
+out/
+
+# Environment variables
+.env
+.env.*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
