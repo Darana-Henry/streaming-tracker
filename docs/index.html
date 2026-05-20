@@ -574,6 +574,30 @@
     }
     .add-to-watchlist-btn:hover { background: var(--accent); color: #fff; }
 
+    /* ── Stats pane ─────────────────────────────────────────────────────────── */
+    #stats-pane { padding: 24px; max-width: 860px; }
+
+    .stat-headline { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 36px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 22px;
+      min-width: 130px;
+    }
+    .stat-card-value { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .stat-card-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .stat-section { margin-bottom: 36px; }
+    .stat-section h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+
+    .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .chart-label { width: 170px; font-size: 13px; color: var(--muted); text-align: right;
+                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+    .chart-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 22px; overflow: hidden; }
+    .chart-bar { height: 100%; background: var(--accent); border-radius: 4px; min-width: 4px; transition: width .5s ease; }
+    .chart-count { width: 28px; font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; }
+
     /* ── Responsive ──────────────────────────────────────────────────────── */
     @media (max-width: 640px) {
       #layout { flex-direction: column; }
@@ -596,6 +620,7 @@
 <nav class="tab-bar">
   <button class="tab active" data-tab="discover">Discover</button>
   <button class="tab" data-tab="mylists">My Lists<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
+  <button class="tab" data-tab="stats">Stats</button>
 </nav>
 
 <div id="discover-pane">
@@ -664,6 +689,12 @@
           Hide seen titles
         </label>
       </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <label>
+          <input type="checkbox" id="hide-watchlisted">
+          Hide watchlisted titles
+        </label>
+      </div>
     </div>
 
   </aside>
@@ -700,6 +731,10 @@
 
 </div>
 
+<!-- ── Stats pane ─────────────────────────────────────────────────────────── -->
+<div id="stats-pane" hidden>
+</div>
+
 <script>
 // ── Firebase config ────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -729,7 +764,8 @@ const filters = {
   yearFrom:    1900,
   yearTo:      2025,
   genres:      new Set(),
-  hideSeen:    false,
+  hideSeen:         false,
+  hideWatchlisted:  false,
   searchQuery: '',
   sortBy:      'popular',
 };
@@ -849,6 +885,7 @@ function getFiltered() {
       if (!tGenres.some(g => filters.genres.has(g))) return false;
     }
     if (filters.hideSeen && seenMap[String(t.id)]) return false;
+    if (filters.hideWatchlisted && watchlistMap[String(t.id)]) return false;
     if (filters.searchQuery) {
       const q       = filters.searchQuery.toLowerCase();
       const inName  = (t.name     || '').toLowerCase().includes(q);
@@ -1091,6 +1128,126 @@ function renderTrackingList() {
   entries.forEach(([id, meta]) => grid.appendChild(makeTrackingCard(id, meta)));
 }
 
+// ── Stats ──────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const pane = document.getElementById('stats-pane');
+  const seenTitles = Object.keys(seenMap).map(id => allTitles[id]).filter(Boolean);
+
+  if (!seenTitles.length) {
+    pane.innerHTML = '<p class="empty-state" style="padding:40px 24px">No watched titles yet — mark some as seen in Discover.</p>';
+    return;
+  }
+
+  // Headline numbers
+  const totalWatched = seenTitles.length;
+  const totalMins    = seenTitles.reduce((s, t) => s + (t.runtime || 0), 0);
+  const totalHours   = (totalMins / 60).toFixed(1);
+  const rated        = seenTitles.filter(t => t.imdbRating);
+  const avgRating    = rated.length
+    ? (rated.reduce((s, t) => s + t.imdbRating, 0) / rated.length).toFixed(1) : '—';
+  const platTally = {};
+  seenTitles.forEach(t => (t.providers || []).forEach(p => { platTally[p] = (platTally[p] || 0) + 1; }));
+  const topPlatEntry = Object.entries(platTally).sort((a, b) => b[1] - a[1])[0];
+  const topPlatLabel = topPlatEntry ? provLabel(topPlatEntry[0]) : '—';
+
+  // By platform
+  const platRows = Object.entries(platTally).sort((a, b) => b[1] - a[1]);
+
+  // By genre (top 10)
+  const genreTally = {};
+  seenTitles.forEach(t => (t.genres || []).forEach(g => { genreTally[g] = (genreTally[g] || 0) + 1; }));
+  const genreRows = Object.entries(genreTally).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  // By IMDB rating bracket
+  const ratingBrackets = [
+    { label: 'Excellent  (8 – 10)', min: 8,  max: 11 },
+    { label: 'Great  (7 – 8)',      min: 7,  max: 8  },
+    { label: 'Good  (6 – 7)',       min: 6,  max: 7  },
+    { label: 'Average  (5 – 6)',    min: 5,  max: 6  },
+    { label: 'Poor  (< 5)',         min: 0,  max: 5  },
+    { label: 'Unrated',             min: null, max: null },
+  ];
+  const ratingRows = ratingBrackets
+    .map(b => {
+      const count = seenTitles.filter(t =>
+        b.min === null ? !t.imdbRating : (t.imdbRating && t.imdbRating >= b.min && t.imdbRating < b.max)
+      ).length;
+      return [b.label, count];
+    })
+    .filter(([, c]) => c > 0);
+
+  // By decade
+  const decadeTally = {};
+  seenTitles.forEach(t => {
+    if (!t.year) return;
+    const d     = Math.floor(t.year / 10) * 10;
+    const label = d < 1990 ? 'Before 1990' : `${d}s`;
+    decadeTally[label] = (decadeTally[label] || 0) + 1;
+  });
+  const decadeRows = Object.entries(decadeTally).sort((a, b) => {
+    const ya = a[0] === 'Before 1990' ? 0 : parseInt(a[0]);
+    const yb = b[0] === 'Before 1990' ? 0 : parseInt(b[0]);
+    return ya - yb;
+  });
+
+  function makeChart(rows) {
+    const max = Math.max(...rows.map(([, c]) => c), 1);
+    return rows.map(([label, count]) => `
+      <div class="chart-row">
+        <div class="chart-label">${escHtml(String(label))}</div>
+        <div class="chart-bar-wrap">
+          <div class="chart-bar" style="width:${Math.round(count / max * 100)}%"></div>
+        </div>
+        <div class="chart-count">${count}</div>
+      </div>`).join('');
+  }
+
+  pane.innerHTML = `
+    <div class="stat-headline">
+      <div class="stat-card">
+        <div class="stat-card-value">${totalWatched}</div>
+        <div class="stat-card-label">Titles watched</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value">${totalHours}h</div>
+        <div class="stat-card-label">Total runtime</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value">${avgRating}</div>
+        <div class="stat-card-label">Avg IMDB rating</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value">${escHtml(topPlatLabel)}</div>
+        <div class="stat-card-label">Most watched on</div>
+      </div>
+    </div>
+
+    ${platRows.length ? `
+    <div class="stat-section">
+      <h2>By streaming platform</h2>
+      ${makeChart(platRows.map(([p, c]) => [provLabel(p), c]))}
+    </div>` : ''}
+
+    ${genreRows.length ? `
+    <div class="stat-section">
+      <h2>By genre</h2>
+      ${makeChart(genreRows)}
+    </div>` : ''}
+
+    ${ratingRows.length ? `
+    <div class="stat-section">
+      <h2>By IMDB rating</h2>
+      ${makeChart(ratingRows)}
+    </div>` : ''}
+
+    ${decadeRows.length ? `
+    <div class="stat-section">
+      <h2>By decade</h2>
+      ${makeChart(decadeRows)}
+    </div>` : ''}
+  `;
+}
+
 function makeTrackingCard(id, meta) {
   const matchedTitle = Object.values(allTitles).find(
     t => t.name && t.name.toLowerCase() === (meta.name || '').toLowerCase()
@@ -1203,7 +1360,9 @@ document.querySelectorAll('.tab').forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById('discover-pane').hidden = (tab !== 'discover');
     document.getElementById('mylists-pane').hidden  = (tab !== 'mylists');
+    document.getElementById('stats-pane').hidden    = (tab !== 'stats');
     if (tab === 'mylists') renderMyLists();
+    if (tab === 'stats')   renderStats();
   });
 });
 
@@ -1250,6 +1409,11 @@ document.getElementById('sort-select').addEventListener('change', e => {
 
 document.getElementById('hide-seen').addEventListener('change', e => {
   filters.hideSeen = e.target.checked;
+  applyAndRender();
+});
+
+document.getElementById('hide-watchlisted').addEventListener('change', e => {
+  filters.hideWatchlisted = e.target.checked;
   applyAndRender();
 });
 
