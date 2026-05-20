@@ -8,7 +8,7 @@ public class Title {
     public Integer year;
     public Integer runtime;
     public String director;
-    public String topActor;
+    public List<String> actors;
     public List<String> genres;
     public String originalLanguage;
     public Double imdbRating;

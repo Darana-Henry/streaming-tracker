@@ -313,6 +313,21 @@
     .card-credit { font-size: 11px; color: var(--muted); }
     .card-credit span { color: var(--text); }
 
+    /* ── Search ──────────────────────────────────────────────────────────── */
+    #search-input {
+      flex: 1;
+      max-width: 300px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    #search-input:focus { border-color: var(--accent); }
+    #search-input::placeholder { color: var(--muted); }
+
     .card-footer { margin-top: auto; }
     .seen-btn {
       width: 100%;
@@ -353,6 +368,7 @@
 
 <header>
   <h1>Streaming <span>Tracker</span></h1>
+  <input type="search" id="search-input" placeholder="Search titles, cast, director…">
   <div id="auth-area">
     <span id="user-name"></span>
     <button id="auth-btn">Sign in with Google</button>
@@ -459,6 +475,7 @@ const filters = {
   genres:      new Set(),
   language:    '',
   hideSeen:    false,
+  searchQuery: '',
 };
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
@@ -576,6 +593,13 @@ function getFiltered() {
     }
     if (filters.language && t.originalLanguage !== filters.language) return false;
     if (filters.hideSeen && seenMap[String(t.id)]) return false;
+    if (filters.searchQuery) {
+      const q       = filters.searchQuery.toLowerCase();
+      const inName  = (t.name     || '').toLowerCase().includes(q);
+      const inDir   = (t.director || '').toLowerCase().includes(q);
+      const inCast  = (t.actors   || []).some(a => a.toLowerCase().includes(q));
+      if (!inName && !inDir && !inCast) return false;
+    }
     return true;
   });
 }
@@ -635,8 +659,10 @@ function makeCard(t) {
   const metaParts = [runtime, lang, t.ageRating].filter(Boolean)
     .map(v => `<span class="meta-chip">${escHtml(v)}</span>`).join('');
 
-  const directorLine = t.director
-    ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '';
+  const creditsBlock = [
+    t.director              ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '',
+    t.actors && t.actors.length ? `<div class="card-credit">Cast: <span>${t.actors.map(escHtml).join(', ')}</span></div>` : '',
+  ].join('');
 
   const btnLabel = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
   const btnClass = 'seen-btn' + (isSeen ? ' is-seen' : '');
@@ -650,7 +676,7 @@ function makeCard(t) {
     <div class="provider-badges">${provBadges}</div>
     ${imdbBlock}
     <div class="card-meta">${genreChips}${metaParts}</div>
-    ${directorLine}
+    ${creditsBlock}
     <div class="card-footer">
       <button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
     </div>
@@ -750,6 +776,11 @@ document.getElementById('lang-select').addEventListener('change', e => {
 
 document.getElementById('hide-seen').addEventListener('change', e => {
   filters.hideSeen = e.target.checked;
+  applyAndRender();
+});
+
+document.getElementById('search-input').addEventListener('input', e => {
+  filters.searchQuery = e.target.value.trim();
   applyAndRender();
 });
 

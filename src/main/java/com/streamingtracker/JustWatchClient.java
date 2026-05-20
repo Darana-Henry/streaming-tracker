@@ -14,18 +14,71 @@ import okhttp3.Response;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class JustWatchClient {
 
-    private static final String API_BASE  = "https://apis.justwatch.com";
-    private static final String LOCALE    = "en_IN";
-    private static final int    PAGE_SIZE = 40;
-    private static final MediaType JSON_CT = MediaType.get("application/json; charset=utf-8");
+    private static final String GRAPHQL_URL = "https://apis.justwatch.com/graphql";
+    private static final String COUNTRY     = "IN";
+    private static final String LANGUAGE    = "en";
+    private static final int    PAGE_SIZE   = 40;
+    private static final MediaType JSON_CT  = MediaType.get("application/json; charset=utf-8");
+
+    private static final String QUERY =
+        "query GetPopularTitles(" +
+        "  $popularTitlesFilter: TitleFilter" +
+        "  $country: Country!" +
+        "  $language: Language!" +
+        "  $first: Int!" +
+        "  $filter: OfferFilter!" +
+        "  $offset: Int" +
+        ") {" +
+        "  popularTitles(" +
+        "    country: $country" +
+        "    filter: $popularTitlesFilter" +
+        "    first: $first" +
+        "    sortBy: POPULAR" +
+        "    sortRandomSeed: 0" +
+        "    offset: $offset" +
+        "  ) {" +
+        "    totalCount" +
+        "    edges {" +
+        "      node {" +
+        "        objectId" +
+        "        objectType" +
+        "        content(country: $country, language: $language) {" +
+        "          title" +
+        "          originalReleaseYear" +
+        "          runtime" +
+        "          ... on MovieOrShowContent {" +
+        "            ageCertification" +
+        "            originalLanguage" +
+        "          }" +
+        "          genres {" +
+        "            shortName" +
+        "            technicalName" +
+        "          }" +
+        "          scoring {" +
+        "            imdbScore" +
+        "            imdbVotes" +
+        "          }" +
+        "          credits {" +
+        "            role" +
+        "            name" +
+        "          }" +
+        "        }" +
+        "        offers(country: $country, platform: WEB, filter: $filter) {" +
+        "          package {" +
+        "            shortName" +
+        "          }" +
+        "          monetizationType" +
+        "        }" +
+        "      }" +
+        "    }" +
+        "  }" +
+        "}";
 
     private final OkHttpClient http;
     private final Config config;
@@ -36,103 +89,70 @@ public class JustWatchClient {
         this.config = config;
     }
 
-    // ── Genre cache ────────────────────────────────────────────────────────────
-
-    /** Returns a map of genre ID → display name (e.g. 1 → "Action"). */
-    public Map<Integer, String> fetchGenres() throws IOException {
-        String url = API_BASE + "/content/genres/locale/" + LOCALE;
-        Request req = new Request.Builder()
-                .url(url)
-                .header("Accept", "application/json")
-                .header("User-Agent", "Mozilla/5.0")
-                .build();
-
-        try (Response resp = http.newCall(req).execute()) {
-            if (!resp.isSuccessful()) {
-                throw new IOException("Genres fetch failed: " + resp.code());
-            }
-            JsonArray arr = JsonParser.parseString(resp.body().string()).getAsJsonArray();
-            Map<Integer, String> map = new HashMap<>();
-            for (JsonElement el : arr) {
-                JsonObject g = el.getAsJsonObject();
-                int id = g.get("id").getAsInt();
-                // prefer technical_name (e.g. "Action"), fall back to short_name ("act")
-                String name = g.has("technical_name") && !g.get("technical_name").isJsonNull()
-                        ? g.get("technical_name").getAsString()
-                        : g.get("short_name").getAsString();
-                map.put(id, name);
-            }
-            return map;
-        }
-    }
-
-    // ── Title pagination ───────────────────────────────────────────────────────
-
-    public List<Title> fetchAllTitles(Map<Integer, String> genreMap)
-            throws IOException, InterruptedException {
-
+    public List<Title> fetchAllTitles() throws IOException, InterruptedException {
         List<Title> all = new ArrayList<>();
-        int page = 1;
+        int offset     = 0;
+        int totalCount = Integer.MAX_VALUE;
 
-        while (true) {
-            System.out.printf("  Page %d — fetched %d titles so far…%n", page, all.size());
-            JsonObject result = fetchPage(page);
+        while (offset < totalCount) {
+            System.out.printf("  Offset %d — fetched %d titles so far…%n", offset, all.size());
+            JsonObject data = fetchPage(offset);
 
-            JsonArray items = result.getAsJsonArray("items");
-            if (items == null || items.size() == 0) break;
+            JsonObject popularTitles = data.getAsJsonObject("popularTitles");
+            totalCount = popularTitles.get("totalCount").getAsInt();
 
-            for (JsonElement el : items) {
-                Title t = parseTitle(el.getAsJsonObject(), genreMap);
+            JsonArray edges = popularTitles.getAsJsonArray("edges");
+            if (edges == null || edges.size() == 0) break;
+
+            for (JsonElement el : edges) {
+                JsonObject node = el.getAsJsonObject().getAsJsonObject("node");
+                Title t = parseTitle(node);
                 if (t != null) all.add(t);
             }
 
-            int total = result.has("total_results") ? result.get("total_results").getAsInt() : 0;
-            if (all.size() >= total || items.size() < PAGE_SIZE) break;
-
-            page++;
-            Thread.sleep(400);  // polite delay to avoid rate limiting
+            offset += edges.size();
+            if (edges.size() < PAGE_SIZE) break;
+            Thread.sleep(400);
         }
 
         return all;
     }
 
-    private JsonObject fetchPage(int page) throws IOException {
-        String url = API_BASE + "/content/titles/" + LOCALE + "/popular";
+    private JsonObject fetchPage(int offset) throws IOException {
+        JsonObject variables = new JsonObject();
+        variables.addProperty("country",  COUNTRY);
+        variables.addProperty("language", LANGUAGE);
+        variables.addProperty("first",    PAGE_SIZE);
+        variables.addProperty("offset",   offset);
+
+        JsonObject titleFilter = new JsonObject();
+        JsonArray packages = new JsonArray();
+        config.providers.forEach(packages::add);
+        titleFilter.add("packages", packages);
+        titleFilter.addProperty("includeTitlesWithoutUrl", true);
+        JsonArray objectTypes = new JsonArray();
+        for (String ct : config.contentTypes) {
+            objectTypes.add("movie".equals(ct) ? "MOVIE" : "SHOW");
+        }
+        titleFilter.add("objectTypes", objectTypes);
+        JsonObject releaseYear = new JsonObject();
+        releaseYear.addProperty("min", config.yearFrom);
+        releaseYear.addProperty("max", config.yearTo);
+        titleFilter.add("releaseYear", releaseYear);
+        variables.add("popularTitlesFilter", titleFilter);
+
+        JsonObject offerFilter = new JsonObject();
+        offerFilter.addProperty("bestOnly", false);
+        variables.add("filter", offerFilter);
 
         JsonObject body = new JsonObject();
-
-        JsonArray types = new JsonArray();
-        config.contentTypes.forEach(types::add);
-        body.add("content_types", types);
-
-        JsonArray prov = new JsonArray();
-        config.providers.forEach(prov::add);
-        body.add("providers", prov);
-
-        body.addProperty("release_year_from", config.yearFrom);
-        body.addProperty("release_year_until", config.yearTo);
-        body.addProperty("page", page);
-        body.addProperty("page_size", PAGE_SIZE);
-        body.addProperty("sort_by", "original_score");
-        body.addProperty("sort_ascending", false);
-
-        JsonArray monetize = new JsonArray();
-        monetize.add("flatrate"); monetize.add("free"); monetize.add("ads");
-        body.add("monetization_types", monetize);
-
-        // Request only the fields we need to keep payloads small
-        JsonArray fields = new JsonArray();
-        for (String f : new String[]{
-                "id", "title", "object_type", "original_release_year",
-                "runtime", "genre_ids", "age_certification", "original_language",
-                "scoring", "offers", "credits"}) {
-            fields.add(f);
-        }
-        body.add("fields", fields);
+        body.addProperty("operationName", "GetPopularTitles");
+        body.addProperty("query", QUERY);
+        body.add("variables", variables);
 
         RequestBody rb = RequestBody.create(gson.toJson(body), JSON_CT);
         Request req = new Request.Builder()
-                .url(url)
+                .url(GRAPHQL_URL)
                 .post(rb)
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
@@ -142,78 +162,83 @@ public class JustWatchClient {
         try (Response resp = http.newCall(req).execute()) {
             String raw = resp.body().string();
             if (!resp.isSuccessful()) {
-                throw new IOException("Page " + page + " failed (" + resp.code() + "): " + raw);
+                throw new IOException("GraphQL request failed (" + resp.code() + "): " + raw);
             }
-            return JsonParser.parseString(raw).getAsJsonObject();
+            JsonObject json = JsonParser.parseString(raw).getAsJsonObject();
+            if (json.has("errors")) {
+                throw new IOException("GraphQL errors: " + json.get("errors"));
+            }
+            return json.getAsJsonObject("data");
         }
     }
 
-    // ── Item parsing ───────────────────────────────────────────────────────────
-
-    private Title parseTitle(JsonObject item, Map<Integer, String> genreMap) {
+    private Title parseTitle(JsonObject node) {
         Title t = new Title();
 
-        t.id          = item.get("id").getAsInt();
-        t.name        = str(item, "title");
-        t.contentType = str(item, "object_type");
-        t.year        = intOrNull(item, "original_release_year");
-        t.runtime     = intOrNull(item, "runtime");
-        t.ageRating   = str(item, "age_certification");
-        t.originalLanguage = str(item, "original_language");
+        t.id          = node.get("objectId").getAsInt();
+        t.contentType = "MOVIE".equals(str(node, "objectType")) ? "movie" : "show";
 
-        // Genres
-        t.genres = new ArrayList<>();
-        if (hasArray(item, "genre_ids")) {
-            for (JsonElement id : item.getAsJsonArray("genre_ids")) {
-                String name = genreMap.get(id.getAsInt());
-                if (name != null) t.genres.add(name);
-            }
-        }
+        JsonObject content = node.has("content") && !node.get("content").isJsonNull()
+                ? node.getAsJsonObject("content") : null;
+        if (content != null) {
+            t.name             = str(content, "title");
+            t.year             = intOrNull(content, "originalReleaseYear");
+            t.runtime          = intOrNull(content, "runtime");
+            t.ageRating        = str(content, "ageCertification");
+            t.originalLanguage = str(content, "originalLanguage");
 
-        // IMDB scoring
-        if (hasArray(item, "scoring")) {
-            for (JsonElement el : item.getAsJsonArray("scoring")) {
-                JsonObject s = el.getAsJsonObject();
-                String pt = s.has("provider_type") ? s.get("provider_type").getAsString() : "";
-                if (pt.equals("imdb:score") && !s.get("value").isJsonNull()) {
-                    t.imdbRating = s.get("value").getAsDouble();
-                } else if (pt.equals("imdb:votes") && !s.get("value").isJsonNull()) {
-                    t.imdbVotes = s.get("value").getAsInt();
+            t.genres = new ArrayList<>();
+            if (hasArray(content, "genres")) {
+                for (JsonElement el : content.getAsJsonArray("genres")) {
+                    JsonObject g    = el.getAsJsonObject();
+                    String techName = str(g, "technicalName");
+                    String name     = techName != null ? techName : str(g, "shortName");
+                    if (name != null) t.genres.add(name);
                 }
             }
+
+            if (hasArray(content, "credits")) {
+                List<String> actors = new ArrayList<>();
+                for (JsonElement el : content.getAsJsonArray("credits")) {
+                    JsonObject c    = el.getAsJsonObject();
+                    String role     = str(c, "role");
+                    String name     = str(c, "name");
+                    if (name == null || name.isEmpty()) continue;
+                    if ("DIRECTOR".equals(role) && t.director == null) t.director = name;
+                    if ("ACTOR".equals(role) && actors.size() < 3) actors.add(name);
+                    if (t.director != null && actors.size() >= 3) break;
+                }
+                t.actors = actors;
+            }
+
+            if (content.has("scoring") && !content.get("scoring").isJsonNull()) {
+                JsonObject scoring = content.getAsJsonObject("scoring");
+                if (scoring.has("imdbScore") && !scoring.get("imdbScore").isJsonNull())
+                    t.imdbRating = scoring.get("imdbScore").getAsDouble();
+                if (scoring.has("imdbVotes") && !scoring.get("imdbVotes").isJsonNull())
+                    t.imdbVotes = scoring.get("imdbVotes").getAsInt();
+            }
         }
 
-        // Providers from offers (deduplicated, limited to configured providers)
         t.providers = new ArrayList<>();
-        Set<String> seen = new HashSet<>(config.providers);
-        if (hasArray(item, "offers")) {
-            for (JsonElement el : item.getAsJsonArray("offers")) {
-                JsonObject o = el.getAsJsonObject();
-                if (!o.has("package_short_name")) continue;
-                String p = o.get("package_short_name").getAsString();
-                if (seen.remove(p)) t.providers.add(p);  // remove keeps insertion order unique
+        Set<String> seen             = new HashSet<>();
+        Set<String> allowedProviders = new HashSet<>(config.providers);
+        Set<String> streamingTypes   = Set.of("FLATRATE", "FREE", "ADS");
+
+        if (hasArray(node, "offers")) {
+            for (JsonElement el : node.getAsJsonArray("offers")) {
+                JsonObject offer = el.getAsJsonObject();
+                if (!streamingTypes.contains(str(offer, "monetizationType"))) continue;
+                if (!offer.has("package") || offer.get("package").isJsonNull()) continue;
+                String shortName = str(offer.getAsJsonObject("package"), "shortName");
+                if (shortName != null && allowedProviders.contains(shortName) && seen.add(shortName))
+                    t.providers.add(shortName);
             }
         }
-        // Skip titles not available on any configured provider
+
         if (t.providers.isEmpty()) return null;
-
-        // Credits — first DIRECTOR and first ACTOR
-        if (hasArray(item, "credits")) {
-            for (JsonElement el : item.getAsJsonArray("credits")) {
-                JsonObject c = el.getAsJsonObject();
-                String role = c.has("role") ? c.get("role").getAsString() : "";
-                String name = c.has("name") ? c.get("name").getAsString() : "";
-                if (name.isEmpty()) continue;
-                if ("DIRECTOR".equals(role) && t.director == null)  t.director = name;
-                if ("ACTOR".equals(role)    && t.topActor == null)  t.topActor  = name;
-                if (t.director != null && t.topActor != null) break;
-            }
-        }
-
         return t;
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
 
     private static String str(JsonObject o, String key) {
         return o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : null;
