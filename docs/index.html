@@ -427,6 +427,16 @@
     </div>
 
     <div class="filter-section">
+      <h3>Sort by</h3>
+      <div class="type-btns" style="flex-wrap:wrap;gap:4px;">
+        <button class="type-btn active" data-sort="popular">Popular</button>
+        <button class="type-btn" data-sort="newest">Newest</button>
+        <button class="type-btn" data-sort="oldest">Oldest</button>
+        <button class="type-btn" data-sort="rating">Top Rated</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
       <div class="toggle-row">
         <label>
           <input type="checkbox" id="hide-seen">
@@ -476,6 +486,7 @@ const filters = {
   language:    '',
   hideSeen:    false,
   searchQuery: '',
+  sortBy:      'popular',
 };
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
@@ -580,7 +591,7 @@ function buildFiltersUI() {
 
 // ── Filter logic ───────────────────────────────────────────────────────────────
 function getFiltered() {
-  return Object.values(allTitles).filter(t => {
+  const results = Object.values(allTitles).filter(t => {
     if (filters.providers.size > 0) {
       const provs = t.providers || [];
       if (!provs.some(p => filters.providers.has(p))) return false;
@@ -602,6 +613,14 @@ function getFiltered() {
     }
     return true;
   });
+
+  switch (filters.sortBy) {
+    case 'newest':  results.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));          break;
+    case 'oldest':  results.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));    break;
+    case 'rating':  results.sort((a, b) => (b.imdbRating ?? 0) - (a.imdbRating ?? 0)); break;
+  }
+
+  return results;
 }
 
 function applyAndRender() {
@@ -762,9 +781,15 @@ document.querySelectorAll('.provider-cb').forEach(cb => {
 
 document.querySelectorAll('.type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    filters.type = btn.dataset.value;
+    if (btn.dataset.sort !== undefined) {
+      document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filters.sortBy = btn.dataset.sort;
+    } else {
+      document.querySelectorAll('[data-value]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filters.type = btn.dataset.value;
+    }
     applyAndRender();
   });
 });

@@ -52,9 +52,9 @@ public class JustWatchClient {
         "          title" +
         "          originalReleaseYear" +
         "          runtime" +
+        "          originalLanguage" +
         "          ... on MovieOrShowContent {" +
         "            ageCertification" +
-        "            originalLanguage" +
         "          }" +
         "          genres {" +
         "            shortName" +
