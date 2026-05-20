@@ -53,6 +53,10 @@ public class JustWatchClient {
         "          posterUrl" +
         "          externalIds { imdbId }" +
         "          originalReleaseYear" +
+        "          releases {" +
+        "            releaseDate" +
+        "            releaseCountry" +
+        "          }" +
         "          runtime" +
         "          ... on MovieOrShowContent {" +
         "            ageCertification" +
@@ -194,6 +198,15 @@ public class JustWatchClient {
                 t.imdbId = str(content.getAsJsonObject("externalIds"), "imdbId");
             }
             t.year             = intOrNull(content, "originalReleaseYear");
+            if (hasArray(content, "releases")) {
+                String earliest = null;
+                for (JsonElement rel : content.getAsJsonArray("releases")) {
+                    String rd = str(rel.getAsJsonObject(), "releaseDate");
+                    if (rd != null && (earliest == null || rd.compareTo(earliest) < 0))
+                        earliest = rd;
+                }
+                t.releaseDate = earliest;
+            }
             t.runtime          = intOrNull(content, "runtime");
             t.ageRating        = str(content, "ageCertification");
 

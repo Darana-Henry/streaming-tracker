@@ -372,8 +372,10 @@
     #search-input:focus { border-color: var(--accent); }
     #search-input::placeholder { color: var(--muted); }
 
+    .card-footer { display: flex; gap: 6px; }
+
     .seen-btn {
-      width: 100%;
+      flex: 1;
       padding: 6px;
       border-radius: 6px;
       border: 1px solid var(--border);
@@ -399,6 +401,220 @@
       font-size: 15px;
     }
 
+    /* ── Watchlist button ───────────────────────────────────────────────────── */
+    .watch-btn {
+      flex: 1;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .watch-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .watch-btn.is-watchlisted { background: var(--accent-dim); border-color: var(--accent); color: #fff; }
+    .watch-btn.remove-wl:hover { border-color: #ef4444; color: #ef4444; }
+    .watch-btn:disabled { opacity: .4; cursor: default; }
+
+    /* ── Tabs ───────────────────────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      gap: 2px;
+      padding: 0 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      margin-bottom: -1px;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tab-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    /* ── My Lists pane ──────────────────────────────────────────────────────── */
+    #mylists-pane { padding: 20px 24px; }
+    .mylist-section { margin-bottom: 40px; }
+    .mylist-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+    .mylist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+    }
+    .empty-state { color: var(--muted); font-size: 14px; padding: 12px 0; }
+
+    /* ── Tracking add area ──────────────────────────────────────────────────── */
+    .tracking-add { display: flex; gap: 8px; margin-bottom: 12px; max-width: 580px; }
+    .tracking-add input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .tracking-add input:focus { border-color: var(--accent); }
+    .tracking-add input::placeholder { color: var(--muted); }
+    .tracking-add button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tracking-add button:hover { background: #7f92ff; }
+    .tracking-add button:disabled { opacity: .5; cursor: default; }
+
+    /* Search results list */
+    #tracking-results {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      max-width: 580px;
+      overflow: hidden;
+    }
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: var(--surface2); }
+    .search-result-thumb {
+      width: 36px;
+      height: 54px;
+      object-fit: cover;
+      border-radius: 3px;
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+    .search-result-thumb-fallback {
+      width: 36px;
+      height: 54px;
+      border-radius: 3px;
+      background: var(--surface2);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--border);
+    }
+    .search-result-info { flex: 1; min-width: 0; }
+    .search-result-title { font-size: 13px; font-weight: 600; }
+    .search-result-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .search-result-btn {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .search-result-btn:hover { background: var(--accent); color: #fff; }
+
+    /* Tracking cards */
+    .tracking-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color .15s;
+    }
+    .tracking-card:hover { border-color: var(--accent-dim); }
+    .tracking-card.is-available { border-color: #166534; }
+    .tracking-poster-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: var(--surface2);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .tracking-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .tracking-poster-fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--border);
+    }
+    .tracking-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .tracking-title { font-size: 13px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tracking-meta  { font-size: 11px; color: var(--muted); }
+    .available-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4ade80;
+      background: #052e16;
+      border: 1px solid #166534;
+      border-radius: 4px;
+      padding: 3px 7px;
+      display: inline-block;
+    }
+    .tracking-footer { display: flex; gap: 5px; margin-top: auto; }
+    .remove-tracking-btn {
+      flex: 1;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .remove-tracking-btn:hover { border-color: #ef4444; color: #ef4444; }
+    .add-to-watchlist-btn {
+      flex: 1;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .add-to-watchlist-btn:hover { background: var(--accent); color: #fff; }
+
     /* ── Responsive ──────────────────────────────────────────────────────── */
     @media (max-width: 640px) {
       #layout { flex-direction: column; }
@@ -418,6 +634,12 @@
   </div>
 </header>
 
+<nav class="tab-bar">
+  <button class="tab active" data-tab="discover">Discover</button>
+  <button class="tab" data-tab="mylists">My Lists<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
+</nav>
+
+<div id="discover-pane">
 <div id="layout">
 
   <!-- ── Filters ─────────────────────────────────────────────────────────── -->
@@ -497,6 +719,29 @@
   </div>
 
 </div>
+</div><!-- #discover-pane -->
+
+<!-- ── My Lists pane ──────────────────────────────────────────────────── -->
+<div id="mylists-pane" hidden>
+
+  <section class="mylist-section">
+    <h2>Watchlist</h2>
+    <p id="watchlist-empty" class="empty-state"></p>
+    <div id="watchlist-grid" class="mylist-grid"></div>
+  </section>
+
+  <section class="mylist-section">
+    <h2>Coming to Streaming</h2>
+    <div class="tracking-add">
+      <input type="url" id="tracking-url" placeholder="Paste a JustWatch URL — e.g. https://www.justwatch.com/in/movie/project-hail-mary">
+      <button id="tracking-search-btn">Find</button>
+    </div>
+    <div id="tracking-results" hidden></div>
+    <p id="tracking-empty" class="empty-state"></p>
+    <div id="tracking-grid" class="mylist-grid"></div>
+  </section>
+
+</div>
 
 <script>
 // ── Firebase config ────────────────────────────────────────────────────────────
@@ -518,6 +763,8 @@ const db   = firebase.database();
 let currentUser  = null;
 let allTitles    = {};   // id → title object
 let seenMap      = {};   // id → true
+let watchlistMap = {};   // id → true
+let trackingMap  = {};   // id → { name, year, posterUrl, contentType, addedAt }
 
 const filters = {
   providers:   new Set(['jhs','prv','lgp','snl','snx','zee']),
@@ -537,15 +784,31 @@ const userName = document.getElementById('user-name');
 auth.onAuthStateChanged(user => {
   currentUser = user;
   if (user) {
-    userName.textContent  = user.displayName || user.email;
-    authBtn.textContent   = 'Sign out';
-    authBtn.className     = 'signed-in';
+    userName.textContent = user.displayName || user.email;
+    authBtn.textContent  = 'Sign out';
+    authBtn.className    = 'signed-in';
+
+    db.ref('/watchlist').on('value', snap => {
+      watchlistMap = snap.val() || {};
+      renderGrid(getFiltered());
+      if (!document.getElementById('mylists-pane').hidden) renderWatchlistGrid();
+      updateMyListsBadge();
+    });
+    db.ref('/tracking').on('value', snap => {
+      trackingMap = snap.val() || {};
+      if (!document.getElementById('mylists-pane').hidden) renderTrackingList();
+      updateMyListsBadge();
+    });
   } else {
-    userName.textContent  = '';
-    authBtn.textContent   = 'Sign in with Google';
-    authBtn.className     = '';
+    userName.textContent = '';
+    authBtn.textContent  = 'Sign in with Google';
+    authBtn.className    = '';
+    db.ref('/watchlist').off();
+    db.ref('/tracking').off();
+    watchlistMap = {};
+    trackingMap  = {};
+    updateMyListsBadge();
   }
-  // Re-render so seen buttons enable/disable correctly
   renderGrid(getFiltered());
 });
 
@@ -680,9 +943,10 @@ function renderGrid(titles) {
   titles.forEach(t => grid.appendChild(makeCard(t)));
 }
 
-function makeCard(t) {
-  const isSeen = !!seenMap[String(t.id)];
-  const div    = document.createElement('div');
+function makeCard(t, opts = {}) {
+  const isSeen        = !!seenMap[String(t.id)];
+  const isWatchlisted = !!watchlistMap[String(t.id)];
+  const div           = document.createElement('div');
   div.className = 'card' + (isSeen ? ' is-seen' : '');
   div.dataset.id = t.id;
 
@@ -699,7 +963,7 @@ function makeCard(t) {
     : '';
 
   const infoParts = [
-    t.runtime  ? `⏱ ${t.runtime} min` : null,
+    t.runtime   ? `⏱ ${t.runtime} min` : null,
     t.ageRating ? t.ageRating : null,
   ].filter(Boolean).join(' · ');
 
@@ -707,18 +971,29 @@ function makeCard(t) {
     .map(g => `<span class="meta-chip">${escHtml(g)}</span>`).join('');
 
   const creditsBlock = [
-    t.director              ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '',
+    t.director               ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '',
     t.actors && t.actors.length ? `<div class="card-credit">Cast: <span>${t.actors.map(escHtml).join(', ')}</span></div>` : '',
   ].join('');
 
-  const initial  = escHtml((t.name || '?')[0].toUpperCase());
-  const disabled = currentUser ? '' : 'disabled title="Sign in to track"';
-  const btnLabel = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
+  const relLabel = t.releaseDate
+    ? new Date(t.releaseDate + 'T00:00:00').toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+    : (t.year || '—');
+
+  const initial   = escHtml((t.name || '?')[0].toUpperCase());
+  const disabled  = currentUser ? '' : 'disabled title="Sign in to track"';
+  const btnLabel  = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
+  const wBtnLabel = isWatchlisted ? '✓ Watchlist' : '+ Watchlist';
 
   const posterBlock = t.posterUrl
     ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
+
+  const footerHtml = opts.watchlistView
+    ? `<button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
+       <button class="watch-btn remove-wl" ${disabled}>Remove</button>`
+    : `<button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
+       <button class="watch-btn ${isWatchlisted ? 'is-watchlisted' : ''}" ${disabled}>${wBtnLabel}</button>`;
 
   div.innerHTML = `
     <div class="card-poster-wrap">
@@ -728,7 +1003,7 @@ function makeCard(t) {
     <div class="card-body">
       <div>
         <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
-        <div class="card-year">${t.year || '—'} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+        <div class="card-year">${relLabel} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
         ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
       </div>
       <div class="provider-badges">${provBadges}</div>
@@ -736,12 +1011,20 @@ function makeCard(t) {
       <div class="card-meta">${genreChipsMeta}</div>
       ${creditsBlock}
       <div class="card-footer" style="margin-top:auto">
-        <button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
+        ${footerHtml}
       </div>
     </div>
   `;
 
   div.querySelector('.seen-btn').addEventListener('click', () => toggleSeen(t.id, !isSeen));
+  const wBtn = div.querySelector('.watch-btn');
+  if (wBtn) {
+    if (opts.watchlistView) {
+      wBtn.addEventListener('click', () => toggleWatchlist(t.id, false));
+    } else {
+      wBtn.addEventListener('click', () => toggleWatchlist(t.id, !isWatchlisted));
+    }
+  }
   return div;
 }
 
@@ -753,6 +1036,9 @@ async function toggleSeen(id, markSeen) {
     if (markSeen) {
       await db.ref('/seen/' + key).set(true);
       seenMap[key] = true;
+      if (watchlistMap[key]) {
+        await db.ref('/watchlist/' + key).remove();
+      }
     } else {
       await db.ref('/seen/' + key).remove();
       delete seenMap[key];
@@ -780,6 +1066,263 @@ async function toggleSeen(id, markSeen) {
     alert('Could not save: ' + err.message);
   }
 }
+
+// ── Watchlist ──────────────────────────────────────────────────────────────────
+async function toggleWatchlist(id, add) {
+  if (!currentUser) return;
+  const key = String(id);
+  try {
+    if (add) await db.ref('/watchlist/' + key).set(true);
+    else     await db.ref('/watchlist/' + key).remove();
+  } catch (err) {
+    console.error('Watchlist toggle failed', err);
+    alert('Could not save: ' + err.message);
+  }
+}
+
+function updateMyListsBadge() {
+  const total = Object.keys(watchlistMap).length + Object.keys(trackingMap).length;
+  const badge = document.getElementById('my-lists-count');
+  badge.textContent = total;
+  badge.hidden = (total === 0);
+}
+
+// ── My Lists rendering ─────────────────────────────────────────────────────────
+function renderMyLists() {
+  renderWatchlistGrid();
+  renderTrackingList();
+}
+
+function renderWatchlistGrid() {
+  const grid  = document.getElementById('watchlist-grid');
+  const empty = document.getElementById('watchlist-empty');
+
+  if (!currentUser) {
+    grid.innerHTML = '';
+    empty.textContent = 'Sign in to use your watchlist.';
+    return;
+  }
+
+  const ids    = Object.keys(watchlistMap);
+  const titles = ids.map(id => allTitles[id]).filter(Boolean);
+
+  if (!titles.length) {
+    grid.innerHTML = '';
+    empty.textContent = 'Your watchlist is empty. Add titles from the Discover tab.';
+    return;
+  }
+  empty.textContent = '';
+  grid.innerHTML = '';
+  titles.forEach(t => grid.appendChild(makeCard(t, { watchlistView: true })));
+}
+
+function renderTrackingList() {
+  const grid  = document.getElementById('tracking-grid');
+  const empty = document.getElementById('tracking-empty');
+
+  if (!currentUser) {
+    grid.innerHTML = '';
+    empty.textContent = 'Sign in to track titles.';
+    return;
+  }
+
+  const entries = Object.entries(trackingMap);
+
+  if (!entries.length) {
+    grid.innerHTML = '';
+    empty.textContent = 'Nothing tracked yet. Paste a JustWatch URL above to start tracking.';
+    return;
+  }
+  empty.textContent = '';
+  grid.innerHTML = '';
+  entries.forEach(([id, meta]) => grid.appendChild(makeTrackingCard(id, meta)));
+}
+
+function makeTrackingCard(id, meta) {
+  const isAvailable = !!allTitles[id];
+  const div = document.createElement('div');
+  div.className = 'tracking-card' + (isAvailable ? ' is-available' : '');
+
+  const initial    = escHtml((meta.name || '?')[0].toUpperCase());
+  const posterHtml = meta.posterUrl
+    ? `<img class="tracking-poster" src="${escHtml(meta.posterUrl)}" alt="" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+
+  const disabled = currentUser ? '' : 'disabled';
+
+  const availSection = isAvailable
+    ? `<div class="available-badge">Now on streaming ✓</div>
+       <div class="provider-badges">
+         ${(allTitles[id].providers || []).map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}
+       </div>`
+    : `<div class="tracking-meta">Not yet on your platforms</div>`;
+
+  const addedDate = meta.addedAt
+    ? new Date(meta.addedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+    : '';
+
+  div.innerHTML = `
+    <div class="tracking-poster-wrap">
+      ${posterHtml}
+      <div class="tracking-poster-fallback" style="${meta.posterUrl ? '' : 'display:flex'}">${initial}</div>
+    </div>
+    <div class="tracking-body">
+      <div class="tracking-title">${escHtml(meta.name || 'Unknown')}</div>
+      <div class="tracking-meta">${meta.year || '—'} · ${meta.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+      ${availSection}
+      ${addedDate ? `<div class="tracking-meta">Added ${addedDate}</div>` : ''}
+      <div class="tracking-footer">
+        ${isAvailable ? `<button class="add-to-watchlist-btn" ${disabled}>+ Watchlist</button>` : ''}
+        <button class="remove-tracking-btn" ${disabled}>Stop tracking</button>
+      </div>
+    </div>
+  `;
+
+  if (isAvailable) {
+    div.querySelector('.add-to-watchlist-btn')?.addEventListener('click', () => toggleWatchlist(id, true));
+  }
+  div.querySelector('.remove-tracking-btn').addEventListener('click', async () => {
+    try { await db.ref('/tracking/' + id).remove(); }
+    catch (err) { alert('Could not remove: ' + err.message); }
+  });
+  return div;
+}
+
+// ── JustWatch search (for tracking) ───────────────────────────────────────────
+const JW_SEARCH_QUERY = `
+  query GetSearchTitles($country: Country!, $language: Language!, $first: Int!, $searchQuery: String!) {
+    searchTitles(country: $country, searchTitlesSearchQuery: $searchQuery, first: $first) {
+      edges {
+        node {
+          objectId
+          objectType
+          content(country: $country, language: $language) {
+            title
+            posterUrl
+            originalReleaseYear
+          }
+        }
+      }
+    }
+  }
+`;
+
+async function jwSearchTitles(query) {
+  const body = JSON.stringify({
+    operationName: 'GetSearchTitles',
+    query: JW_SEARCH_QUERY,
+    variables: { country: 'IN', language: 'en', first: 5, searchQuery: query },
+  });
+  const resp = await fetch('https://apis.justwatch.com/graphql', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body,
+  });
+  if (!resp.ok) throw new Error('Search request failed (' + resp.status + ')');
+  const json = await resp.json();
+  if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL error');
+  const edges = json.data?.searchTitles?.edges || [];
+  return edges.map(e => {
+    const node = e.node, content = node.content || {};
+    let posterUrl = null;
+    if (content.posterUrl) {
+      posterUrl = 'https://images.justwatch.com' +
+        content.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
+    }
+    return {
+      id:          String(node.objectId),
+      contentType: node.objectType === 'MOVIE' ? 'movie' : 'show',
+      name:        content.title,
+      year:        content.originalReleaseYear,
+      posterUrl,
+    };
+  });
+}
+
+function extractSlugAndType(url) {
+  const m = url.match(/justwatch\.com\/[a-z]+\/(movie|show)\/([^?#/]+)/i);
+  return m ? { type: m[1], slug: m[2] } : null;
+}
+
+function renderSearchResults(results) {
+  const container = document.getElementById('tracking-results');
+  if (!results.length) {
+    container.innerHTML = '<div style="padding:12px 14px;color:var(--muted)">No results found. Try a different URL.</div>';
+    container.hidden = false;
+    return;
+  }
+  container.innerHTML = results.map((r, i) => {
+    const thumbHtml = r.posterUrl
+      ? `<img class="search-result-thumb" src="${escHtml(r.posterUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="search-result-thumb-fallback">${escHtml((r.name || '?')[0].toUpperCase())}</div>`;
+    return `
+      <div class="search-result-item" data-idx="${i}">
+        ${thumbHtml}
+        <div class="search-result-info">
+          <div class="search-result-title">${escHtml(r.name || 'Unknown')}</div>
+          <div class="search-result-meta">${r.year || '—'} · ${r.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+        </div>
+        <button class="search-result-btn">Track this</button>
+      </div>
+    `;
+  }).join('');
+  container.hidden = false;
+
+  container.querySelectorAll('.search-result-item').forEach((el, i) => {
+    el.querySelector('.search-result-btn').addEventListener('click', async () => {
+      const r = results[i];
+      try {
+        await db.ref('/tracking/' + r.id).set({
+          name:        r.name,
+          year:        r.year,
+          posterUrl:   r.posterUrl,
+          contentType: r.contentType,
+          addedAt:     Date.now(),
+        });
+        document.getElementById('tracking-url').value = '';
+        container.hidden = true;
+        container.innerHTML = '';
+      } catch (err) {
+        alert('Could not save to tracking: ' + err.message);
+      }
+    });
+  });
+}
+
+document.getElementById('tracking-search-btn').addEventListener('click', async () => {
+  const btn    = document.getElementById('tracking-search-btn');
+  const urlVal = document.getElementById('tracking-url').value.trim();
+  const parsed = extractSlugAndType(urlVal);
+  if (!parsed) {
+    alert('Paste a valid JustWatch URL (e.g. https://www.justwatch.com/in/movie/project-hail-mary)');
+    return;
+  }
+  btn.disabled    = true;
+  btn.textContent = 'Searching…';
+  try {
+    const results = await jwSearchTitles(parsed.slug.replace(/-/g, ' '));
+    renderSearchResults(results);
+  } catch (err) {
+    console.error('JW search error:', err);
+    alert('Search failed: ' + err.message + '\nCheck the browser console for details.');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Find';
+  }
+});
+
+// ── Tab switching ──────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('discover-pane').hidden = (tab !== 'discover');
+    document.getElementById('mylists-pane').hidden  = (tab !== 'mylists');
+    if (tab === 'mylists') renderMyLists();
+  });
+});
 
 // ── Dual year range slider ─────────────────────────────────────────────────────
 const yearFrom  = document.getElementById('year-from');

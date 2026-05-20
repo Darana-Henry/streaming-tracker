@@ -16,6 +16,7 @@ public class Title {
     public Double imdbRating;
     public Integer imdbVotes;
     public String ageRating;
+    public String releaseDate;   // ISO "YYYY-MM-DD", earliest known release, may be null
     public String contentType;   // "movie" or "show"
     public List<String> providers;
 }
