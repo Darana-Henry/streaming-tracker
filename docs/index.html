@@ -363,6 +363,22 @@
       font-size: 15px;
     }
 
+    /* ── Dismiss button ────────────────────────────────────────────────────── */
+    .dismiss-btn {
+      width: 100%;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .dismiss-btn:hover { border-color: #ef4444; color: #ef4444; }
+    .dismiss-btn.is-dismissed { background: #1f0a0a; border-color: #7f1d1d; color: #f87171; }
+    .dismiss-btn:disabled { opacity: .4; cursor: default; }
+
     /* ── Watchlist button ───────────────────────────────────────────────────── */
     .watch-btn {
       width: 100%;
@@ -715,6 +731,12 @@
           Hide watchlisted titles
         </label>
       </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <label>
+          <input type="checkbox" id="hide-dismissed" checked>
+          Hide dismissed titles
+        </label>
+      </div>
     </div>
 
   </aside>
@@ -800,11 +822,12 @@ const auth = firebase.auth();
 const db   = firebase.database();
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let currentUser  = null;
-let allTitles    = {};   // id → title object
-let seenMap      = {};   // id → true
-let watchlistMap = {};   // id → true
-let trackingMap  = {};   // id → { name, year, posterUrl, contentType, addedAt }
+let currentUser   = null;
+let allTitles     = {};   // id → title object
+let seenMap       = {};   // id → true
+let watchlistMap  = {};   // id → true
+let trackingMap   = {};   // id → { name, year, posterUrl, contentType, addedAt }
+let dismissedMap  = {};   // id → true
 
 const filters = {
   providers:   new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
@@ -814,6 +837,7 @@ const filters = {
   genres:      new Set(),
   hideSeen:         false,
   hideWatchlisted:  false,
+  hideDismissed:    true,
   searchQuery: '',
   sortBy:      'popular',
 };
@@ -840,13 +864,19 @@ auth.onAuthStateChanged(user => {
       if (!document.getElementById('mylists-pane').hidden) renderTrackingList();
       updateMyListsBadge();
     });
+    db.ref('/dismissed').on('value', snap => {
+      dismissedMap = snap.val() || {};
+      renderGrid(getFiltered());
+    });
   } else {
     userName.textContent = '';
     authBtn.textContent  = 'Sign in with Google';
     authBtn.className    = '';
     db.ref('/watchlist').off();
     db.ref('/tracking').off();
-    watchlistMap = {};
+    db.ref('/dismissed').off();
+    watchlistMap  = {};
+    dismissedMap  = {};
     trackingMap  = {};
     updateMyListsBadge();
   }
@@ -934,6 +964,7 @@ function getFiltered() {
     }
     if (filters.hideSeen && seenMap[String(t.id)]) return false;
     if (filters.hideWatchlisted && watchlistMap[String(t.id)]) return false;
+    if (filters.hideDismissed && dismissedMap[String(t.id)]) return false;
     if (filters.searchQuery) {
       const q       = filters.searchQuery.toLowerCase();
       const inName  = (t.name     || '').toLowerCase().includes(q);
@@ -984,6 +1015,7 @@ function renderGrid(titles) {
 function makeCard(t, opts = {}) {
   const isSeen        = !!seenMap[String(t.id)];
   const isWatchlisted = !!watchlistMap[String(t.id)];
+  const isDismissed   = !!dismissedMap[String(t.id)];
   const div           = document.createElement('div');
   div.className = 'card' + (isSeen ? ' is-seen' : '');
   div.dataset.id = t.id;
@@ -1018,9 +1050,10 @@ function makeCard(t, opts = {}) {
     : (t.year || '—');
 
   const initial   = escHtml((t.name || '?')[0].toUpperCase());
-  const disabled  = currentUser ? '' : 'disabled title="Sign in to track"';
-  const btnLabel  = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
-  const wBtnLabel = isWatchlisted ? '✓ Watchlist' : '+ Watchlist';
+  const disabled   = currentUser ? '' : 'disabled title="Sign in to track"';
+  const btnLabel   = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
+  const wBtnLabel  = isWatchlisted ? '✓ Watchlist' : '+ Watchlist';
+  const dBtnLabel  = isDismissed ? '✗ Dismissed — Undo' : 'Not Interested';
 
   const posterBlock = t.posterUrl
     ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
@@ -1031,7 +1064,8 @@ function makeCard(t, opts = {}) {
     ? `<button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
        <button class="watch-btn remove-wl" ${disabled}>Remove</button>`
     : `<button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
-       <button class="watch-btn ${isWatchlisted ? 'is-watchlisted' : ''}" ${disabled}>${wBtnLabel}</button>`;
+       <button class="watch-btn ${isWatchlisted ? 'is-watchlisted' : ''}" ${disabled}>${wBtnLabel}</button>
+       <button class="dismiss-btn ${isDismissed ? 'is-dismissed' : ''}" ${disabled}>${dBtnLabel}</button>`;
 
   div.innerHTML = `
     <div class="card-poster-wrap">
@@ -1063,6 +1097,7 @@ function makeCard(t, opts = {}) {
       wBtn.addEventListener('click', () => toggleWatchlist(t.id, !isWatchlisted));
     }
   }
+  div.querySelector('.dismiss-btn')?.addEventListener('click', () => toggleDismissed(t.id, !isDismissed));
   return div;
 }
 
@@ -1114,6 +1149,35 @@ async function toggleWatchlist(id, add) {
     else     await db.ref('/watchlist/' + key).remove();
   } catch (err) {
     console.error('Watchlist toggle failed', err);
+    alert('Could not save: ' + err.message);
+  }
+}
+
+// ── Dismiss ────────────────────────────────────────────────────────────────────
+async function toggleDismissed(id, dismiss) {
+  if (!currentUser) return;
+  const key = String(id);
+  try {
+    if (dismiss) {
+      await db.ref('/dismissed/' + key).set(true);
+      dismissedMap[key] = true;
+    } else {
+      await db.ref('/dismissed/' + key).remove();
+      delete dismissedMap[key];
+    }
+    if (filters.hideDismissed && dismiss) {
+      const card = document.querySelector(`.card[data-id="${id}"]`);
+      if (card) card.remove();
+      const filtered = getFiltered();
+      const total    = Object.keys(allTitles).length;
+      document.getElementById('stats').textContent =
+        `Showing ${filtered.length} of ${total} titles · ${Object.keys(seenMap).length} seen`;
+    } else {
+      const card = document.querySelector(`.card[data-id="${id}"]`);
+      if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    }
+  } catch (err) {
+    console.error('Dismiss toggle failed', err);
     alert('Could not save: ' + err.message);
   }
 }
@@ -1480,6 +1544,11 @@ document.getElementById('hide-seen').addEventListener('change', e => {
 
 document.getElementById('hide-watchlisted').addEventListener('change', e => {
   filters.hideWatchlisted = e.target.checked;
+  applyAndRender();
+});
+
+document.getElementById('hide-dismissed').addEventListener('change', e => {
+  filters.hideDismissed = e.target.checked;
   applyAndRender();
 });
 
