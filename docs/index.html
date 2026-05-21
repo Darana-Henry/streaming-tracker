@@ -425,7 +425,8 @@
     .empty-state { color: var(--muted); font-size: 14px; padding: 12px 0; }
 
     /* ── Watchlist filter bar ───────────────────────────────────────────────── */
-    .wl-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .wl-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .wl-row { display: flex; align-items: center; gap: 8px; }
     .wl-type-btns { display: flex; gap: 4px; }
     .wl-type-btn {
       background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
@@ -433,10 +434,10 @@
     }
     .wl-type-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
     .wl-controls select {
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+      width: 140px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
       color: var(--text); font-size: 13px; padding: 5px 10px; cursor: pointer;
     }
-    .wl-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+    .wl-count { font-size: 12px; color: var(--muted); margin-left: 4px; }
 
     /* ── Tracking add area ──────────────────────────────────────────────────── */
     .tracking-add { display: flex; gap: 8px; margin-bottom: 12px; max-width: 580px; }
@@ -734,28 +735,32 @@
   <section class="mylist-section">
     <h2>Watchlist</h2>
     <div class="wl-controls">
-      <div class="wl-type-btns">
-        <button class="wl-type-btn active" data-value="both">All</button>
-        <button class="wl-type-btn" data-value="movie">Movies</button>
-        <button class="wl-type-btn" data-value="show">Shows</button>
+      <div class="wl-row">
+        <div class="wl-type-btns">
+          <button class="wl-type-btn active" data-value="both">All</button>
+          <button class="wl-type-btn" data-value="movie">Movies</button>
+          <button class="wl-type-btn" data-value="show">Shows</button>
+        </div>
+        <span class="wl-count" id="wl-count"></span>
       </div>
-      <select id="wl-provider-select">
-        <option value="">All platforms</option>
-        <option value="jhs">JioHotstar</option>
-        <option value="prv">Prime Video</option>
-        <option value="lgp">Lionsgate Play</option>
-        <option value="snl">SonyLIV</option>
-        <option value="snx">Sun NXT</option>
-        <option value="zee">ZEE5</option>
-        <option value="vim">Voot</option>
-      </select>
-      <select id="wl-sort-select">
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
-        <option value="rating">Top Rated</option>
-        <option value="az">A – Z</option>
-      </select>
-      <span class="wl-count" id="wl-count"></span>
+      <div class="wl-row">
+        <select id="wl-provider-select">
+          <option value="">All platforms</option>
+          <option value="jhs">JioHotstar</option>
+          <option value="prv">Prime Video</option>
+          <option value="lgp">Lionsgate Play</option>
+          <option value="snl">SonyLIV</option>
+          <option value="snx">Sun NXT</option>
+          <option value="zee">ZEE5</option>
+          <option value="vim">Voot</option>
+        </select>
+        <select id="wl-sort-select">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="rating">Top Rated</option>
+          <option value="az">A – Z</option>
+        </select>
+      </div>
     </div>
     <p id="watchlist-empty" class="empty-state"></p>
     <div id="watchlist-grid" class="mylist-grid"></div>
