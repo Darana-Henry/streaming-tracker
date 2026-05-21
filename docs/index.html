@@ -762,6 +762,13 @@
     </div>
 
     <div class="filter-section">
+      <h3>Audio Language</h3>
+      <div class="genre-list" id="lang-list">
+        <span style="color:var(--muted);font-size:12px">Loading…</span>
+      </div>
+    </div>
+
+    <div class="filter-section">
       <h3>Sort by</h3>
       <select id="sort-select">
         <option value="popular">Popular</option>
@@ -892,6 +899,7 @@ const filters = {
   yearFrom:    1900,
   yearTo:      2025,
   genres:      new Set(),
+  audioLangs:  new Set(),
   hideSeen:         false,
   hideWatchlisted:  false,
   hideDismissed:    true,
@@ -970,11 +978,13 @@ async function loadData() {
 // ── Build dynamic filter UI ────────────────────────────────────────────────────
 function buildFiltersUI() {
   const genreSet = new Set();
+  const langSet  = new Set();
   let   minYear  = Infinity;
   let   maxYear  = -Infinity;
 
   Object.values(allTitles).forEach(t => {
     (t.genres || []).forEach(g => genreSet.add(g));
+    (t.audioLanguages || []).forEach(l => langSet.add(l));
     if (t.year) { minYear = Math.min(minYear, t.year); maxYear = Math.max(maxYear, t.year); }
   });
 
@@ -1004,6 +1014,22 @@ function buildFiltersUI() {
     })
   );
 
+  // Audio language checkboxes
+  const langList = document.getElementById('lang-list');
+  langList.innerHTML = '';
+  [...langSet].sort((a, b) => langLabel(a).localeCompare(langLabel(b))).forEach(code => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" class="lang-cb" value="${escHtml(code)}"> ${escHtml(langLabel(code))}`;
+    langList.appendChild(lbl);
+  });
+  langList.querySelectorAll('.lang-cb').forEach(cb =>
+    cb.addEventListener('change', () => {
+      if (cb.checked) filters.audioLangs.add(cb.value);
+      else            filters.audioLangs.delete(cb.value);
+      applyAndRender();
+    })
+  );
+
 }
 
 // ── Filter logic ───────────────────────────────────────────────────────────────
@@ -1022,6 +1048,10 @@ function getFiltered() {
     if (filters.hideSeen && seenMap[String(t.id)]) return false;
     if (filters.hideWatchlisted && watchlistMap[String(t.id)]) return false;
     if (filters.hideDismissed && dismissedMap[String(t.id)]) return false;
+    if (filters.audioLangs.size > 0) {
+      const tLangs = t.audioLanguages || [];
+      if (!tLangs.some(l => filters.audioLangs.has(l))) return false;
+    }
     if (filters.searchQuery) {
       const q       = filters.searchQuery.toLowerCase();
       const inName  = (t.name     || '').toLowerCase().includes(q);

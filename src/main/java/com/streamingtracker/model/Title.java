@@ -19,6 +19,7 @@ public class Title {
     public String releaseDate;    // ISO "YYYY-MM-DD", earliest known release, may be null
     public String streamingDate;  // ISO "YYYY-MM-DD", most recent availableFromTime across providers, may be null
     public String firstSeen;      // ISO "YYYY-MM-DD", date title first appeared in a scraper run
-    public String contentType;   // "movie" or "show"
+    public String contentType;          // "movie" or "show"
     public List<String> providers;
+    public List<String> audioLanguages; // language codes available across streaming offers
 }

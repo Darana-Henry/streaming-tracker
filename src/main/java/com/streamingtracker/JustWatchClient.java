@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +56,7 @@ public class JustWatchClient {
         "          posterUrl" +
         "          externalIds { imdbId }" +
         "          originalReleaseYear" +
+        "          originalReleaseDate" +
         "          runtime" +
         "          ... on MovieOrShowContent {" +
         "            ageCertification" +
@@ -78,6 +80,7 @@ public class JustWatchClient {
         "          }" +
         "          monetizationType" +
         "          availableFromTime" +
+        "          audioLanguages(language: $language)" +
         "        }" +
         "      }" +
         "    }" +
@@ -215,8 +218,9 @@ public class JustWatchClient {
             if (content.has("externalIds") && !content.get("externalIds").isJsonNull()) {
                 t.imdbId = str(content.getAsJsonObject("externalIds"), "imdbId");
             }
-            t.year             = intOrNull(content, "originalReleaseYear");
-            t.runtime          = intOrNull(content, "runtime");
+            t.year        = intOrNull(content, "originalReleaseYear");
+            t.releaseDate = str(content, "originalReleaseDate");
+            t.runtime     = intOrNull(content, "runtime");
             t.ageRating        = str(content, "ageCertification");
 
             t.genres = new ArrayList<>();
@@ -256,6 +260,7 @@ public class JustWatchClient {
         Set<String> seen             = new HashSet<>();
         Set<String> allowedProviders = new HashSet<>(config.providers);
         Set<String> streamingTypes   = Set.of("FLATRATE", "FREE", "ADS");
+        Set<String> langsSeen        = new LinkedHashSet<>();
         String latestStreamingDate   = null;
         if (hasArray(node, "offers")) {
             for (JsonElement el : node.getAsJsonArray("offers")) {
@@ -273,9 +278,15 @@ public class JustWatchClient {
                     if (latestStreamingDate == null || afd.compareTo(latestStreamingDate) > 0)
                         latestStreamingDate = afd;
                 }
+                if (hasArray(offer, "audioLanguages")) {
+                    for (JsonElement lang : offer.getAsJsonArray("audioLanguages")) {
+                        if (!lang.isJsonNull()) langsSeen.add(lang.getAsString());
+                    }
+                }
             }
         }
-        t.streamingDate = latestStreamingDate;
+        t.streamingDate    = latestStreamingDate;
+        t.audioLanguages   = langsSeen.isEmpty() ? null : new ArrayList<>(langsSeen);
 
         if (t.providers.isEmpty()) return null;
         return t;
