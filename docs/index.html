@@ -71,7 +71,7 @@
       top: 0;
       z-index: 100;
     }
-    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.5px; flex: 1; }
+    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.5px; white-space: nowrap; }
     header h1 span { color: var(--accent-light); }
 
     #auth-area { display: flex; align-items: center; gap: 12px; }
@@ -256,19 +256,19 @@
       margin: 0 0 14px;
       letter-spacing: -.3px;
     }
+    /* Two-column layout: hero left, 2×2 mini grid right — fixed height */
     #new-releases-layout {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
+      grid-template-columns: 1.1fr 1fr;
       gap: 10px;
+      height: 310px;
     }
-    @media (max-width: 600px) {
-      #new-releases-layout { grid-template-columns: 1fr; }
-      .hero-release-card { grid-row: auto; }
+    @media (max-width: 620px) {
+      #new-releases-layout { grid-template-columns: 1fr; height: auto; }
+      .hero-release-card { height: 220px; }
     }
-    /* Hero card — spans both rows on the left */
+    /* Hero — landscape-cropped portrait poster, fills fixed height */
     .hero-release-card {
-      grid-row: 1 / 3;
       position: relative;
       border-radius: 12px;
       overflow: hidden;
@@ -276,21 +276,21 @@
       background: var(--surface);
       border: 1px solid var(--border);
       transition: transform .2s, box-shadow .2s;
-      min-height: 260px;
+      height: 100%;
     }
     .hero-release-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 28px var(--accent-glow); }
     .hero-release-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: top center;
       display: block;
-      min-height: 260px;
     }
     .hero-release-overlay {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      padding: 40px 16px 16px;
-      background: linear-gradient(to top, rgba(5,20,36,0.97) 0%, rgba(5,20,36,0.65) 55%, transparent 100%);
+      padding: 50px 16px 16px;
+      background: linear-gradient(to top, rgba(5,20,36,0.97) 0%, rgba(5,20,36,0.5) 60%, transparent 100%);
     }
     .hero-release-badge {
       display: inline-block;
@@ -305,9 +305,16 @@
       padding: 2px 7px;
       margin-bottom: 8px;
     }
-    .hero-release-title { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.25; margin-bottom: 5px; }
+    .hero-release-title { font-size: 20px; font-weight: 700; color: #fff; line-height: 1.2; margin-bottom: 5px; }
     .hero-release-meta { font-size: 12px; color: var(--muted); }
-    /* Mini cards — fill the two rows on the right */
+    /* Right side: 2×2 grid of mini cards */
+    .releases-mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+      height: 100%;
+    }
     .mini-release-card {
       display: flex;
       gap: 0;
@@ -317,26 +324,28 @@
       overflow: hidden;
       cursor: pointer;
       transition: border-color .2s, box-shadow .2s, transform .15s;
+      min-width: 0;
     }
     .mini-release-card:hover { border-color: rgba(99,102,241,0.4); box-shadow: 0 4px 20px rgba(0,0,0,0.35); transform: translateY(-2px); }
     .mini-release-card img {
-      width: 70px;
+      width: 58px;
       flex-shrink: 0;
       object-fit: cover;
+      object-position: top center;
       background: var(--surface2);
       display: block;
     }
     .mini-release-info {
       flex: 1;
-      padding: 12px 12px 12px 10px;
+      padding: 10px 10px 10px 9px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       min-width: 0;
     }
-    .mini-release-title { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-    .mini-release-meta { font-size: 11px; color: var(--muted); }
-    .mini-release-rating { font-size: 11px; color: #fbbf24; font-weight: 600; margin-top: 3px; }
+    .mini-release-title { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; margin-bottom: 4px; }
+    .mini-release-meta { font-size: 10px; color: var(--muted); }
+    .mini-release-rating { font-size: 10px; color: #fbbf24; font-weight: 600; margin-top: 2px; }
 
     /* ── Card grid ────────────────────────────────────────────────────────────── */
     #grid {
@@ -529,8 +538,8 @@
 
     /* ── Search ──────────────────────────────────────────────────────────────── */
     #search-input {
-      flex: 1;
-      max-width: 320px;
+      margin-left: auto;
+      width: 260px;
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 9999px;
@@ -610,39 +619,45 @@
     .watch-btn:disabled { opacity: .35; cursor: default; }
 
     /* ── Tabs ────────────────────────────────────────────────────────────────── */
-    .tab-bar {
+    .header-tabs {
       display: flex;
-      gap: 4px;
-      padding: 0 24px;
-      background: rgba(5,20,36,0.82);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border2);
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
     }
     .tab {
-      background: none;
+      background: transparent;
       border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--muted);
-      padding: 10px 16px;
-      font-size: 14px;
+      border-radius: 9999px;
+      color: rgba(212,228,250,0.5);
+      padding: 6px 16px;
+      font-size: 13px;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: color .15s, border-color .15s;
-      margin-bottom: -1px;
+      transition: color .15s, background .15s;
+      white-space: nowrap;
     }
     .tab:hover { color: var(--text); }
-    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
-    .tab-badge {
-      display: inline-block;
+    .tab.active {
       background: var(--accent);
       color: #fff;
+      font-weight: 600;
+    }
+    .tab-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      color: #fff;
       border-radius: 9999px;
-      padding: 1px 7px;
-      font-size: 11px;
-      margin-left: 6px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 5px;
       vertical-align: middle;
+    }
+    .tab:not(.active) .tab-badge {
+      background: var(--accent);
+      color: #fff;
     }
 
     /* ── My Lists pane ──────────────────────────────────────────────────────── */
@@ -876,18 +891,17 @@
 
 <header>
   <h1>Streaming <span>Tracker</span></h1>
+  <div class="header-tabs">
+    <button class="tab active" data-tab="discover">Discover</button>
+    <button class="tab" data-tab="mylists">My Library<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
+    <button class="tab" data-tab="stats">Analytics</button>
+  </div>
   <input type="search" id="search-input" placeholder="Search titles, cast, director…">
   <div id="auth-area">
     <span id="user-name"></span>
     <button id="auth-btn">Sign in with Google</button>
   </div>
 </header>
-
-<nav class="tab-bar">
-  <button class="tab active" data-tab="discover">Discover</button>
-  <button class="tab" data-tab="mylists">My Library<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
-  <button class="tab" data-tab="stats">Analytics</button>
-</nav>
 
 <div id="discover-pane">
 <div id="layout">
@@ -1308,7 +1322,7 @@ function renderNewThisMonth() {
   const [hero, ...rest] = recent;
   layout.innerHTML = '';
 
-  // Hero card
+  // Hero card (left column, full height)
   const heroEl = document.createElement('div');
   heroEl.className = 'hero-release-card';
   heroEl.innerHTML = `
@@ -1321,8 +1335,10 @@ function renderNewThisMonth() {
     </div>`;
   layout.appendChild(heroEl);
 
-  // Mini cards
-  rest.forEach(t => {
+  // 2×2 mini grid (right column)
+  const miniGrid = document.createElement('div');
+  miniGrid.className = 'releases-mini-grid';
+  rest.slice(0, 4).forEach(t => {
     const el = document.createElement('div');
     el.className = 'mini-release-card';
     el.innerHTML = `
@@ -1333,8 +1349,9 @@ function renderNewThisMonth() {
         <div class="mini-release-meta">${t.year || ''}${t.contentType === 'show' ? ' · TV Show' : ' · Movie'}</div>
         ${t.imdbRating ? `<div class="mini-release-rating">★ ${t.imdbRating}</div>` : ''}
       </div>`;
-    layout.appendChild(el);
+    miniGrid.appendChild(el);
   });
+  layout.appendChild(miniGrid);
 
   container.style.display = 'block';
 }
