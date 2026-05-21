@@ -218,12 +218,15 @@ public class JustWatchClient {
                     rawPoster.replace("{profile}", "s332").replace("{format}", "webp");
             }
             if (hasArray(content, "backdrops")) {
-                JsonElement first = content.getAsJsonArray("backdrops").get(0);
-                if (first != null && first.isJsonObject()) {
-                    String rawBackdrop = str(first.getAsJsonObject(), "backdropUrl");
-                    if (rawBackdrop != null) {
-                        t.backdropUrl = "https://images.justwatch.com" +
-                            rawBackdrop.replace("{profile}", "s1920").replace("{format}", "jpg");
+                var backdrops = content.getAsJsonArray("backdrops");
+                if (backdrops.size() > 0) {
+                    JsonElement first = backdrops.get(0);
+                    if (first.isJsonObject()) {
+                        String rawBackdrop = str(first.getAsJsonObject(), "backdropUrl");
+                        if (rawBackdrop != null) {
+                            t.backdropUrl = "https://images.justwatch.com" +
+                                rawBackdrop.replace("{profile}", "s1920").replace("{format}", "jpg");
+                        }
                     }
                 }
             }
