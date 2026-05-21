@@ -798,7 +798,7 @@
   <div id="main">
     <div id="stats"></div>
     <div id="new-this-month" style="display:none">
-      <h3>New this month</h3>
+      <h3>Recent Releases</h3>
       <div id="new-strip"></div>
     </div>
     <div id="loading">Loading titles…</div>
@@ -1049,13 +1049,17 @@ function applyAndRender() {
 function renderNewThisMonth() {
   const strip     = document.getElementById('new-strip');
   const container = document.getElementById('new-this-month');
-  const cutoff    = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);  // YYYY-MM-DD
+  const minYear   = new Date().getFullYear() - 2;  // last 3 years inclusive
 
   const recent = Object.values(allTitles)
-    .filter(t => t.firstSeen && t.firstSeen >= cutoffStr)
-    .sort((a, b) => b.firstSeen.localeCompare(a.firstSeen))
+    .filter(t => {
+      if (!t.year || t.year < minYear) return false;
+      if (filters.type !== 'both' && t.contentType !== filters.type) return false;
+      if (filters.hideSeen && seenMap[String(t.id)]) return false;
+      if (filters.hideDismissed && dismissedMap[String(t.id)]) return false;
+      return true;
+    })
+    .sort((a, b) => (b.year - a.year) || ((b.imdbRating || 0) - (a.imdbRating || 0)))
     .slice(0, 40);
 
   if (!recent.length) { container.style.display = 'none'; return; }
@@ -1065,14 +1069,12 @@ function renderNewThisMonth() {
   recent.forEach(t => {
     const el = document.createElement('div');
     el.className = 'strip-card';
-    const dateLabel = new Date(t.firstSeen + 'T00:00:00')
-      .toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     el.innerHTML = `
       <img src="${t.posterUrl || ''}" alt="" loading="lazy"
            onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
       <div class="strip-card-info">
         <div class="strip-card-title">${escHtml(t.name || '')}</div>
-        <div class="strip-card-date">${dateLabel}</div>
+        <div class="strip-card-date">${t.year || ''}</div>
       </div>`;
     strip.appendChild(el);
   });
