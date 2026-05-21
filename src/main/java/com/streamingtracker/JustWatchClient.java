@@ -54,6 +54,7 @@ public class JustWatchClient {
         "        content(country: $country, language: $language) {" +
         "          title" +
         "          posterUrl" +
+        "          backdrops { backdropUrl }" +
         "          externalIds { imdbId }" +
         "          originalReleaseYear" +
         "          originalReleaseDate" +
@@ -215,6 +216,16 @@ public class JustWatchClient {
             if (rawPoster != null) {
                 t.posterUrl = "https://images.justwatch.com" +
                     rawPoster.replace("{profile}", "s332").replace("{format}", "webp");
+            }
+            if (hasArray(content, "backdrops")) {
+                JsonElement first = content.getAsJsonArray("backdrops").get(0);
+                if (first != null && first.isJsonObject()) {
+                    String rawBackdrop = str(first.getAsJsonObject(), "backdropUrl");
+                    if (rawBackdrop != null) {
+                        t.backdropUrl = "https://images.justwatch.com" +
+                            rawBackdrop.replace("{profile}", "s1920").replace("{format}", "jpg");
+                    }
+                }
             }
             if (content.has("externalIds") && !content.get("externalIds").isJsonNull()) {
                 t.imdbId = str(content.getAsJsonObject("externalIds"), "imdbId");

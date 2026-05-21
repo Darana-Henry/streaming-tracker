@@ -261,13 +261,14 @@
       position: relative;
       border-radius: 14px;
       overflow: hidden;
-      height: 320px;
+      height: 300px;
       background: var(--surface);
       border: 1px solid var(--border);
     }
     .carousel-slide {
       position: absolute;
       inset: 0;
+      display: flex;
       opacity: 0;
       transition: opacity .7s ease;
       pointer-events: none;
@@ -276,21 +277,40 @@
       opacity: 1;
       pointer-events: auto;
     }
-    .carousel-slide img {
+    /* Left half — image */
+    .carousel-img-half {
+      width: 50%;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .carousel-img-half img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: top center;
+      object-position: center top;
       display: block;
     }
-    .carousel-slide-overlay {
+    /* fade from image into info panel */
+    .carousel-img-half::after {
+      content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 100px 28px 28px;
-      background: linear-gradient(to top, rgba(5,20,36,0.98) 0%, rgba(5,20,36,0.55) 55%, transparent 100%);
+      inset: 0;
+      background: linear-gradient(to right, transparent 60%, var(--surface) 100%);
+    }
+    /* Right half — info */
+    .carousel-info-half {
+      flex: 1;
+      padding: 28px 28px 28px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      background: var(--surface);
     }
     .carousel-badge {
       display: inline-block;
+      align-self: flex-start;
       font-size: 10px;
       font-weight: 700;
       letter-spacing: .08em;
@@ -303,24 +323,72 @@
       margin-bottom: 10px;
     }
     .carousel-title {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 700;
-      color: #fff;
-      line-height: 1.2;
+      color: var(--text);
+      line-height: 1.25;
       margin-bottom: 6px;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
-    .carousel-meta { font-size: 13px; color: rgba(212,228,250,0.8); }
+    .carousel-meta-row {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .carousel-rating {
+      color: #fbbf24;
+      font-weight: 600;
+    }
+    .carousel-logline {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .carousel-genres {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+    .carousel-genre-chip {
+      font-size: 10px;
+      font-weight: 500;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      color: var(--muted);
+    }
+    .carousel-providers {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .carousel-prov-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 5px;
+      border: 1px solid;
+    }
     /* Prev / Next arrows */
     .carousel-btn {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
       z-index: 3;
-      background: rgba(5,20,36,0.65);
+      background: rgba(5,20,36,0.7);
       border: 1px solid var(--border);
       border-radius: 50%;
-      width: 38px; height: 38px;
+      width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       color: var(--text);
@@ -328,29 +396,28 @@
     }
     .carousel-btn:hover { background: var(--accent); border-color: var(--accent); }
     .carousel-btn .material-symbols-outlined { font-size: 20px; }
-    .carousel-btn.carousel-prev { left: 14px; }
-    .carousel-btn.carousel-next { right: 14px; }
+    .carousel-btn.carousel-prev { left: 12px; }
+    .carousel-btn.carousel-next { right: 12px; }
     /* Dot indicators */
     .carousel-dots {
       position: absolute;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 12px;
+      right: 20px;
       display: flex;
-      gap: 7px;
+      gap: 6px;
       z-index: 3;
     }
     .carousel-dot {
-      width: 7px; height: 7px;
+      width: 6px; height: 6px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.25);
       cursor: pointer;
       transition: background .2s, transform .2s;
       border: none;
     }
     .carousel-dot.active {
-      background: #fff;
-      transform: scale(1.35);
+      background: var(--accent);
+      transform: scale(1.4);
     }
 
     /* ── Card grid ────────────────────────────────────────────────────────────── */
@@ -1417,18 +1484,51 @@ function renderNewThisMonth() {
   _carouselTitles = recent;
   _carouselIdx    = 0;
 
+  const provColors = {
+    jhs: { bg: 'rgba(139,92,246,0.18)', color: '#a78bfa', border: 'rgba(139,92,246,0.5)' },
+    prv: { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8', border: 'rgba(14,165,233,0.5)' },
+    lgp: { bg: 'rgba(249,115,22,0.18)',  color: '#fb923c', border: 'rgba(249,115,22,0.5)' },
+    snl: { bg: 'rgba(239,68,68,0.18)',   color: '#f87171', border: 'rgba(239,68,68,0.5)'  },
+    snx: { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.5)' },
+    zee: { bg: 'rgba(168,85,247,0.18)',  color: '#c084fc', border: 'rgba(168,85,247,0.5)' },
+    vim: { bg: 'rgba(124,58,237,0.18)',  color: '#a78bfa', border: 'rgba(124,58,237,0.5)' },
+  };
+
+  function makeCarouselSlide(t, active) {
+    const imgSrc   = t.backdropUrl || t.posterUrl || '';
+    const genres   = (t.genres || []).slice(0, 4)
+      .map(g => `<span class="carousel-genre-chip">${escHtml(toTitleCase(g))}</span>`).join('');
+    const provs    = (t.providers || []).slice(0, 4).map(p => {
+      const c = provColors[p] || { bg: 'rgba(99,102,241,0.18)', color: '#818cf8', border: 'rgba(99,102,241,0.5)' };
+      return `<span class="carousel-prov-badge" style="background:${c.bg};color:${c.color};border-color:${c.border}">${escHtml(provLabel(p))}</span>`;
+    }).join('');
+    const typeLabel = t.contentType === 'show' ? 'TV Show' : 'Movie';
+    return `
+      <div class="carousel-slide${active ? ' active' : ''}">
+        <div class="carousel-img-half">
+          <img src="${imgSrc}" alt="" loading="lazy"
+               onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
+        </div>
+        <div class="carousel-info-half">
+          <div class="carousel-badge">New Release</div>
+          <div class="carousel-title">${escHtml(t.name || '')}</div>
+          <div class="carousel-meta-row">
+            <span>${t.year || ''}</span>
+            <span>·</span>
+            <span>${typeLabel}</span>
+            ${t.imdbRating ? `<span>·</span><span class="carousel-rating">★ ${t.imdbRating}</span>` : ''}
+            ${t.ageRating  ? `<span>·</span><span>${escHtml(t.ageRating)}</span>` : ''}
+          </div>
+          ${t.shortDescription ? `<div class="carousel-logline">${escHtml(t.shortDescription)}</div>` : ''}
+          ${genres ? `<div class="carousel-genres">${genres}</div>` : ''}
+          ${provs  ? `<div class="carousel-providers">${provs}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
   layout.innerHTML = `
     <div class="carousel-wrapper" id="carousel-wrapper">
-      ${recent.map((t, i) => `
-        <div class="carousel-slide${i === 0 ? ' active' : ''}">
-          <img src="${t.posterUrl || ''}" alt="" loading="lazy"
-               onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
-          <div class="carousel-slide-overlay">
-            <div class="carousel-badge">New Release</div>
-            <div class="carousel-title">${escHtml(t.name || '')}</div>
-            <div class="carousel-meta">${t.year || ''}${t.contentType === 'show' ? ' · TV Show' : ' · Movie'}${t.imdbRating ? ` · ★ ${t.imdbRating}` : ''}</div>
-          </div>
-        </div>`).join('')}
+      ${recent.map((t, i) => makeCarouselSlide(t, i === 0)).join('')}
       <button class="carousel-btn carousel-prev" id="carousel-prev">
         <span class="material-symbols-outlined">chevron_left</span>
       </button>
