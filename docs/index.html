@@ -1663,9 +1663,15 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
   try {
     meta = await jwFetchByPath(parsed.fullPath);
   } catch (err) {
-    alert('Could not fetch title info: ' + err.message);
-    btn.disabled = false; btn.textContent = 'Find';
-    return;
+    // CORS or network failure — fall back to slug-derived name, no poster
+    const slug = parsed.fullPath.split('/').pop();
+    meta = {
+      objectId:    null,
+      name:        slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      year:        null,
+      contentType: parsed.type,
+      posterUrl:   null,
+    };
   }
   btn.disabled = false; btn.textContent = 'Find';
 
@@ -1686,7 +1692,8 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
   container.hidden = false;
 
   document.getElementById('confirm-track-btn').addEventListener('click', async () => {
-    const key = String(meta.objectId);
+    const slug = parsed.fullPath.split('/').pop();
+    const key  = meta.objectId ? String(meta.objectId) : (parsed.type + '_' + slug);
     try {
       await db.ref('/tracking/' + key).set({
         name:        meta.name,
