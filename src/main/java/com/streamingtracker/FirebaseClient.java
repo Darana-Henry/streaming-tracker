@@ -1,7 +1,9 @@
 package com.streamingtracker;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.streamingtracker.model.Title;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -10,7 +12,9 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FirebaseClient {
 
@@ -25,6 +29,34 @@ public class FirebaseClient {
         this.http        = http;
         this.accessToken = accessToken;
         this.dbUrl       = dbUrl;
+    }
+
+    /** Returns a map of id → firstSeen for all titles currently in Firebase. */
+    public Map<String, String> fetchExistingFirstSeen() throws IOException {
+        Request req = new Request.Builder()
+                .url(dbUrl + "/titles.json?shallow=false")
+                .header("Authorization", "Bearer " + accessToken)
+                .get()
+                .build();
+        Map<String, String> result = new HashMap<>();
+        try (Response resp = http.newCall(req).execute()) {
+            if (!resp.isSuccessful()) return result;
+            String raw = resp.body().string();
+            if (raw == null || raw.equals("null")) return result;
+            JsonElement root = JsonParser.parseString(raw);
+            if (!root.isJsonObject()) return result;
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject().entrySet()) {
+                JsonElement val = entry.getValue();
+                if (val.isJsonObject()) {
+                    JsonElement fs = val.getAsJsonObject().get("firstSeen");
+                    if (fs != null && !fs.isJsonNull()) {
+                        result.put(entry.getKey(), fs.getAsString());
+                    }
+                }
+            }
+        }
+        System.out.println("Fetched firstSeen for " + result.size() + " existing titles");
+        return result;
     }
 
     /**

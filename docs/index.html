@@ -202,6 +202,59 @@
       margin-bottom: 14px;
     }
 
+    /* ── New this month strip ────────────────────────────────────────────── */
+    #new-this-month { margin-bottom: 28px; }
+    #new-this-month h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 10px;
+      letter-spacing: .3px;
+    }
+    #new-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    #new-strip::-webkit-scrollbar { height: 4px; }
+    #new-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .strip-card {
+      flex: 0 0 110px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .15s, transform .1s;
+    }
+    .strip-card:hover { border-color: var(--accent-dim); transform: translateY(-1px); }
+    .strip-card img {
+      width: 100%;
+      aspect-ratio: 2/3;
+      object-fit: cover;
+      display: block;
+      background: var(--surface2);
+    }
+    .strip-card-info {
+      padding: 5px 6px 7px;
+    }
+    .strip-card-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .strip-card-date {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
     /* ── Card grid ───────────────────────────────────────────────────────── */
     #grid {
       display: grid;
@@ -744,6 +797,10 @@
   <!-- ── Main content ──────────────────────────────────────────────────── -->
   <div id="main">
     <div id="stats"></div>
+    <div id="new-this-month" style="display:none">
+      <h3>New this month</h3>
+      <div id="new-strip"></div>
+    </div>
     <div id="loading">Loading titles…</div>
     <div id="grid" style="display:none"></div>
   </div>
@@ -986,6 +1043,39 @@ function getFiltered() {
 
 function applyAndRender() {
   renderGrid(getFiltered());
+  renderNewThisMonth();
+}
+
+function renderNewThisMonth() {
+  const strip     = document.getElementById('new-strip');
+  const container = document.getElementById('new-this-month');
+  const cutoff    = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);  // YYYY-MM-DD
+
+  const recent = Object.values(allTitles)
+    .filter(t => t.firstSeen && t.firstSeen >= cutoffStr)
+    .sort((a, b) => b.firstSeen.localeCompare(a.firstSeen))
+    .slice(0, 40);
+
+  if (!recent.length) { container.style.display = 'none'; return; }
+
+  container.style.display = 'block';
+  strip.innerHTML = '';
+  recent.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'strip-card';
+    const dateLabel = new Date(t.firstSeen + 'T00:00:00')
+      .toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    el.innerHTML = `
+      <img src="${t.posterUrl || ''}" alt="" loading="lazy"
+           onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
+      <div class="strip-card-info">
+        <div class="strip-card-title">${escHtml(t.name || '')}</div>
+        <div class="strip-card-date">${dateLabel}</div>
+      </div>`;
+    strip.appendChild(el);
+  });
 }
 
 // ── Card rendering ─────────────────────────────────────────────────────────────

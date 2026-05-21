@@ -4,7 +4,9 @@ import com.streamingtracker.auth.ServiceAccountAuth;
 import com.streamingtracker.model.Title;
 import okhttp3.OkHttpClient;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -35,9 +37,22 @@ public class Main {
         String token = auth.getAccessToken();
         System.out.println("Access token obtained");
 
-        // ── Step 3: overwrite /titles ─────────────────────────────────────────
-        System.out.println("\n=== Writing to Firebase ===");
+        // ── Step 3: stamp firstSeen ───────────────────────────────────────────
+        System.out.println("\n=== Stamping firstSeen ===");
         FirebaseClient fb = new FirebaseClient(http, token, config.databaseUrl);
+        Map<String, String> existingFirstSeen = fb.fetchExistingFirstSeen();
+        String today = LocalDate.now().toString();
+        int newTitles = 0;
+        for (Title t : titles) {
+            String key = String.valueOf(t.id);
+            String existing = existingFirstSeen.get(key);
+            t.firstSeen = (existing != null) ? existing : today;
+            if (existing == null) newTitles++;
+        }
+        System.out.printf("New titles this run: %d  (firstSeen = %s)%n", newTitles, today);
+
+        // ── Step 4: overwrite /titles ─────────────────────────────────────────
+        System.out.println("\n=== Writing to Firebase ===");
         fb.writeTitles(titles);
 
         System.out.println("\nDone.");

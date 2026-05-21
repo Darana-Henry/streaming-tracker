@@ -77,6 +77,7 @@ public class JustWatchClient {
         "            shortName" +
         "          }" +
         "          monetizationType" +
+        "          availableFromTime" +
         "        }" +
         "      }" +
         "    }" +
@@ -100,6 +101,8 @@ public class JustWatchClient {
             System.out.printf("%n  --- Fetching provider: %s ---%n", provider);
             fetchForProvider(provider, merged);
         }
+        long withDate = merged.values().stream().filter(t -> t.streamingDate != null).count();
+        System.out.printf("%n  [streamingDate] populated: %d / %d titles%n", withDate, merged.size());
         return new ArrayList<>(merged.values());
     }
 
@@ -253,6 +256,7 @@ public class JustWatchClient {
         Set<String> seen             = new HashSet<>();
         Set<String> allowedProviders = new HashSet<>(config.providers);
         Set<String> streamingTypes   = Set.of("FLATRATE", "FREE", "ADS");
+        String latestStreamingDate   = null;
         if (hasArray(node, "offers")) {
             for (JsonElement el : node.getAsJsonArray("offers")) {
                 JsonObject offer = el.getAsJsonObject();
@@ -261,10 +265,17 @@ public class JustWatchClient {
                 String shortName = str(offer.getAsJsonObject("package"), "shortName");
                 if (shortName == null) continue;
                 if ("pva".equals(shortName)) shortName = "prv";  // Prime Video (ad-tier) → Prime
-                if (allowedProviders.contains(shortName) && seen.add(shortName))
-                    t.providers.add(shortName);
+                if (!allowedProviders.contains(shortName)) continue;
+                if (seen.add(shortName)) t.providers.add(shortName);
+                String aft = str(offer, "availableFromTime");
+                if (aft != null) {
+                    String afd = aft.length() >= 10 ? aft.substring(0, 10) : aft;  // keep YYYY-MM-DD
+                    if (latestStreamingDate == null || afd.compareTo(latestStreamingDate) > 0)
+                        latestStreamingDate = afd;
+                }
             }
         }
+        t.streamingDate = latestStreamingDate;
 
         if (t.providers.isEmpty()) return null;
         return t;
