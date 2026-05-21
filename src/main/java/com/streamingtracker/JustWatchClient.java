@@ -57,6 +57,7 @@ public class JustWatchClient {
         "          externalIds { imdbId }" +
         "          originalReleaseYear" +
         "          originalReleaseDate" +
+        "          shortDescription" +
         "          runtime" +
         "          ... on MovieOrShowContent {" +
         "            ageCertification" +
@@ -218,9 +219,10 @@ public class JustWatchClient {
             if (content.has("externalIds") && !content.get("externalIds").isJsonNull()) {
                 t.imdbId = str(content.getAsJsonObject("externalIds"), "imdbId");
             }
-            t.year        = intOrNull(content, "originalReleaseYear");
-            t.releaseDate = str(content, "originalReleaseDate");
-            t.runtime     = intOrNull(content, "runtime");
+            t.year             = intOrNull(content, "originalReleaseYear");
+            t.releaseDate      = str(content, "originalReleaseDate");
+            t.shortDescription = str(content, "shortDescription");
+            t.runtime          = intOrNull(content, "runtime");
             t.ageRating        = str(content, "ageCertification");
 
             t.genres = new ArrayList<>();

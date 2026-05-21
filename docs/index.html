@@ -160,17 +160,30 @@
     .year-inputs input[type="number"]:focus { outline: none; border-color: var(--accent); }
     .year-sep { font-size: 12px; color: var(--muted); }
 
-    /* Genre list (scrollable) */
+    /* Genre / language list (scrollable) */
+    .filter-search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 8px;
+      margin-bottom: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+    }
+    .filter-search:focus { outline: none; border-color: var(--accent); }
     .genre-list {
       display: flex;
       flex-direction: column;
       gap: 5px;
-      max-height: 180px;
+      max-height: 160px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
     .genre-list label { font-size: 12px; }
+    .genre-list label.hidden { display: none; }
 
     /* Language select */
     select {
@@ -327,6 +340,17 @@
     }
 
     .card-year { font-size: 12px; color: var(--muted); }
+    .card-logline {
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
 
     .provider-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
     .badge {
@@ -756,13 +780,15 @@
 
     <div class="filter-section">
       <h3>Genre</h3>
+      <input type="search" class="filter-search" id="genre-search" placeholder="Search genres…">
       <div class="genre-list" id="genre-list">
         <span style="color:var(--muted);font-size:12px">Loading…</span>
       </div>
     </div>
 
     <div class="filter-section">
-      <h3>Audio Language</h3>
+      <h3>Language</h3>
+      <input type="search" class="filter-search" id="lang-search" placeholder="Search languages…">
       <div class="genre-list" id="lang-list">
         <span style="color:var(--muted);font-size:12px">Loading…</span>
       </div>
@@ -1003,7 +1029,7 @@ function buildFiltersUI() {
   genreList.innerHTML = '';
   [...genreSet].sort().forEach(g => {
     const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" class="genre-cb" value="${escHtml(g)}"> ${escHtml(g)}`;
+    lbl.innerHTML = `<input type="checkbox" class="genre-cb" value="${escHtml(g)}"> ${escHtml(toTitleCase(g))}`;
     genreList.appendChild(lbl);
   });
   genreList.querySelectorAll('.genre-cb').forEach(cb =>
@@ -1013,6 +1039,14 @@ function buildFiltersUI() {
       applyAndRender();
     })
   );
+  document.getElementById('genre-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    genreList.querySelectorAll('label').forEach(lbl => {
+      const checked = lbl.querySelector('input').checked;
+      const matches = lbl.textContent.trim().toLowerCase().startsWith(q);
+      lbl.classList.toggle('hidden', q.length > 0 && !matches && !checked);
+    });
+  });
 
   // Audio language checkboxes
   const langList = document.getElementById('lang-list');
@@ -1029,6 +1063,14 @@ function buildFiltersUI() {
       applyAndRender();
     })
   );
+  document.getElementById('lang-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    langList.querySelectorAll('label').forEach(lbl => {
+      const checked = lbl.querySelector('input').checked;
+      const matches = lbl.textContent.trim().toLowerCase().startsWith(q);
+      lbl.classList.toggle('hidden', q.length > 0 && !matches && !checked);
+    });
+  });
 
 }
 
@@ -1090,7 +1132,7 @@ function renderNewThisMonth() {
       return true;
     })
     .sort((a, b) => (b.year - a.year) || ((b.imdbRating || 0) - (a.imdbRating || 0)))
-    .slice(0, 40);
+    .slice(0, 10);
 
   if (!recent.length) { container.style.display = 'none'; return; }
 
@@ -1160,7 +1202,7 @@ function makeCard(t, opts = {}) {
   ].filter(Boolean).join(' · ');
 
   const genreChipsMeta = (t.genres || []).slice(0, 3)
-    .map(g => `<span class="meta-chip">${escHtml(g)}</span>`).join('');
+    .map(g => `<span class="meta-chip">${escHtml(toTitleCase(g))}</span>`).join('');
 
   const creditsBlock = [
     t.director               ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '',
@@ -1198,6 +1240,7 @@ function makeCard(t, opts = {}) {
       <div>
         <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
         <div class="card-year">${relLabel} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
+        ${t.shortDescription ? `<div class="card-logline">${escHtml(t.shortDescription)}</div>` : ''}
         ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
       </div>
       <div class="provider-badges">${provBadges}</div>
@@ -1510,7 +1553,7 @@ function makeTrackingCard(id, meta) {
   div.className = 'tracking-card' + (isAvailable ? ' is-available' : '');
 
   const initial    = escHtml((meta.name || '?')[0].toUpperCase());
-  const posterSrc  = matchedTitle?.posterUrl || null;
+  const posterSrc  = matchedTitle?.posterUrl || meta.posterUrl || null;
   const posterHtml = posterSrc
     ? `<img class="tracking-poster" src="${escHtml(posterSrc)}" alt="" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -1558,29 +1601,84 @@ function makeTrackingCard(id, meta) {
 
 // ── Tracking URL parser ────────────────────────────────────────────────────────
 
-function extractSlugAndType(url) {
-  const m = url.match(/justwatch\.com\/[a-z]+\/(movie|show)\/([^?#/]+)/i);
-  return m ? { type: m[1], slug: m[2] } : null;
+function extractFullPath(url) {
+  const m = url.match(/justwatch\.com(\/[a-z]+\/(movie|show)\/[^?#/]+)/i);
+  return m ? { fullPath: m[1], type: m[2] } : null;
 }
 
-document.getElementById('tracking-search-btn').addEventListener('click', () => {
+async function jwFetchByPath(fullPath) {
+  const query = `query GetTitleByPath($fullPath: String!, $country: Country!, $language: Language!) {
+    urlV2(fullPath: $fullPath) {
+      node {
+        objectId
+        objectType
+        content(country: $country, language: $language) {
+          title
+          posterUrl
+          originalReleaseYear
+        }
+      }
+    }
+  }`;
+  const resp = await fetch('https://apis.justwatch.com/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ query, variables: { fullPath, country: 'IN', language: 'en' } }),
+  });
+  if (!resp.ok) throw new Error('JustWatch request failed');
+  const json = await resp.json();
+  const node = json?.data?.urlV2?.node;
+  if (!node) throw new Error('Title not found');
+  const c = node.content || {};
+  let posterUrl = null;
+  if (c.posterUrl) {
+    posterUrl = 'https://images.justwatch.com' +
+      c.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
+  }
+  return {
+    objectId:    node.objectId,
+    name:        c.title        || '',
+    year:        c.originalReleaseYear || null,
+    contentType: node.objectType === 'MOVIE' ? 'movie' : 'show',
+    posterUrl,
+  };
+}
+
+document.getElementById('tracking-search-btn').addEventListener('click', async () => {
   const urlVal    = document.getElementById('tracking-url').value.trim();
-  const parsed    = extractSlugAndType(urlVal);
+  const parsed    = extractFullPath(urlVal);
   const container = document.getElementById('tracking-results');
+  const btn       = document.getElementById('tracking-search-btn');
   if (!parsed) {
     alert('Paste a valid JustWatch URL (e.g. https://www.justwatch.com/in/movie/project-hail-mary)');
     return;
   }
-  const displayName = parsed.slug.split('-')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  const typeLabel = parsed.type === 'movie' ? 'Movie' : 'TV Show';
+
+  btn.disabled = true;
+  btn.textContent = 'Finding…';
+  container.hidden = true;
+  container.innerHTML = '';
+
+  let meta;
+  try {
+    meta = await jwFetchByPath(parsed.fullPath);
+  } catch (err) {
+    alert('Could not fetch title info: ' + err.message);
+    btn.disabled = false; btn.textContent = 'Find';
+    return;
+  }
+  btn.disabled = false; btn.textContent = 'Find';
+
+  const thumbHtml = meta.posterUrl
+    ? `<img src="${escHtml(meta.posterUrl)}" style="width:48px;aspect-ratio:2/3;object-fit:cover;border-radius:4px" alt="">`
+    : `<div class="search-result-thumb-fallback">${escHtml((meta.name || '?')[0])}</div>`;
 
   container.innerHTML = `
     <div class="search-result-item">
-      <div class="search-result-thumb-fallback">${escHtml(displayName[0] || '?')}</div>
+      ${thumbHtml}
       <div class="search-result-info">
-        <div class="search-result-title">${escHtml(displayName)}</div>
-        <div class="search-result-meta">${typeLabel}</div>
+        <div class="search-result-title">${escHtml(meta.name)}</div>
+        <div class="search-result-meta">${meta.contentType === 'movie' ? 'Movie' : 'TV Show'}${meta.year ? ' · ' + meta.year : ''}</div>
       </div>
       <button class="search-result-btn" id="confirm-track-btn">Track this</button>
     </div>
@@ -1588,11 +1686,13 @@ document.getElementById('tracking-search-btn').addEventListener('click', () => {
   container.hidden = false;
 
   document.getElementById('confirm-track-btn').addEventListener('click', async () => {
-    const key = parsed.type + '_' + parsed.slug;
+    const key = String(meta.objectId);
     try {
       await db.ref('/tracking/' + key).set({
-        name:        displayName,
-        contentType: parsed.type,
+        name:        meta.name,
+        year:        meta.year,
+        posterUrl:   meta.posterUrl,
+        contentType: meta.contentType,
         addedAt:     Date.now(),
       });
       document.getElementById('tracking-url').value = '';
@@ -1712,15 +1812,11 @@ function provBadgeClass(code) {
   return { jhs: 'badge-jhs-card', prv: 'badge-prv-card', lgp: 'badge-lgp-card', snl: 'badge-snl-card', snx: 'badge-snx-card', zee: 'badge-zee-card', vim: 'badge-vim-card' }[code] || 'badge-other';
 }
 
-const LANG_NAMES = {
-  en: 'English', hi: 'Hindi', ta: 'Tamil', te: 'Telugu',
-  ml: 'Malayalam', kn: 'Kannada', mr: 'Marathi', bn: 'Bengali',
-  pa: 'Punjabi', gu: 'Gujarati', ko: 'Korean', ja: 'Japanese',
-  fr: 'French', de: 'German', es: 'Spanish', it: 'Italian',
-  zh: 'Chinese', pt: 'Portuguese', ru: 'Russian', ar: 'Arabic',
-};
+function toTitleCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+const _langDisplay = new Intl.DisplayNames(['en'], { type: 'language' });
 function langLabel(code) {
-  return LANG_NAMES[code] || code.toUpperCase();
+  try { return _langDisplay.of(code) || code; } catch { return code; }
 }
 
 function fmtVotes(n) {
