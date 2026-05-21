@@ -247,52 +247,147 @@
       margin-bottom: 14px;
     }
 
-    /* ── Recent Releases strip ───────────────────────────────────────────────── */
+    /* ── New & Latest Releases section ──────────────────────────────────────── */
     #new-this-month { margin-bottom: 32px; }
-    #new-this-month h3 {
+    #new-this-month > h3 {
       font-size: 18px;
       font-weight: 700;
       color: var(--text);
       margin: 0 0 14px;
       letter-spacing: -.3px;
     }
-    #new-strip {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--surface4) transparent;
+    #new-releases-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 10px;
     }
-    #new-strip::-webkit-scrollbar { height: 4px; }
-    #new-strip::-webkit-scrollbar-thumb { background: var(--surface4); border-radius: 2px; }
-    .strip-card {
-      flex: 0 0 120px;
+    @media (max-width: 600px) {
+      #new-releases-layout { grid-template-columns: 1fr; }
+      .hero-release-card { grid-row: auto; }
+    }
+    /* Hero card — spans both rows on the left */
+    .hero-release-card {
+      grid-row: 1 / 3;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: transform .2s, box-shadow .2s;
+      min-height: 260px;
+    }
+    .hero-release-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 28px var(--accent-glow); }
+    .hero-release-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      min-height: 260px;
+    }
+    .hero-release-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 40px 16px 16px;
+      background: linear-gradient(to top, rgba(5,20,36,0.97) 0%, rgba(5,20,36,0.65) 55%, transparent 100%);
+    }
+    .hero-release-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      background: var(--accent-dim);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 4px;
+      padding: 2px 7px;
+      margin-bottom: 8px;
+    }
+    .hero-release-title { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.25; margin-bottom: 5px; }
+    .hero-release-meta { font-size: 12px; color: var(--muted); }
+    /* Mini cards — fill the two rows on the right */
+    .mini-release-card {
+      display: flex;
+      gap: 0;
       background: var(--surface);
       border: 1px solid var(--border2);
       border-radius: 10px;
       overflow: hidden;
       cursor: pointer;
-      transition: border-color .2s, transform .2s, box-shadow .2s;
+      transition: border-color .2s, box-shadow .2s, transform .15s;
     }
-    .strip-card:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 16px var(--accent-glow); }
-    .strip-card img {
-      width: 100%;
-      aspect-ratio: 2/3;
+    .mini-release-card:hover { border-color: rgba(99,102,241,0.4); box-shadow: 0 4px 20px rgba(0,0,0,0.35); transform: translateY(-2px); }
+    .mini-release-card img {
+      width: 70px;
+      flex-shrink: 0;
       object-fit: cover;
-      display: block;
       background: var(--surface2);
+      display: block;
     }
-    .strip-card-info { padding: 6px 8px 8px; }
-    .strip-card-title { font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .strip-card-date { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .mini-release-info {
+      flex: 1;
+      padding: 12px 12px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .mini-release-title { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .mini-release-meta { font-size: 11px; color: var(--muted); }
+    .mini-release-rating { font-size: 11px; color: #fbbf24; font-weight: 600; margin-top: 3px; }
 
     /* ── Card grid ────────────────────────────────────────────────────────────── */
     #grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
       gap: 12px;
     }
+
+    /* ── Provider icon toggle buttons ────────────────────────────────────────────── */
+    .provider-icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 8px;
+    }
+    .prov-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      opacity: 0.3;
+      transition: opacity .2s, transform .15s;
+      font-family: inherit;
+    }
+    .prov-btn.active { opacity: 1; }
+    .prov-btn:hover { transform: scale(1.08); opacity: 0.75; }
+    .prov-btn.active:hover { opacity: 0.9; }
+    .prov-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .3px;
+      transition: box-shadow .2s;
+    }
+    .prov-btn.active .prov-icon { box-shadow: 0 0 12px currentColor; }
+    .prov-jhs .prov-icon { background: rgba(139,92,246,0.22); color: #a78bfa; border: 1.5px solid rgba(139,92,246,0.5); }
+    .prov-prv .prov-icon { background: rgba(14,165,233,0.22);  color: #38bdf8; border: 1.5px solid rgba(14,165,233,0.5); }
+    .prov-lgp .prov-icon { background: rgba(249,115,22,0.22);  color: #fb923c; border: 1.5px solid rgba(249,115,22,0.5); }
+    .prov-snl .prov-icon { background: rgba(239,68,68,0.22);   color: #f87171; border: 1.5px solid rgba(239,68,68,0.5); }
+    .prov-snx .prov-icon { background: rgba(251,146,60,0.22);  color: #fdba74; border: 1.5px solid rgba(251,146,60,0.5); }
+    .prov-zee .prov-icon { background: rgba(168,85,247,0.22);  color: #c084fc; border: 1.5px solid rgba(168,85,247,0.5); }
+    .prov-vim .prov-icon { background: rgba(124,58,237,0.22);  color: #a78bfa; border: 1.5px solid rgba(124,58,237,0.5); }
+    .prov-name { font-size: 9px; color: var(--muted); font-weight: 500; text-align: center; white-space: nowrap; }
 
     .card {
       background: var(--surface);
@@ -300,10 +395,10 @@
       border-radius: 12px;
       overflow: hidden;
       display: flex;
-      flex-direction: row;
-      transition: border-color .2s, box-shadow .2s;
+      flex-direction: column;
+      transition: border-color .2s, box-shadow .2s, transform .2s;
     }
-    .card:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 0 24px rgba(99,102,241,0.12); }
+    .card:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(99,102,241,0.1); transform: translateY(-2px); }
     .card.is-seen {
       background: var(--seen-bg);
       border-color: var(--seen-border);
@@ -314,26 +409,27 @@
     /* Poster */
     .card-poster-wrap {
       position: relative;
-      width: 100px;
-      min-width: 100px;
+      width: 100%;
+      aspect-ratio: 2/3;
       background: var(--surface2);
       overflow: hidden;
       flex-shrink: 0;
-      align-self: stretch;
     }
     .card-poster {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform .3s ease;
     }
+    .card:hover .card-poster { transform: scale(1.04); }
     .card-poster-fallback {
       position: absolute;
       inset: 0;
       display: none;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-size: 48px;
       font-weight: 700;
       color: var(--surface4);
       background: var(--surface2);
@@ -341,7 +437,7 @@
 
     /* Card body */
     .card-body {
-      padding: 12px 14px;
+      padding: 10px 12px 12px;
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -353,11 +449,11 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
     }
 
     .card-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       line-height: 1.3;
       color: var(--text);
@@ -412,7 +508,7 @@
     }
 
     .card-imdb {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
       font-size: 11px;
@@ -421,7 +517,7 @@
       border-radius: 4px;
       padding: 2px 6px;
       white-space: nowrap;
-      flex-shrink: 0;
+      align-self: flex-start;
     }
     .imdb-star { color: #f5c518; font-size: 12px; }
     .imdb-score { font-weight: 700; color: var(--text); }
@@ -555,7 +651,7 @@
     .mylist-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text); letter-spacing: -.3px; }
     .mylist-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
       gap: 12px;
     }
     .empty-state { color: var(--muted); font-size: 14px; padding: 12px 0; }
@@ -801,21 +897,35 @@
 
     <div class="filter-section">
       <h3>Provider</h3>
-      <div class="cb-list">
-        <label><input type="checkbox" class="provider-cb" value="jhs" checked>
-          <span class="badge-jhs">JioHotstar</span></label>
-        <label><input type="checkbox" class="provider-cb" value="prv" checked>
-          <span class="badge-prv">Prime Video</span></label>
-        <label><input type="checkbox" class="provider-cb" value="lgp" checked>
-          <span class="badge-lgp">Lionsgate Play</span></label>
-        <label><input type="checkbox" class="provider-cb" value="snl" checked>
-          <span class="badge-snl">SonyLIV</span></label>
-        <label><input type="checkbox" class="provider-cb" value="snx" checked>
-          <span class="badge-snx">Sun NXT</span></label>
-        <label><input type="checkbox" class="provider-cb" value="zee" checked>
-          <span class="badge-zee">ZEE5</span></label>
-        <label><input type="checkbox" class="provider-cb" value="vim" checked>
-          <span class="badge-vim">Voot</span></label>
+      <div class="provider-icon-grid">
+        <button class="prov-btn prov-jhs active" data-prov="jhs" title="JioHotstar">
+          <div class="prov-icon">JH</div>
+          <span class="prov-name">Hotstar</span>
+        </button>
+        <button class="prov-btn prov-prv active" data-prov="prv" title="Prime Video">
+          <div class="prov-icon">PV</div>
+          <span class="prov-name">Prime</span>
+        </button>
+        <button class="prov-btn prov-lgp active" data-prov="lgp" title="Lionsgate Play">
+          <div class="prov-icon">LG</div>
+          <span class="prov-name">Lionsgate</span>
+        </button>
+        <button class="prov-btn prov-snl active" data-prov="snl" title="SonyLIV">
+          <div class="prov-icon">SL</div>
+          <span class="prov-name">SonyLIV</span>
+        </button>
+        <button class="prov-btn prov-snx active" data-prov="snx" title="Sun NXT">
+          <div class="prov-icon">SN</div>
+          <span class="prov-name">Sun NXT</span>
+        </button>
+        <button class="prov-btn prov-zee active" data-prov="zee" title="ZEE5">
+          <div class="prov-icon">Z5</div>
+          <span class="prov-name">ZEE5</span>
+        </button>
+        <button class="prov-btn prov-vim active" data-prov="vim" title="Voot">
+          <div class="prov-icon">VT</div>
+          <span class="prov-name">Voot</span>
+        </button>
       </div>
     </div>
 
@@ -890,8 +1000,8 @@
   <div id="main">
     <div id="stats"></div>
     <div id="new-this-month" style="display:none">
-      <h3>Recent Releases</h3>
-      <div id="new-strip"></div>
+      <h3>New &amp; Latest Releases</h3>
+      <div id="new-releases-layout"></div>
     </div>
     <div id="loading">Loading titles…</div>
     <div id="grid" style="display:none"></div>
@@ -1178,9 +1288,9 @@ function applyAndRender() {
 }
 
 function renderNewThisMonth() {
-  const strip     = document.getElementById('new-strip');
   const container = document.getElementById('new-this-month');
-  const minYear   = new Date().getFullYear() - 2;  // last 3 years inclusive
+  const layout    = document.getElementById('new-releases-layout');
+  const minYear   = new Date().getFullYear() - 2;
 
   const recent = Object.values(allTitles)
     .filter(t => {
@@ -1191,24 +1301,42 @@ function renderNewThisMonth() {
       return true;
     })
     .sort((a, b) => (b.year - a.year) || ((b.imdbRating || 0) - (a.imdbRating || 0)))
-    .slice(0, 10);
+    .slice(0, 5);
 
   if (!recent.length) { container.style.display = 'none'; return; }
 
-  container.style.display = 'block';
-  strip.innerHTML = '';
-  recent.forEach(t => {
+  const [hero, ...rest] = recent;
+  layout.innerHTML = '';
+
+  // Hero card
+  const heroEl = document.createElement('div');
+  heroEl.className = 'hero-release-card';
+  heroEl.innerHTML = `
+    <img src="${hero.posterUrl || ''}" alt="" loading="lazy"
+         onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
+    <div class="hero-release-overlay">
+      <div class="hero-release-badge">New Release</div>
+      <div class="hero-release-title">${escHtml(hero.name || '')}</div>
+      <div class="hero-release-meta">${hero.year || ''}${hero.contentType === 'show' ? ' · TV Show' : ' · Movie'}${hero.imdbRating ? ` · ★ ${hero.imdbRating}` : ''}</div>
+    </div>`;
+  layout.appendChild(heroEl);
+
+  // Mini cards
+  rest.forEach(t => {
     const el = document.createElement('div');
-    el.className = 'strip-card';
+    el.className = 'mini-release-card';
     el.innerHTML = `
       <img src="${t.posterUrl || ''}" alt="" loading="lazy"
            onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
-      <div class="strip-card-info">
-        <div class="strip-card-title">${escHtml(t.name || '')}</div>
-        <div class="strip-card-date">${t.year || ''}</div>
+      <div class="mini-release-info">
+        <div class="mini-release-title">${escHtml(t.name || '')}</div>
+        <div class="mini-release-meta">${t.year || ''}${t.contentType === 'show' ? ' · TV Show' : ' · Movie'}</div>
+        ${t.imdbRating ? `<div class="mini-release-rating">★ ${t.imdbRating}</div>` : ''}
       </div>`;
-    strip.appendChild(el);
+    layout.appendChild(el);
   });
+
+  container.style.display = 'block';
 }
 
 // ── Card rendering ─────────────────────────────────────────────────────────────
@@ -1296,13 +1424,11 @@ function makeCard(t, opts = {}) {
       <div class="card-poster-fallback" style="${t.posterUrl ? '' : 'display:flex'}">${initial}</div>
     </div>
     <div class="card-body">
-      <div class="card-title-row">
-        <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
-        ${imdbBlock}
-      </div>
+      <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
       <div class="card-year">${relLabel} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
-      ${t.shortDescription ? `<div class="card-logline">${escHtml(t.shortDescription)}</div>` : ''}
+      ${imdbBlock}
       <div class="provider-badges">${provBadges}</div>
+      ${t.shortDescription ? `<div class="card-logline">${escHtml(t.shortDescription)}</div>` : ''}
       ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
       <div class="card-meta">${genreChipsMeta}</div>
       ${creditsBlock}
@@ -1803,10 +1929,16 @@ document.getElementById('year-to').addEventListener('change', function() {
 });
 
 // ── Other filter event listeners ───────────────────────────────────────────────
-document.querySelectorAll('.provider-cb').forEach(cb => {
-  cb.addEventListener('change', () => {
-    if (cb.checked) filters.providers.add(cb.value);
-    else            filters.providers.delete(cb.value);
+document.querySelectorAll('.prov-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const prov = btn.dataset.prov;
+    if (filters.providers.has(prov)) {
+      filters.providers.delete(prov);
+      btn.classList.remove('active');
+    } else {
+      filters.providers.add(prov);
+      btn.classList.add('active');
+    }
     applyAndRender();
   });
 });
