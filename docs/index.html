@@ -424,6 +424,20 @@
     }
     .empty-state { color: var(--muted); font-size: 14px; padding: 12px 0; }
 
+    /* ── Watchlist filter bar ───────────────────────────────────────────────── */
+    .wl-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .wl-type-btns { display: flex; gap: 4px; }
+    .wl-type-btn {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); padding: 5px 12px; font-size: 13px; cursor: pointer;
+    }
+    .wl-type-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .wl-controls select {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-size: 13px; padding: 5px 10px; cursor: pointer;
+    }
+    .wl-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+
     /* ── Tracking add area ──────────────────────────────────────────────────── */
     .tracking-add { display: flex; gap: 8px; margin-bottom: 12px; max-width: 580px; }
     .tracking-add input {
@@ -719,6 +733,30 @@
 
   <section class="mylist-section">
     <h2>Watchlist</h2>
+    <div class="wl-controls">
+      <div class="wl-type-btns">
+        <button class="wl-type-btn active" data-value="both">All</button>
+        <button class="wl-type-btn" data-value="movie">Movies</button>
+        <button class="wl-type-btn" data-value="show">Shows</button>
+      </div>
+      <select id="wl-provider-select">
+        <option value="">All platforms</option>
+        <option value="jhs">JioHotstar</option>
+        <option value="prv">Prime Video</option>
+        <option value="lgp">Lionsgate Play</option>
+        <option value="snl">SonyLIV</option>
+        <option value="snx">Sun NXT</option>
+        <option value="zee">ZEE5</option>
+        <option value="vim">Voot</option>
+      </select>
+      <select id="wl-sort-select">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="rating">Top Rated</option>
+        <option value="az">A – Z</option>
+      </select>
+      <span class="wl-count" id="wl-count"></span>
+    </div>
     <p id="watchlist-empty" class="empty-state"></p>
     <div id="watchlist-grid" class="mylist-grid"></div>
   </section>
@@ -1083,6 +1121,8 @@ function updateMyListsBadge() {
 }
 
 // ── My Lists rendering ─────────────────────────────────────────────────────────
+const wlFilters = { type: 'both', provider: '', sort: 'newest' };
+
 function renderMyLists() {
   renderWatchlistGrid();
   renderTrackingList();
@@ -1091,22 +1131,38 @@ function renderMyLists() {
 function renderWatchlistGrid() {
   const grid  = document.getElementById('watchlist-grid');
   const empty = document.getElementById('watchlist-empty');
+  const count = document.getElementById('wl-count');
 
   if (!currentUser) {
-    grid.innerHTML = '';
+    grid.innerHTML = ''; count.textContent = '';
     empty.textContent = 'Sign in to use your watchlist.';
     return;
   }
 
-  const ids    = Object.keys(watchlistMap);
-  const titles = ids.map(id => allTitles[id]).filter(Boolean);
+  const all = Object.keys(watchlistMap).map(id => allTitles[id]).filter(Boolean);
 
-  if (!titles.length) {
-    grid.innerHTML = '';
+  if (!all.length) {
+    grid.innerHTML = ''; count.textContent = '';
     empty.textContent = 'Your watchlist is empty. Add titles from the Discover tab.';
     return;
   }
-  empty.textContent = '';
+
+  let titles = all.slice();
+  if (wlFilters.type !== 'both') titles = titles.filter(t => t.contentType === wlFilters.type);
+  if (wlFilters.provider)        titles = titles.filter(t => (t.providers || []).includes(wlFilters.provider));
+
+  switch (wlFilters.sort) {
+    case 'newest': titles.sort((a, b) => (b.year ?? 0)    - (a.year ?? 0));           break;
+    case 'oldest': titles.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));        break;
+    case 'rating': titles.sort((a, b) => (b.imdbRating ?? 0) - (a.imdbRating ?? 0)); break;
+    case 'az':     titles.sort((a, b) => (a.name || '').localeCompare(b.name || '')); break;
+  }
+
+  count.textContent = titles.length < all.length
+    ? `Showing ${titles.length} of ${all.length}`
+    : `${all.length} title${all.length !== 1 ? 's' : ''}`;
+
+  empty.textContent = titles.length ? '' : 'No titles match the current filters.';
   grid.innerHTML = '';
   titles.forEach(t => grid.appendChild(makeCard(t, { watchlistView: true })));
 }
@@ -1420,6 +1476,24 @@ document.getElementById('hide-seen').addEventListener('change', e => {
 document.getElementById('hide-watchlisted').addEventListener('change', e => {
   filters.hideWatchlisted = e.target.checked;
   applyAndRender();
+});
+
+// ── Watchlist filter/sort listeners ───────────────────────────────────────────
+document.querySelectorAll('.wl-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.wl-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    wlFilters.type = btn.dataset.value;
+    renderWatchlistGrid();
+  });
+});
+document.getElementById('wl-provider-select').addEventListener('change', e => {
+  wlFilters.provider = e.target.value;
+  renderWatchlistGrid();
+});
+document.getElementById('wl-sort-select').addEventListener('change', e => {
+  wlFilters.sort = e.target.value;
+  renderWatchlistGrid();
 });
 
 document.getElementById('search-input').addEventListener('input', e => {
