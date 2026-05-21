@@ -256,43 +256,40 @@
       margin: 0 0 14px;
       letter-spacing: -.3px;
     }
-    /* Two-column layout: hero left, 2×2 mini grid right — fixed height */
-    #new-releases-layout {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 10px;
-      height: 310px;
-    }
-    @media (max-width: 620px) {
-      #new-releases-layout { grid-template-columns: 1fr; height: auto; }
-      .hero-release-card { height: 220px; }
-    }
-    /* Hero — landscape-cropped portrait poster, fills fixed height */
-    .hero-release-card {
+    /* ── Latest Releases Carousel ───────────────────────────────────────────── */
+    .carousel-wrapper {
       position: relative;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
-      cursor: pointer;
+      height: 320px;
       background: var(--surface);
       border: 1px solid var(--border);
-      transition: transform .2s, box-shadow .2s;
-      height: 100%;
     }
-    .hero-release-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 28px var(--accent-glow); }
-    .hero-release-card img {
+    .carousel-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity .7s ease;
+      pointer-events: none;
+    }
+    .carousel-slide.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .carousel-slide img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       object-position: top center;
       display: block;
     }
-    .hero-release-overlay {
+    .carousel-slide-overlay {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      padding: 50px 16px 16px;
-      background: linear-gradient(to top, rgba(5,20,36,0.97) 0%, rgba(5,20,36,0.5) 60%, transparent 100%);
+      padding: 100px 28px 28px;
+      background: linear-gradient(to top, rgba(5,20,36,0.98) 0%, rgba(5,20,36,0.55) 55%, transparent 100%);
     }
-    .hero-release-badge {
+    .carousel-badge {
       display: inline-block;
       font-size: 10px;
       font-weight: 700;
@@ -300,52 +297,61 @@
       text-transform: uppercase;
       color: var(--accent-light);
       background: var(--accent-dim);
-      border: 1px solid rgba(99,102,241,0.3);
+      border: 1px solid rgba(99,102,241,0.35);
       border-radius: 4px;
-      padding: 2px 7px;
-      margin-bottom: 8px;
+      padding: 2px 8px;
+      margin-bottom: 10px;
     }
-    .hero-release-title { font-size: 20px; font-weight: 700; color: #fff; line-height: 1.2; margin-bottom: 5px; }
-    .hero-release-meta { font-size: 12px; color: var(--muted); }
-    /* Right side: 2×2 grid of mini cards */
-    .releases-mini-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      gap: 8px;
-      height: 100%;
+    .carousel-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
-    .mini-release-card {
-      display: flex;
-      gap: 0;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 10px;
-      overflow: hidden;
+    .carousel-meta { font-size: 13px; color: rgba(212,228,250,0.8); }
+    /* Prev / Next arrows */
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 3;
+      background: rgba(5,20,36,0.65);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      transition: border-color .2s, box-shadow .2s, transform .15s;
-      min-width: 0;
+      color: var(--text);
+      transition: background .15s, border-color .15s;
     }
-    .mini-release-card:hover { border-color: rgba(99,102,241,0.4); box-shadow: 0 4px 20px rgba(0,0,0,0.35); transform: translateY(-2px); }
-    .mini-release-card img {
-      width: 58px;
-      flex-shrink: 0;
-      object-fit: cover;
-      object-position: top center;
-      background: var(--surface2);
-      display: block;
-    }
-    .mini-release-info {
-      flex: 1;
-      padding: 10px 10px 10px 9px;
+    .carousel-btn:hover { background: var(--accent); border-color: var(--accent); }
+    .carousel-btn .material-symbols-outlined { font-size: 20px; }
+    .carousel-btn.carousel-prev { left: 14px; }
+    .carousel-btn.carousel-next { right: 14px; }
+    /* Dot indicators */
+    .carousel-dots {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-width: 0;
+      gap: 7px;
+      z-index: 3;
     }
-    .mini-release-title { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; margin-bottom: 4px; }
-    .mini-release-meta { font-size: 10px; color: var(--muted); }
-    .mini-release-rating { font-size: 10px; color: #fbbf24; font-weight: 600; margin-top: 2px; }
+    .carousel-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: background .2s, transform .2s;
+      border: none;
+    }
+    .carousel-dot.active {
+      background: #fff;
+      transform: scale(1.35);
+    }
 
     /* ── Card grid ────────────────────────────────────────────────────────────── */
     #grid {
@@ -851,30 +857,114 @@
     .add-to-watchlist-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
     /* ── Stats pane ─────────────────────────────────────────────────────────── */
-    #stats-pane { padding: 24px; max-width: 900px; }
+    /* ── Analytics Dashboard ────────────────────────────────────────────────── */
+    #stats-pane { padding: 32px; }
 
-    .stat-headline { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 40px; }
+    .analytics-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.5px;
+      margin-bottom: 24px;
+    }
+
+    /* Stat cards — 4 columns, icon + value */
+    .stat-headline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 720px) { .stat-headline { grid-template-columns: repeat(2, 1fr); } }
+
     .stat-card {
       background: var(--surface);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
       border: 1px solid var(--border2);
-      border-radius: 12px;
-      padding: 18px 24px;
-      min-width: 140px;
-      transition: border-color .2s, box-shadow .2s;
+      transition: box-shadow .2s;
     }
-    .stat-card:hover { border-color: rgba(99,102,241,0.3); box-shadow: 0 0 16px rgba(99,102,241,0.08); }
-    .stat-card-value { font-size: 28px; font-weight: 700; color: var(--accent-light); line-height: 1.1; }
-    .stat-card-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .stat-card-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 26px;
+    }
+    .stat-card-body { min-width: 0; flex: 1; }
+    .stat-card-label { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+    .stat-card-value { font-size: 26px; font-weight: 700; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .stat-section { margin-bottom: 36px; }
-    .stat-section h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+    .stat-card[data-stat="watched"]  { border-color: rgba(99,102,241,0.45); box-shadow: 0 0 24px rgba(99,102,241,0.1); }
+    .stat-card[data-stat="watched"]  .stat-card-icon  { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .stat-card[data-stat="watched"]  .stat-card-value { color: #818cf8; }
 
-    .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .chart-label { width: 180px; font-size: 13px; color: var(--muted); text-align: right;
-                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
-    .chart-bar-wrap { flex: 1; background: var(--surface2); border-radius: 6px; height: 22px; overflow: hidden; }
-    .chart-bar { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%); border-radius: 6px; min-width: 4px; transition: width .5s ease; }
-    .chart-count { width: 28px; font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; }
+    .stat-card[data-stat="runtime"]  { border-color: rgba(14,165,233,0.45); box-shadow: 0 0 24px rgba(14,165,233,0.1); }
+    .stat-card[data-stat="runtime"]  .stat-card-icon  { background: rgba(14,165,233,0.15); color: #38bdf8; }
+    .stat-card[data-stat="runtime"]  .stat-card-value { color: #38bdf8; }
+
+    .stat-card[data-stat="rating"]   { border-color: rgba(234,179,8,0.45);  box-shadow: 0 0 24px rgba(234,179,8,0.1);  }
+    .stat-card[data-stat="rating"]   .stat-card-icon  { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+    .stat-card[data-stat="rating"]   .stat-card-value { color: #fbbf24; }
+
+    .stat-card[data-stat="platform"] { border-color: rgba(139,92,246,0.45); box-shadow: 0 0 24px rgba(139,92,246,0.1); }
+    .stat-card[data-stat="platform"] .stat-card-icon  { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .stat-card[data-stat="platform"] .stat-card-value { color: #a78bfa; }
+
+    /* 2×2 chart grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 720px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-panel {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 20px 20px 14px;
+    }
+    .chart-panel-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+
+    /* Vertical bar chart */
+    .vchart {
+      display: flex;
+      align-items: flex-end;
+      height: 160px;
+      gap: 5px;
+      border-bottom: 1px solid var(--border2);
+      padding-bottom: 2px;
+    }
+    .vchart-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .vchart-value { font-size: 10px; font-weight: 700; color: var(--text); margin-bottom: 4px; text-align: center; line-height: 1; }
+    .vchart-bar {
+      width: 55%;
+      max-width: 38px;
+      background: linear-gradient(to top, var(--accent) 0%, #818cf8 100%);
+      border-radius: 4px 4px 0 0;
+      box-shadow: 0 0 10px rgba(99,102,241,0.45), 0 -3px 10px rgba(99,102,241,0.25);
+      min-height: 3px;
+      transition: height .5s ease;
+    }
+    .vchart-labels { display: flex; gap: 5px; margin-top: 8px; }
+    .vchart-xlabel {
+      flex: 1; min-width: 0;
+      font-size: 9px; color: var(--muted);
+      text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
 
     /* ── Responsive ──────────────────────────────────────────────────────────── */
     @media (max-width: 900px) {
@@ -1301,6 +1391,10 @@ function applyAndRender() {
   renderNewThisMonth();
 }
 
+let _carouselTitles = [];
+let _carouselIdx    = 0;
+let _carouselTimer  = null;
+
 function renderNewThisMonth() {
   const container = document.getElementById('new-this-month');
   const layout    = document.getElementById('new-releases-layout');
@@ -1315,45 +1409,77 @@ function renderNewThisMonth() {
       return true;
     })
     .sort((a, b) => (b.year - a.year) || ((b.imdbRating || 0) - (a.imdbRating || 0)))
-    .slice(0, 5);
+    .slice(0, 10);
 
-  if (!recent.length) { container.style.display = 'none'; return; }
+  if (!recent.length) { container.style.display = 'none'; clearInterval(_carouselTimer); return; }
 
-  const [hero, ...rest] = recent;
-  layout.innerHTML = '';
+  clearInterval(_carouselTimer);
+  _carouselTitles = recent;
+  _carouselIdx    = 0;
 
-  // Hero card (left column, full height)
-  const heroEl = document.createElement('div');
-  heroEl.className = 'hero-release-card';
-  heroEl.innerHTML = `
-    <img src="${hero.posterUrl || ''}" alt="" loading="lazy"
-         onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
-    <div class="hero-release-overlay">
-      <div class="hero-release-badge">New Release</div>
-      <div class="hero-release-title">${escHtml(hero.name || '')}</div>
-      <div class="hero-release-meta">${hero.year || ''}${hero.contentType === 'show' ? ' · TV Show' : ' · Movie'}${hero.imdbRating ? ` · ★ ${hero.imdbRating}` : ''}</div>
+  layout.innerHTML = `
+    <div class="carousel-wrapper" id="carousel-wrapper">
+      ${recent.map((t, i) => `
+        <div class="carousel-slide${i === 0 ? ' active' : ''}">
+          <img src="${t.posterUrl || ''}" alt="" loading="lazy"
+               onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
+          <div class="carousel-slide-overlay">
+            <div class="carousel-badge">New Release</div>
+            <div class="carousel-title">${escHtml(t.name || '')}</div>
+            <div class="carousel-meta">${t.year || ''}${t.contentType === 'show' ? ' · TV Show' : ' · Movie'}${t.imdbRating ? ` · ★ ${t.imdbRating}` : ''}</div>
+          </div>
+        </div>`).join('')}
+      <button class="carousel-btn carousel-prev" id="carousel-prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button class="carousel-btn carousel-next" id="carousel-next">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+      <div class="carousel-dots" id="carousel-dots">
+        ${recent.map((_, i) => `<button class="carousel-dot${i === 0 ? ' active' : ''}"></button>`).join('')}
+      </div>
     </div>`;
-  layout.appendChild(heroEl);
-
-  // 2×2 mini grid (right column)
-  const miniGrid = document.createElement('div');
-  miniGrid.className = 'releases-mini-grid';
-  rest.slice(0, 4).forEach(t => {
-    const el = document.createElement('div');
-    el.className = 'mini-release-card';
-    el.innerHTML = `
-      <img src="${t.posterUrl || ''}" alt="" loading="lazy"
-           onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
-      <div class="mini-release-info">
-        <div class="mini-release-title">${escHtml(t.name || '')}</div>
-        <div class="mini-release-meta">${t.year || ''}${t.contentType === 'show' ? ' · TV Show' : ' · Movie'}</div>
-        ${t.imdbRating ? `<div class="mini-release-rating">★ ${t.imdbRating}</div>` : ''}
-      </div>`;
-    miniGrid.appendChild(el);
-  });
-  layout.appendChild(miniGrid);
 
   container.style.display = 'block';
+
+  const wrapper = document.getElementById('carousel-wrapper');
+
+  document.getElementById('carousel-prev').addEventListener('click', () => {
+    _carouselGoto((_carouselIdx - 1 + _carouselTitles.length) % _carouselTitles.length);
+    _carouselResetTimer();
+  });
+  document.getElementById('carousel-next').addEventListener('click', () => {
+    _carouselGoto((_carouselIdx + 1) % _carouselTitles.length);
+    _carouselResetTimer();
+  });
+  document.querySelectorAll('#carousel-dots .carousel-dot').forEach((dot, i) => {
+    dot.addEventListener('click', () => { _carouselGoto(i); _carouselResetTimer(); });
+  });
+
+  wrapper.addEventListener('mouseenter', () => clearInterval(_carouselTimer));
+  wrapper.addEventListener('mouseleave', () => _carouselStartTimer());
+
+  _carouselStartTimer();
+}
+
+function _carouselGoto(idx) {
+  const wrapper = document.getElementById('carousel-wrapper');
+  if (!wrapper) return;
+  wrapper.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === idx));
+  wrapper.querySelectorAll('.carousel-dot').forEach((d, i)  => d.classList.toggle('active',  i === idx));
+  _carouselIdx = idx;
+}
+
+function _carouselStartTimer() {
+  clearInterval(_carouselTimer);
+  _carouselTimer = setInterval(() => {
+    if (_carouselTitles.length) _carouselGoto((_carouselIdx + 1) % _carouselTitles.length);
+  }, 4500);
+}
+
+function _carouselResetTimer() {
+  clearInterval(_carouselTimer);
+  _carouselStartTimer();
 }
 
 // ── Card rendering ─────────────────────────────────────────────────────────────
@@ -1687,61 +1813,84 @@ function renderStats() {
     return ya - yb;
   });
 
-  function makeChart(rows) {
+  function makeVChart(rows) {
     const max = Math.max(...rows.map(([, c]) => c), 1);
-    return rows.map(([label, count]) => `
-      <div class="chart-row">
-        <div class="chart-label">${escHtml(String(label))}</div>
-        <div class="chart-bar-wrap">
-          <div class="chart-bar" style="width:${Math.round(count / max * 100)}%"></div>
-        </div>
-        <div class="chart-count">${count}</div>
-      </div>`).join('');
+    const BAR_MAX = 130;
+    const cols = rows.map(([label, count]) => ({
+      label, count, h: Math.max(Math.round(count / max * BAR_MAX), 3)
+    }));
+    return `
+      <div class="vchart">
+        ${cols.map(({ count, h }) => `
+          <div class="vchart-col">
+            <div class="vchart-value">${count}</div>
+            <div class="vchart-bar" style="height:${h}px"></div>
+          </div>`).join('')}
+      </div>
+      <div class="vchart-labels">
+        ${cols.map(({ label }) => `<div class="vchart-xlabel">${escHtml(String(label))}</div>`).join('')}
+      </div>`;
   }
 
   pane.innerHTML = `
+    <h1 class="analytics-title">Analytics Dashboard</h1>
+
     <div class="stat-headline">
-      <div class="stat-card">
-        <div class="stat-card-value">${totalWatched}</div>
-        <div class="stat-card-label">Titles watched</div>
+      <div class="stat-card" data-stat="watched">
+        <div class="stat-card-icon"><span class="material-symbols-outlined">desktop_windows</span></div>
+        <div class="stat-card-body">
+          <div class="stat-card-label">Titles Watched</div>
+          <div class="stat-card-value">${totalWatched}</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-value">${totalHours}h</div>
-        <div class="stat-card-label">Total runtime</div>
+      <div class="stat-card" data-stat="runtime">
+        <div class="stat-card-icon"><span class="material-symbols-outlined">schedule</span></div>
+        <div class="stat-card-body">
+          <div class="stat-card-label">Total Runtime</div>
+          <div class="stat-card-value">${totalHours}h</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-value">${avgRating}</div>
-        <div class="stat-card-label">Avg IMDB rating</div>
+      <div class="stat-card" data-stat="rating">
+        <div class="stat-card-icon"><span class="material-symbols-outlined">star</span></div>
+        <div class="stat-card-body">
+          <div class="stat-card-label">Avg IMDb Rating</div>
+          <div class="stat-card-value">${avgRating}</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-value">${escHtml(topPlatLabel)}</div>
-        <div class="stat-card-label">Most watched on</div>
+      <div class="stat-card" data-stat="platform">
+        <div class="stat-card-icon"><span class="material-symbols-outlined">theaters</span></div>
+        <div class="stat-card-body">
+          <div class="stat-card-label">Most Watched On</div>
+          <div class="stat-card-value">${escHtml(topPlatLabel)}</div>
+        </div>
       </div>
     </div>
 
-    ${platRows.length ? `
-    <div class="stat-section">
-      <h2>By streaming platform</h2>
-      ${makeChart(platRows.map(([p, c]) => [provLabel(p), c]))}
-    </div>` : ''}
+    <div class="charts-grid">
+      ${platRows.length ? `
+      <div class="chart-panel">
+        <div class="chart-panel-title">By streaming platform</div>
+        ${makeVChart(platRows.map(([p, c]) => [provLabel(p), c]))}
+      </div>` : ''}
 
-    ${genreRows.length ? `
-    <div class="stat-section">
-      <h2>By genre</h2>
-      ${makeChart(genreRows)}
-    </div>` : ''}
+      ${genreRows.length ? `
+      <div class="chart-panel">
+        <div class="chart-panel-title">By genre</div>
+        ${makeVChart(genreRows)}
+      </div>` : ''}
 
-    ${ratingRows.length ? `
-    <div class="stat-section">
-      <h2>By IMDB rating</h2>
-      ${makeChart(ratingRows)}
-    </div>` : ''}
+      ${ratingRows.length ? `
+      <div class="chart-panel">
+        <div class="chart-panel-title">By IMDb rating</div>
+        ${makeVChart(ratingRows.map(([l, c]) => [l.includes('(') ? l.split('(')[1].replace(')', '') : l, c]))}
+      </div>` : ''}
 
-    ${decadeRows.length ? `
-    <div class="stat-section">
-      <h2>By decade</h2>
-      ${makeChart(decadeRows)}
-    </div>` : ''}
+      ${decadeRows.length ? `
+      <div class="chart-panel">
+        <div class="chart-panel-title">By decade</div>
+        ${makeVChart(decadeRows)}
+      </div>` : ''}
+    </div>
   `;
 }
 
