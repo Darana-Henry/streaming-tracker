@@ -606,6 +606,22 @@
       overflow: hidden;
       line-height: 1.4;
     }
+    .card-logline.expanded {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+    .logline-toggle {
+      font-size: 10px;
+      color: var(--accent, #a78bfa);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+      font-style: italic;
+      display: none;
+    }
 
     .provider-badges { display: flex; gap: 4px; flex-wrap: wrap; }
     .badge {
@@ -1869,7 +1885,7 @@ function makeCard(t, opts = {}) {
       <div class="card-year">${relLabel} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
       ${imdbBlock}
       <div class="provider-badges">${provBadges}</div>
-      ${t.shortDescription ? `<div class="card-logline">${escHtml(t.shortDescription)}</div>` : ''}
+      ${t.shortDescription ? `<div class="card-logline">${escHtml(t.shortDescription)}</div><button class="logline-toggle">more</button>` : ''}
       ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
       <div class="card-meta">${genreChipsMeta}</div>
       ${creditsBlock}
@@ -1878,6 +1894,18 @@ function makeCard(t, opts = {}) {
       </div>
     </div>
   `;
+
+  const logline = div.querySelector('.card-logline');
+  const loglineToggle = div.querySelector('.logline-toggle');
+  if (logline && loglineToggle) {
+    if (logline.scrollHeight > logline.clientHeight) {
+      loglineToggle.style.display = 'inline';
+    }
+    loglineToggle.addEventListener('click', () => {
+      const expanded = logline.classList.toggle('expanded');
+      loglineToggle.textContent = expanded ? 'less' : 'more';
+    });
+  }
 
   div.querySelector('.seen-btn').addEventListener('click', () => toggleSeen(t.id, !isSeen));
   const wBtn = div.querySelector('.watch-btn');
