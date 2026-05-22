@@ -1898,11 +1898,9 @@ function makeCard(t, opts = {}) {
   const logline = div.querySelector('.card-logline');
   const loglineToggle = div.querySelector('.logline-toggle');
   if (logline && loglineToggle) {
-    const ro = new ResizeObserver(() => {
-      loglineToggle.style.display = logline.scrollHeight > logline.clientHeight ? 'inline' : 'none';
-      ro.disconnect();
-    });
-    ro.observe(logline);
+    if (logline.scrollHeight > logline.clientHeight) {
+      loglineToggle.style.display = 'inline';
+    }
     loglineToggle.addEventListener('click', () => {
       const expanded = logline.classList.toggle('expanded');
       loglineToggle.textContent = expanded ? 'less' : 'more';
