@@ -1896,36 +1896,36 @@ function makeCard(t, opts = {}) {
 async function toggleSeen(id, markSeen) {
   if (!currentUser) return;
   const key = String(id);
+
+  // Optimistic update — apply locally first, persist in background
+  const prevSeen = seenMap[key];
+  const prevWatchlist = watchlistMap[key];
+  if (markSeen) { seenMap[key] = true; delete watchlistMap[key]; }
+  else          { delete seenMap[key]; }
+
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+  const total = Object.keys(allTitles).length;
+  document.getElementById('stats').textContent =
+    `Showing ${getFiltered().length} of ${total} titles · ${Object.keys(seenMap).length} seen`;
+  if (filters.hideSeen && markSeen) {
+    const card2 = document.querySelector(`.card[data-id="${id}"]`);
+    if (card2) card2.remove();
+  }
+
   try {
     if (markSeen) {
       await db.ref('/seen/' + key).set(true);
-      seenMap[key] = true;
-      if (watchlistMap[key]) {
-        await db.ref('/watchlist/' + key).remove();
-      }
+      if (prevWatchlist) await db.ref('/watchlist/' + key).remove();
     } else {
       await db.ref('/seen/' + key).remove();
-      delete seenMap[key];
-    }
-    // Re-render only the affected card for speed
-    const card = document.querySelector(`.card[data-id="${id}"]`);
-    if (card) {
-      const fresh = makeCard(allTitles[key] || allTitles[id]);
-      card.replaceWith(fresh);
-    }
-    // Update stats
-    const total   = Object.keys(allTitles).length;
-    const seenCount = Object.keys(seenMap).length;
-    const filtered  = getFiltered();
-    document.getElementById('stats').textContent =
-      `Showing ${filtered.length} of ${total} titles · ${seenCount} seen`;
-
-    // If hiding-seen and we just marked as seen, remove the card
-    if (filters.hideSeen && markSeen) {
-      const card2 = document.querySelector(`.card[data-id="${id}"]`);
-      if (card2) card2.remove();
     }
   } catch (err) {
+    // Roll back
+    if (prevSeen) seenMap[key] = true; else delete seenMap[key];
+    if (prevWatchlist) watchlistMap[key] = true; else delete watchlistMap[key];
+    const card3 = document.querySelector(`.card[data-id="${id}"]`);
+    if (card3) card3.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Seen toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -1935,10 +1935,22 @@ async function toggleSeen(id, markSeen) {
 async function toggleWatchlist(id, add) {
   if (!currentUser) return;
   const key = String(id);
+
+  // Optimistic update
+  const prev = watchlistMap[key];
+  if (add) watchlistMap[key] = true; else delete watchlistMap[key];
+
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+
   try {
     if (add) await db.ref('/watchlist/' + key).set(true);
     else     await db.ref('/watchlist/' + key).remove();
   } catch (err) {
+    // Roll back
+    if (prev) watchlistMap[key] = true; else delete watchlistMap[key];
+    const card2 = document.querySelector(`.card[data-id="${id}"]`);
+    if (card2) card2.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Watchlist toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -1948,26 +1960,30 @@ async function toggleWatchlist(id, add) {
 async function toggleDismissed(id, dismiss) {
   if (!currentUser) return;
   const key = String(id);
+
+  // Optimistic update
+  const prev = dismissedMap[key];
+  if (dismiss) dismissedMap[key] = true; else delete dismissedMap[key];
+
+  if (filters.hideDismissed && dismiss) {
+    const card = document.querySelector(`.card[data-id="${id}"]`);
+    if (card) card.remove();
+    const total = Object.keys(allTitles).length;
+    document.getElementById('stats').textContent =
+      `Showing ${getFiltered().length} of ${total} titles · ${Object.keys(seenMap).length} seen`;
+  } else {
+    const card = document.querySelector(`.card[data-id="${id}"]`);
+    if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+  }
+
   try {
-    if (dismiss) {
-      await db.ref('/dismissed/' + key).set(true);
-      dismissedMap[key] = true;
-    } else {
-      await db.ref('/dismissed/' + key).remove();
-      delete dismissedMap[key];
-    }
-    if (filters.hideDismissed && dismiss) {
-      const card = document.querySelector(`.card[data-id="${id}"]`);
-      if (card) card.remove();
-      const filtered = getFiltered();
-      const total    = Object.keys(allTitles).length;
-      document.getElementById('stats').textContent =
-        `Showing ${filtered.length} of ${total} titles · ${Object.keys(seenMap).length} seen`;
-    } else {
-      const card = document.querySelector(`.card[data-id="${id}"]`);
-      if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
-    }
+    if (dismiss) await db.ref('/dismissed/' + key).set(true);
+    else         await db.ref('/dismissed/' + key).remove();
   } catch (err) {
+    // Roll back
+    if (prev) dismissedMap[key] = true; else delete dismissedMap[key];
+    const card2 = document.querySelector(`.card[data-id="${id}"]`);
+    if (card2) card2.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Dismiss toggle failed', err);
     alert('Could not save: ' + err.message);
   }
