@@ -123,7 +123,7 @@
 
     /* Checkboxes */
     .cb-list { display: flex; flex-direction: column; gap: 4px; }
-    .cb-list label, .toggle-row label {
+    .cb-list label {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -135,8 +135,52 @@
       transition: background .15s;
     }
     .cb-list label:hover { background: rgba(255,255,255,0.04); }
-    .cb-list input[type="checkbox"], .toggle-row input[type="checkbox"] {
+    .cb-list input[type="checkbox"] {
       width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer;
+    }
+
+    /* Toggle switches */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 5px 2px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .toggle-switch {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: transform .2s, background .2s;
+    }
+    .toggle-switch input:checked + .toggle-track {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle-switch input:checked + .toggle-track::after {
+      transform: translateX(16px);
+      background: #fff;
     }
 
     /* Provider colours in filter */
@@ -341,6 +385,11 @@
     .carousel-rating {
       color: #fbbf24;
       font-weight: 600;
+    }
+    .carousel-votes {
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: 4px;
     }
     .carousel-logline {
       font-size: 13px;
@@ -1146,21 +1195,24 @@
 
     <div class="filter-section">
       <div class="toggle-row">
-        <label>
+        <span>Hide watched</span>
+        <label class="toggle-switch">
           <input type="checkbox" id="hide-seen">
-          Hide seen titles
+          <span class="toggle-track"></span>
         </label>
       </div>
-      <div class="toggle-row" style="margin-top:8px">
-        <label>
+      <div class="toggle-row">
+        <span>Hide saved</span>
+        <label class="toggle-switch">
           <input type="checkbox" id="hide-watchlisted">
-          Hide watchlisted titles
+          <span class="toggle-track"></span>
         </label>
       </div>
-      <div class="toggle-row" style="margin-top:8px">
-        <label>
+      <div class="toggle-row">
+        <span>Hide dismissed</span>
+        <label class="toggle-switch">
           <input type="checkbox" id="hide-dismissed" checked>
-          Hide dismissed titles
+          <span class="toggle-track"></span>
         </label>
       </div>
     </div>
@@ -1183,6 +1235,11 @@
 
 <!-- ── My Lists pane ──────────────────────────────────────────────────── -->
 <div id="mylists-pane" hidden>
+
+  <div id="lib-discover" style="display:none; margin-bottom:40px;">
+    <h3 style="font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:16px;color:var(--text)">Top Picks You Haven't Seen</h3>
+    <div id="lib-carousel-layout"></div>
+  </div>
 
   <section class="mylist-section">
     <h2>Watchlist</h2>
@@ -1287,7 +1344,10 @@ auth.onAuthStateChanged(user => {
     db.ref('/watchlist').on('value', snap => {
       watchlistMap = snap.val() || {};
       renderGrid(getFiltered());
-      if (!document.getElementById('mylists-pane').hidden) renderWatchlistGrid();
+      if (!document.getElementById('mylists-pane').hidden) {
+        renderLibraryCarousel();
+        renderWatchlistGrid();
+      }
       updateMyListsBadge();
     });
     db.ref('/tracking').on('value', snap => {
@@ -1298,6 +1358,7 @@ auth.onAuthStateChanged(user => {
     db.ref('/dismissed').on('value', snap => {
       dismissedMap = snap.val() || {};
       renderGrid(getFiltered());
+      if (!document.getElementById('mylists-pane').hidden) renderLibraryCarousel();
     });
   } else {
     userName.textContent = '';
@@ -1582,6 +1643,143 @@ function _carouselResetTimer() {
   _carouselStartTimer();
 }
 
+// ── Library "Top Picks" carousel ───────────────────────────────────────────────
+let _libCarouselTitles = [];
+let _libCarouselIdx    = 0;
+let _libCarouselTimer  = null;
+
+const MIN_VOTES_THRESHOLD = 1000;
+
+function renderLibraryCarousel() {
+  const container = document.getElementById('lib-discover');
+  const layout    = document.getElementById('lib-carousel-layout');
+  const thisYear  = new Date().getFullYear();
+  const minYear   = thisYear - 5;
+
+  const picks = Object.values(allTitles)
+    .filter(t => {
+      if (!t.year || t.year < minYear) return false;
+      if ((t.imdbVotes || 0) < MIN_VOTES_THRESHOLD) return false;
+      if (!t.imdbRating) return false;
+      if (seenMap[String(t.id)])       return false;
+      if (watchlistMap[String(t.id)])  return false;
+      if (dismissedMap[String(t.id)])  return false;
+      return true;
+    })
+    .sort((a, b) => (b.imdbRating - a.imdbRating) || (b.imdbVotes - a.imdbVotes))
+    .slice(0, 10);
+
+  if (!picks.length) {
+    container.style.display = 'none';
+    clearInterval(_libCarouselTimer);
+    return;
+  }
+
+  clearInterval(_libCarouselTimer);
+  _libCarouselTitles = picks;
+  _libCarouselIdx    = 0;
+
+  const provColors = {
+    jhs: { bg: 'rgba(139,92,246,0.18)', color: '#a78bfa', border: 'rgba(139,92,246,0.5)' },
+    prv: { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8', border: 'rgba(14,165,233,0.5)' },
+    lgp: { bg: 'rgba(249,115,22,0.18)',  color: '#fb923c', border: 'rgba(249,115,22,0.5)' },
+    snl: { bg: 'rgba(239,68,68,0.18)',   color: '#f87171', border: 'rgba(239,68,68,0.5)'  },
+    snx: { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.5)' },
+    zee: { bg: 'rgba(168,85,247,0.18)',  color: '#c084fc', border: 'rgba(168,85,247,0.5)' },
+    vim: { bg: 'rgba(124,58,237,0.18)',  color: '#a78bfa', border: 'rgba(124,58,237,0.5)' },
+  };
+
+  function makeLibSlide(t, active) {
+    const imgSrc   = t.backdropUrl || t.posterUrl || '';
+    const genres   = (t.genres || []).slice(0, 4)
+      .map(g => `<span class="carousel-genre-chip">${escHtml(toTitleCase(g))}</span>`).join('');
+    const provs    = (t.providers || []).slice(0, 4).map(p => {
+      const c = provColors[p] || { bg: 'rgba(99,102,241,0.18)', color: '#818cf8', border: 'rgba(99,102,241,0.5)' };
+      return `<span class="carousel-prov-badge" style="background:${c.bg};color:${c.color};border-color:${c.border}">${escHtml(provLabel(p))}</span>`;
+    }).join('');
+    const typeLabel  = t.contentType === 'show' ? 'TV Show' : 'Movie';
+    const votesLabel = t.imdbVotes >= 1000
+      ? (t.imdbVotes >= 1000000 ? (t.imdbVotes / 1000000).toFixed(1) + 'M' : Math.round(t.imdbVotes / 1000) + 'k') + ' votes'
+      : t.imdbVotes + ' votes';
+    return `
+      <div class="carousel-slide${active ? ' active' : ''}">
+        <div class="carousel-img-half">
+          <img src="${imgSrc}" alt="" loading="lazy"
+               onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
+        </div>
+        <div class="carousel-info-half">
+          <div class="carousel-badge" style="background:rgba(99,102,241,0.25);color:var(--accent-light);border-color:rgba(99,102,241,0.4)">Top Rated</div>
+          <div class="carousel-title">${escHtml(t.name || '')}</div>
+          <div class="carousel-meta-row">
+            <span>${t.year || ''}</span>
+            <span>·</span>
+            <span>${typeLabel}</span>
+            ${t.imdbRating ? `<span>·</span><span class="carousel-rating">★ ${t.imdbRating}</span><span class="carousel-votes">${votesLabel}</span>` : ''}
+            ${t.ageRating  ? `<span>·</span><span>${escHtml(t.ageRating)}</span>` : ''}
+          </div>
+          ${t.shortDescription ? `<div class="carousel-logline">${escHtml(t.shortDescription)}</div>` : ''}
+          ${genres ? `<div class="carousel-genres">${genres}</div>` : ''}
+          ${provs  ? `<div class="carousel-providers">${provs}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  layout.innerHTML = `
+    <div class="carousel-wrapper" id="lib-carousel-wrapper">
+      ${picks.map((t, i) => makeLibSlide(t, i === 0)).join('')}
+      <button class="carousel-btn carousel-prev" id="lib-carousel-prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button class="carousel-btn carousel-next" id="lib-carousel-next">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+      <div class="carousel-dots" id="lib-carousel-dots">
+        ${picks.map((_, i) => `<button class="carousel-dot${i === 0 ? ' active' : ''}"></button>`).join('')}
+      </div>
+    </div>`;
+
+  container.style.display = 'block';
+
+  const wrapper = document.getElementById('lib-carousel-wrapper');
+
+  document.getElementById('lib-carousel-prev').addEventListener('click', () => {
+    _libCarouselGoto((_libCarouselIdx - 1 + _libCarouselTitles.length) % _libCarouselTitles.length);
+    _libCarouselResetTimer();
+  });
+  document.getElementById('lib-carousel-next').addEventListener('click', () => {
+    _libCarouselGoto((_libCarouselIdx + 1) % _libCarouselTitles.length);
+    _libCarouselResetTimer();
+  });
+  document.querySelectorAll('#lib-carousel-dots .carousel-dot').forEach((dot, i) => {
+    dot.addEventListener('click', () => { _libCarouselGoto(i); _libCarouselResetTimer(); });
+  });
+
+  wrapper.addEventListener('mouseenter', () => clearInterval(_libCarouselTimer));
+  wrapper.addEventListener('mouseleave', () => _libCarouselStartTimer());
+
+  _libCarouselStartTimer();
+}
+
+function _libCarouselGoto(idx) {
+  const wrapper = document.getElementById('lib-carousel-wrapper');
+  if (!wrapper) return;
+  wrapper.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === idx));
+  wrapper.querySelectorAll('.carousel-dot').forEach((d, i)  => d.classList.toggle('active',  i === idx));
+  _libCarouselIdx = idx;
+}
+
+function _libCarouselStartTimer() {
+  clearInterval(_libCarouselTimer);
+  _libCarouselTimer = setInterval(() => {
+    if (_libCarouselTitles.length) _libCarouselGoto((_libCarouselIdx + 1) % _libCarouselTitles.length);
+  }, 4500);
+}
+
+function _libCarouselResetTimer() {
+  clearInterval(_libCarouselTimer);
+  _libCarouselStartTimer();
+}
+
 // ── Card rendering ─────────────────────────────────────────────────────────────
 function renderGrid(titles) {
   const grid    = document.getElementById('grid');
@@ -1786,6 +1984,7 @@ function updateMyListsBadge() {
 const wlFilters = { type: 'both', provider: '', sort: 'newest' };
 
 function renderMyLists() {
+  renderLibraryCarousel();
   renderWatchlistGrid();
   renderTrackingList();
 }
