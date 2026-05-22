@@ -620,7 +620,6 @@
       padding: 0;
       font-family: inherit;
       font-style: italic;
-      display: none;
     }
 
     .provider-badges { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -1898,11 +1897,6 @@ function makeCard(t, opts = {}) {
   const logline = div.querySelector('.card-logline');
   const loglineToggle = div.querySelector('.logline-toggle');
   if (logline && loglineToggle) {
-    const ro = new ResizeObserver(() => {
-      loglineToggle.style.display = logline.scrollHeight > logline.clientHeight ? 'inline' : 'none';
-      ro.disconnect();
-    });
-    ro.observe(logline);
     loglineToggle.addEventListener('click', () => {
       const expanded = logline.classList.toggle('expanded');
       loglineToggle.textContent = expanded ? 'less' : 'more';
