@@ -49,12 +49,12 @@ java -jar build/libs/streaming-tracker-1.0.jar
 ### Run with options
 
 ```sh
-./gradlew run --args="--providers=hst,prv --year-from=2015 --year-to=2024 --content-type=movies"
+./gradlew run --args="--providers=jhs,prv --year-from=2015 --year-to=2024 --content-type=movies"
 ```
 
 | Flag | Values | Default |
 |---|---|---|
-| `--providers` | comma-separated: `hst` `prv` `lgy` | `hst,prv,lgy` |
+| `--providers` | comma-separated: `jhs` `prv` `lgp` `snl` `snx` `zee` `vim` | all seven |
 | `--year-from` | integer year | `1900` |
 | `--year-to` | integer year | current year |
 | `--content-type` | `movies` \| `shows` \| `both` | `both` |
@@ -70,13 +70,21 @@ java -jar build/libs/streaming-tracker-1.0.jar
 ## Firebase data layout
 
 ```
-/titles/{justwatch_id}:
-  id, name, year, runtime, director, topActor,
-  genres[], originalLanguage, imdbRating, imdbVotes,
-  ageRating, contentType, providers[]
+/titles/{justwatch_id}:          ← written by scraper
+  id, imdbId, name, year, runtime, director,
+  actors[], genres[], originalLanguage, audioLanguages[],
+  imdbRating, imdbVotes, ageRating, shortDescription,
+  releaseDate, streamingDate, firstSeen,
+  posterUrl, backdropUrl,
+  contentType, providers[]
 
-/seen/{justwatch_id}: true   ← written only by the frontend, never by scraper
+/seen/{justwatch_id}: true       ← written by frontend only
+/watchlist/{justwatch_id}: true  ← written by frontend only
+/dismissed/{justwatch_id}: true  ← written by frontend only
+/tracking/{id}: { name, year, posterUrl, contentType, addedAt }  ← written by frontend only
 ```
+
+Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot
 
 ## GitHub Pages deployment
 
@@ -90,11 +98,11 @@ java -jar build/libs/streaming-tracker-1.0.jar
 ```json
 {
   "rules": {
-    "titles": { ".read": true, ".write": false },
-    "seen":   {
-      ".read":  "auth != null",
-      ".write": "auth != null"
-    }
+    "titles":    { ".read": true,           ".write": false          },
+    "seen":      { ".read": "auth != null", ".write": "auth != null" },
+    "watchlist": { ".read": "auth != null", ".write": "auth != null" },
+    "dismissed": { ".read": "auth != null", ".write": "auth != null" },
+    "tracking":  { ".read": "auth != null", ".write": "auth != null" }
   }
 }
 ```

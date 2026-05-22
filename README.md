@@ -29,14 +29,11 @@ In Firebase Console → Realtime Database → Rules, paste:
 ```json
 {
   "rules": {
-    "titles": {
-      ".read":  true,
-      ".write": false
-    },
-    "seen": {
-      ".read":  "auth != null",
-      ".write": "auth != null"
-    }
+    "titles":    { ".read": true,          ".write": false         },
+    "seen":      { ".read": "auth != null", ".write": "auth != null" },
+    "watchlist": { ".read": "auth != null", ".write": "auth != null" },
+    "dismissed": { ".read": "auth != null", ".write": "auth != null" },
+    "tracking":  { ".read": "auth != null", ".write": "auth != null" }
   }
 }
 ```
@@ -95,12 +92,12 @@ gradle run
 ### With options
 
 ```sh
-./gradlew run --args="--providers=hst,prv --year-from=2015 --year-to=2024 --content-type=movies"
+./gradlew run --args="--providers=jhs,prv --year-from=2015 --year-to=2024 --content-type=movies"
 ```
 
 | Flag | Values | Default |
 |------|--------|---------|
-| `--providers` | `hst`, `prv`, `lgy` (comma-separated) | all three |
+| `--providers` | `jhs`, `prv`, `lgp`, `snl`, `snx`, `zee`, `vim` (comma-separated) | all seven |
 | `--year-from` | any year integer | `1900` |
 | `--year-to` | any year integer | current year |
 | `--content-type` | `movies` · `shows` · `both` | `both` |
@@ -109,7 +106,7 @@ gradle run
 
 ```sh
 ./gradlew jar
-java -jar build/libs/streaming-tracker-1.0.jar --providers=hst
+java -jar build/libs/streaming-tracker-1.0.jar --providers=jhs
 ```
 
 ### What each scraper run does
@@ -123,41 +120,100 @@ java -jar build/libs/streaming-tracker-1.0.jar --providers=hst
 
 ## 5 — Frontend features
 
-- **Provider filter** — Hotstar, Prime Video, Lionsgate Play checkboxes.
-- **Year range** — dual-thumb slider, built from actual data range.
-- **Content type** — Movies / Shows / Both toggle.
-- **Genre multi-select** — dynamically built from data.
-- **Language dropdown** — dynamically built from data, common language codes resolved to full names.
-- **Seen tracking** — "Mark as seen" / "Undo seen" on each card, written to `/seen` in Firebase and persists across devices.
-- **Hide seen** — toggle to hide all seen titles from the grid.
-- **Google sign-in** — only authenticated users can write to `/seen`; reading titles is always public.
+### Tabs
+
+| Tab | Contents |
+|-----|---------|
+| **Discover** | Filtered title grid + Latest Releases carousel |
+| **My Library** | Watchlist, custom Tracking list, Top Picks carousel |
+| **Analytics** | Stats on seen titles — watch time, avg rating, breakdown by platform / genre / decade / rating bracket |
+
+### Filters (sidebar)
+
+- **Provider icon toggles** — JioHotstar, Prime Video, Lionsgate Play, SonyLIV, Sun NXT, ZEE5, Voot.
+- **Content type** — Movies / Shows / Both segmented button.
+- **Year range** — min/max number inputs, bounded to data range.
+- **Genre multi-select** — live search, dynamically built from data.
+- **Language dropdown** — dynamically built; ISO codes resolved to full names.
+- **Hide seen / Hide watchlisted / Hide dismissed** — toggle switches.
+
+### Discover — title cards
+
+Each card shows poster (or coloured fallback), title, year, rating, logline, genre chips, and provider badges.  Actions: **Mark as seen / Undo**, **Add to watchlist**, **Dismiss** (Not Interested).
+
+### Latest Releases carousel
+
+Split-panel carousel (backdrop image left, metadata right) showing recently added titles, auto-advancing with prev/next arrows and dot indicators.
+
+### My Library
+
+- **Watchlist** — save titles to watch later; filterable by content type and provider.
+- **Tracking** — add arbitrary titles (not in the database) with poster, year, and content type; stored under `/tracking`.
+- **Top Picks carousel** — curated high-rated titles (≥ 7.5 IMDB, ≥ 3 000 votes) not yet seen, watchlisted, or dismissed.
+
+### Analytics dashboard
+
+Headline stats (titles watched, hours, avg rating, top platform) plus bar charts for: by platform, by genre, by IMDB rating bracket, by decade.
+
+### Auth
+
+Google Sign-In required to write `/seen`, `/watchlist`, `/tracking`, `/dismissed`.  Reading `/titles` is always public.
 
 ---
 
 ## 6 — Data model
 
-### `/titles/{id}`
+### `/titles/{id}` — written by scraper
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `id` | int | JustWatch title ID |
+| `imdbId` | string? | IMDb ID (e.g. `tt1234567`) |
 | `name` | string | |
 | `year` | int? | original release year |
 | `runtime` | int? | minutes |
 | `director` | string? | first credited director |
-| `topActor` | string? | first credited actor |
+| `actors` | string[] | credited cast members |
 | `genres` | string[] | resolved from JustWatch genre IDs |
 | `originalLanguage` | string? | ISO 639-1 code |
+| `audioLanguages` | string[] | language codes available across streaming offers |
 | `imdbRating` | double? | |
 | `imdbVotes` | int? | |
 | `ageRating` | string? | e.g. `U`, `UA`, `A` |
+| `shortDescription` | string? | logline / plot summary |
+| `releaseDate` | string? | ISO `YYYY-MM-DD`, earliest known release |
+| `streamingDate` | string? | ISO `YYYY-MM-DD`, most recent `availableFromTime` across providers |
+| `firstSeen` | string? | ISO `YYYY-MM-DD`, date title first appeared in a scraper run |
+| `posterUrl` | string? | JustWatch poster image URL |
+| `backdropUrl` | string? | JustWatch backdrop/still image URL |
 | `contentType` | string | `"movie"` or `"show"` |
-| `providers` | string[] | e.g. `["hst","prv"]` |
+| `providers` | string[] | e.g. `["jhs","prv"]` — see provider codes below |
 
-### `/seen/{id}`
+**Provider codes:** `jhs` JioHotstar · `prv` Prime Video · `lgp` Lionsgate Play · `snl` SonyLIV · `snx` Sun NXT · `zee` ZEE5 · `vim` Voot
 
-Value is always `true`.  Key is the JustWatch title ID as a string.  
-Written only by the frontend; never by the scraper.
+### `/seen/{id}` — written by frontend
+
+Value is always `true`.  Key is the JustWatch title ID as a string.
+
+### `/watchlist/{id}` — written by frontend
+
+Value is always `true`.  Titles the user wants to watch later.
+
+### `/dismissed/{id}` — written by frontend
+
+Value is always `true`.  Titles the user has marked "Not Interested".
+
+### `/tracking/{id}` — written by frontend
+
+Custom titles added manually by the user (not necessarily in `/titles`).
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | |
+| `year` | int? | |
+| `posterUrl` | string? | |
+| `contentType` | string | `"movie"` or `"show"` |
+| `addedAt` | int | Unix timestamp (ms) |
 
 ---
 
