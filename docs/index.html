@@ -481,9 +481,9 @@
     .carousel-votes { color: var(--muted); font-size: 11px; }
     .carousel-logline {
       font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 12px;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .carousel-genres { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+    .carousel-genres { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
     .carousel-genre-chip {
       font-size: 10px; font-weight: 500;
       background: var(--surface3); border: 1px solid var(--border);
@@ -510,6 +510,23 @@
       transition: background .2s, transform .2s; border: none;
     }
     .carousel-dot.active { background: var(--accent); transform: scale(1.4); }
+
+    .carousel-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .carousel-action-btn {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 4px 10px; cursor: pointer;
+      color: var(--muted); transition: background .15s, border-color .15s, color .15s;
+    }
+    .carousel-action-btn .material-symbols-outlined { font-size: 14px; }
+    .carousel-action-btn:hover { background: var(--surface3); color: var(--text); }
+    .carousel-action-btn.ca-seen:hover    { background: rgba(74,222,128,0.15); border-color: #4ade80; color: #4ade80; }
+    .carousel-action-btn.ca-watch:hover   { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-light); }
+    .carousel-action-btn.ca-dismiss:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: #f87171; }
+    .carousel-action-btn.ca-seen.is-seen         { background: rgba(74,222,128,0.15); border-color: #4ade80; color: #4ade80; }
+    .carousel-action-btn.ca-watch.is-watchlisted { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-light); }
+    .carousel-action-btn.ca-dismiss.is-dismissed { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: #f87171; }
 
     /* ── Card grid ── */
     #grid-header {
@@ -1526,7 +1543,11 @@ function renderTopPicks() {
     t.year >= TOP_PICKS_MIN_YEAR &&
     t.imdbRating > TOP_PICKS_RATING &&
     (t.imdbVotes || 0) >= TOP_PICKS_MIN_VOTES &&
-    (filters.type === 'both' || t.contentType === filters.type)
+    (filters.type === 'both' || t.contentType === filters.type) &&
+    !seenMap[String(t.id)] &&
+    !watchlistMap[String(t.id)] &&
+    !dismissedMap[String(t.id)] &&
+    (filters.audioLangs.size === 0 || (t.audioLanguages || []).some(l => filters.audioLangs.has(l)))
   );
 
   // Shuffle for variety
@@ -1564,6 +1585,19 @@ function renderTopPicks() {
   document.querySelectorAll('#tp-dots .carousel-dot').forEach((d, i) => d.addEventListener('click', () => { _tpGoto(i); _tpResetTimer(); }));
   wrapper.addEventListener('mouseenter', () => clearInterval(_tpTimer));
   wrapper.addEventListener('mouseleave', () => _tpStartTimer());
+
+  wrapper.querySelectorAll('.carousel-action-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'seen')    await toggleSeen(id, !seenMap[id]);
+      if (action === 'watch')   await toggleWatchlist(id, !watchlistMap[id]);
+      if (action === 'dismiss') await toggleDismissed(id, !dismissedMap[id]);
+      renderTopPicks();
+    });
+  });
+
   _tpStartTimer();
 }
 
@@ -1588,8 +1622,24 @@ function makeCarouselSlide(t, active, badgeText) {
   }).join('');
   const typeLabel = t.contentType === 'show' ? 'TV Show' : 'Movie';
   const votes     = t.imdbVotes >= 1000000 ? (t.imdbVotes/1000000).toFixed(1)+'M' : t.imdbVotes >= 1000 ? Math.round(t.imdbVotes/1000)+'K' : (t.imdbVotes||'');
+  const key       = String(t.id);
+  const isSeen    = !!seenMap[key];
+  const isWL      = !!watchlistMap[key];
+  const isDismiss = !!dismissedMap[key];
+  const actions   = currentUser ? `
+        <div class="carousel-actions">
+          <button class="carousel-action-btn ca-seen${isSeen ? ' is-seen' : ''}" data-id="${key}" data-action="seen">
+            <span class="material-symbols-outlined">done_all</span>${isSeen ? 'Watched' : 'Mark watched'}
+          </button>
+          <button class="carousel-action-btn ca-watch${isWL ? ' is-watchlisted' : ''}" data-id="${key}" data-action="watch">
+            <span class="material-symbols-outlined">bookmark</span>${isWL ? 'Watchlisted' : 'Watchlist'}
+          </button>
+          <button class="carousel-action-btn ca-dismiss${isDismiss ? ' is-dismissed' : ''}" data-id="${key}" data-action="dismiss">
+            <span class="material-symbols-outlined">thumb_down</span>Not interested
+          </button>
+        </div>` : '';
   return `
-    <div class="carousel-slide${active ? ' active' : ''}">
+    <div class="carousel-slide${active ? ' active' : ''}" data-id="${key}">
       <div class="carousel-img-half">
         <img src="${escHtml(imgSrc)}" alt="" loading="lazy" onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
       </div>
@@ -1604,6 +1654,7 @@ function makeCarouselSlide(t, active, badgeText) {
         ${t.shortDescription ? `<div class="carousel-logline">${escHtml(t.shortDescription)}</div>` : ''}
         ${genres ? `<div class="carousel-genres">${genres}</div>` : ''}
         ${provs  ? `<div class="carousel-providers">${provs}</div>` : ''}
+        ${actions}
       </div>
     </div>`;
 }
