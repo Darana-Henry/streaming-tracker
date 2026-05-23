@@ -5,88 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Streaming Tracker</title>
 
-  <!-- Firebase SDK (compat mode — no build step needed) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-  <!-- Fonts (Stitch "Dark Cinema Aesthetic" design system) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
 
   <style>
-    /* ── Reset / base ─────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── Stitch "Dark Cinema Aesthetic" design system ─────────────────────────── */
     :root {
-      --bg:           #051424;
-      --surface:      #0d1c2d;
-      --surface2:     #122131;
-      --surface3:     #1c2b3c;
-      --surface4:     #273647;
+      --bg:           #060f1a;
+      --surface:      #0c1825;
+      --surface2:     #111f2e;
+      --surface3:     #172535;
+      --surface4:     #1e2f40;
       --border:       rgba(255,255,255,0.08);
       --border2:      rgba(255,255,255,0.05);
-      --text:         #d4e4fa;
-      --muted:        rgba(199,196,215,0.75);
+      --text:         #ddeeff;
+      --muted:        rgba(190,210,235,0.6);
       --accent:       #6366f1;
-      --accent-light: #c0c1ff;
+      --accent-light: #a5b4fc;
       --accent-dim:   rgba(99,102,241,0.15);
-      --accent-glow:  rgba(99,102,241,0.25);
-      --seen-bg:      rgba(5,20,36,0.6);
-      --seen-border:  rgba(22,101,52,0.4);
+      --accent-glow:  rgba(99,102,241,0.3);
 
-      /* Provider colours */
-      --jhs: #8b5cf6;
-      --prv: #0ea5e9;
-      --lgp: #f97316;
-      --snl: #ef4444;
-      --snx: #fb923c;
-      --zee: #a855f7;
-      --vim: #7c3aed;
+      --jhs: #8b5cf6; --prv: #0ea5e9; --lgp: #f97316;
+      --snl: #ef4444; --snx: #fb923c; --zee: #a855f7; --vim: #06b6d4;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 14px;
       line-height: 1.5;
       min-height: 100vh;
     }
 
-    /* ── Header ──────────────────────────────────────────────────────────────── */
+    /* ── Header ── */
     header {
-      background: rgba(5,20,36,0.82);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(6,15,26,0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
+      padding: 0 24px;
+      height: 56px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
       position: sticky;
       top: 0;
       z-index: 100;
     }
-    header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.5px; white-space: nowrap; }
-    header h1 span { color: var(--accent-light); }
+    .logo { font-size: 18px; font-weight: 800; letter-spacing: -.6px; white-space: nowrap; flex-shrink: 0; }
+    .logo span { color: var(--accent-light); }
 
-    #auth-area { display: flex; align-items: center; gap: 12px; }
-    #user-name { font-size: 13px; color: var(--muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header-tabs { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .tab {
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: rgba(190,210,235,0.45);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .tab-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      color: #fff;
+      border-radius: 9999px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 5px;
+    }
+    .tab:not(.active) .tab-badge { background: var(--accent); }
+
+    #search-input {
+      margin-left: auto;
+      width: 240px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 6px 16px 6px 36px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(190,210,235,0.4)' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 12px center;
+    }
+    #search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+    #search-input::placeholder { color: var(--muted); }
+
+    #auth-area { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    #user-name { font-size: 12px; color: var(--muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #auth-btn {
       background: var(--accent);
       color: #fff;
       border: none;
-      border-radius: 9999px;
-      padding: 7px 18px;
+      border-radius: 8px;
+      padding: 6px 16px;
       font-size: 13px;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
       transition: all .2s;
+      white-space: nowrap;
     }
     #auth-btn:hover { background: #7275f5; box-shadow: 0 0 16px var(--accent-glow); }
     #auth-btn.signed-in {
@@ -96,103 +133,130 @@
       font-weight: 400;
     }
 
-    /* ── Layout ──────────────────────────────────────────────────────────────── */
+    /* ── Layout ── */
     #layout { display: flex; align-items: flex-start; }
 
-    /* ── Filter sidebar ──────────────────────────────────────────────────────── */
+    /* ── Sidebar ── */
     #filters {
-      width: 232px;
-      min-width: 232px;
+      width: 236px;
+      min-width: 236px;
       background: var(--surface);
-      border-right: 1px solid var(--border2);
-      padding: 20px 16px;
-      min-height: calc(100vh - 93px);
+      border-right: 1px solid var(--border);
+      min-height: calc(100vh - 56px);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      padding: 8px 0 16px;
+      position: sticky;
+      top: 56px;
+      max-height: calc(100vh - 56px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--surface4) transparent;
     }
 
-    .filter-section h3 {
+    .filters-heading {
+      padding: 12px 16px 8px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--accent-light);
-      margin-bottom: 8px;
+      color: rgba(165,180,252,0.4);
     }
 
-    /* Checkboxes */
-    .cb-list { display: flex; flex-direction: column; gap: 4px; }
-    .cb-list label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      color: var(--text);
-      padding: 4px 6px;
-      border-radius: 6px;
-      transition: background .15s;
-    }
-    .cb-list label:hover { background: rgba(255,255,255,0.04); }
-    .cb-list input[type="checkbox"] {
-      width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer;
-    }
+    /* Accordion filter sections */
+    .filter-section { border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .filter-section:last-child { border-bottom: none; }
 
-    /* Toggle switches */
-    .toggle-row {
+    .filter-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 5px 2px;
-      font-size: 13px;
-      color: var(--text);
-    }
-    .toggle-switch {
-      position: relative;
-      width: 36px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .toggle-track {
-      position: absolute;
-      inset: 0;
-      border-radius: 10px;
-      background: var(--surface3);
-      border: 1px solid var(--border2);
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 9px 16px;
       cursor: pointer;
-      transition: background .2s, border-color .2s;
+      font-family: inherit;
+      color: rgba(165,180,252,0.7);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      transition: color .15s, background .15s;
     }
-    .toggle-track::after {
-      content: '';
-      position: absolute;
-      top: 2px; left: 2px;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--muted);
-      transition: transform .2s, background .2s;
+    .filter-header:hover { color: var(--accent-light); background: rgba(99,102,241,0.05); }
+    .filter-section:not(.collapsed) > .filter-header { color: var(--accent-light); }
+    .filter-header .material-symbols-outlined {
+      font-size: 15px;
+      color: inherit;
+      transition: transform .25s;
+      opacity: 0.7;
     }
-    .toggle-switch input:checked + .toggle-track {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    .toggle-switch input:checked + .toggle-track::after {
-      transform: translateX(16px);
-      background: #fff;
+    .filter-section.collapsed .filter-header .material-symbols-outlined { transform: rotate(-90deg); }
+
+    .filter-body { overflow: hidden; max-height: 400px; transition: max-height .28s ease; }
+    .filter-section.collapsed .filter-body { max-height: 0; }
+    .filter-body-inner { padding: 0 16px 12px; }
+
+    /* Non-collapsible static label (for sections with no toggle) */
+    .filter-label {
+      padding: 10px 16px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--accent-light);
     }
 
-    /* Provider colours in filter */
-    .badge-jhs { color: var(--jhs); }
-    .badge-prv { color: var(--prv); }
-    .badge-lgp { color: var(--lgp); }
-    .badge-snl { color: var(--snl); }
-    .badge-snx { color: var(--snx); }
-    .badge-zee { color: var(--zee); }
-    .badge-vim { color: var(--vim); }
+    /* Provider icon grid */
+    .provider-icon-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding-bottom: 4px;
+    }
+    .prov-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 2px;
+      opacity: 0.28;
+      transition: opacity .2s, transform .15s;
+      font-family: inherit;
+      border-radius: 8px;
+    }
+    .prov-btn.active { opacity: 1; }
+    .prov-btn:hover { transform: scale(1.05); opacity: 0.65; background: rgba(255,255,255,0.03); }
+    .prov-btn.active:hover { opacity: 0.88; }
+    .prov-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .3px;
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+    .prov-btn.active .prov-icon { box-shadow: 0 0 14px currentColor; }
+    .prov-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; display: block; }
+    .prov-jhs .prov-icon { background: rgba(139,92,246,0.22); color: #a78bfa; border: 1.5px solid rgba(139,92,246,0.5); }
+    .prov-prv .prov-icon { background: rgba(14,165,233,0.22);  color: #38bdf8; border: 1.5px solid rgba(14,165,233,0.5); }
+    .prov-lgp .prov-icon { background: rgba(249,115,22,0.22);  color: #fb923c; border: 1.5px solid rgba(249,115,22,0.5); }
+    .prov-snl .prov-icon { background: rgba(239,68,68,0.22);   color: #f87171; border: 1.5px solid rgba(239,68,68,0.5); }
+    .prov-snx .prov-icon { background: rgba(251,146,60,0.22);  color: #fdba74; border: 1.5px solid rgba(251,146,60,0.5); }
+    .prov-zee .prov-icon { background: rgba(168,85,247,0.22);  color: #c084fc; border: 1.5px solid rgba(168,85,247,0.5); }
+    .prov-vim .prov-icon { background: rgba(6,182,212,0.22);   color: #67e8f9; border: 1.5px solid rgba(6,182,212,0.5); }
+    .prov-name { font-size: 9px; color: var(--muted); font-weight: 600; text-align: center; white-space: nowrap; }
 
-    /* Content type buttons */
+    /* Type buttons */
     .type-btns { display: flex; gap: 3px; background: var(--surface2); padding: 3px; border-radius: 8px; }
     .type-btn {
       flex: 1;
@@ -207,19 +271,15 @@
       cursor: pointer;
       transition: all .15s;
     }
-    .type-btn.active {
-      background: rgba(99,102,241,0.25);
-      color: var(--accent-light);
-      font-weight: 600;
-    }
+    .type-btn.active { background: rgba(99,102,241,0.25); color: var(--accent-light); font-weight: 600; }
 
-    /* Year range inputs */
-    .year-inputs { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    /* Year range */
+    .year-inputs { display: flex; align-items: center; gap: 6px; }
     .year-inputs input[type="number"] {
-      width: 66px;
+      width: 60px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 7px;
       color: var(--text);
       font-size: 13px;
       padding: 5px 7px;
@@ -231,295 +291,248 @@
     .year-inputs input[type="number"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
     .year-sep { font-size: 12px; color: var(--muted); }
 
-    /* Genre / language list (scrollable) */
+    /* Filter search inputs */
     .filter-search {
       width: 100%;
-      box-sizing: border-box;
-      padding: 5px 10px;
+      padding: 5px 9px;
       margin-bottom: 6px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 7px;
       color: var(--text);
       font-size: 12px;
       font-family: inherit;
-      transition: border-color .15s;
     }
     .filter-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+
+    /* Genre / language scrollable list */
     .genre-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      max-height: 160px;
+      gap: 2px;
+      max-height: 150px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--surface4) transparent;
     }
-    .genre-list label { font-size: 12px; }
+    .cb-list { display: flex; flex-direction: column; gap: 2px; }
+    .cb-list label, .genre-list label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text);
+      padding: 4px 5px;
+      border-radius: 5px;
+      transition: background .12s;
+    }
+    .cb-list label:hover, .genre-list label:hover { background: rgba(255,255,255,0.04); }
+    .cb-list input[type="checkbox"], .genre-list input[type="checkbox"] {
+      width: 13px; height: 13px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+    }
     .genre-list label.hidden { display: none; }
 
-    /* Language select */
+    /* Sort select */
     select {
       width: 100%;
       background: var(--surface2);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 7px;
       padding: 6px 10px;
       font-size: 13px;
       font-family: inherit;
       cursor: pointer;
       outline: none;
-      transition: border-color .15s;
     }
     select:focus { border-color: var(--accent); }
     select option { background: var(--surface3); }
 
-    /* Hide-seen toggle */
-    .toggle-row { margin-top: 4px; }
-
-    /* ── Main area ────────────────────────────────────────────────────────────── */
-    #main {
-      flex: 1;
-      padding: 20px 24px;
-      min-width: 0;
+    /* Toggle switches */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 5px 2px;
+      font-size: 12px;
+      color: var(--text);
     }
-
-    #stats {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 14px;
+    .toggle-switch { position: relative; width: 34px; height: 19px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      border-radius: 10px;
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
     }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: transform .2s, background .2s;
+    }
+    .toggle-switch input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(15px); background: #fff; }
 
-    /* ── New & Latest Releases section ──────────────────────────────────────── */
-    #new-this-month { margin-bottom: 32px; }
-    #new-this-month > h3 {
-      font-size: 18px;
+    /* ── Main area ── */
+    #main { flex: 1; padding: 20px 24px; min-width: 0; }
+
+    /* ── Discover stats bar ── */
+    #discover-stats-bar {
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .dstat-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 8px 14px;
+      white-space: nowrap;
+    }
+    .dstat-icon { font-size: 16px; color: var(--accent-light); font-variation-settings: 'FILL' 1; }
+    .dstat-value { font-size: 15px; font-weight: 700; color: var(--text); }
+    .dstat-label { font-size: 12px; color: var(--muted); }
+
+    /* ── Carousel ── */
+    #top-picks { margin-bottom: 28px; }
+    #top-picks > h2 {
+      font-size: 16px;
       font-weight: 700;
       color: var(--text);
-      margin: 0 0 14px;
+      margin-bottom: 12px;
       letter-spacing: -.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    /* ── Latest Releases Carousel ───────────────────────────────────────────── */
+    #top-picks > h2 .section-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #fbbf24;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
     .carousel-wrapper {
       position: relative;
       border-radius: 14px;
       overflow: hidden;
-      height: 300px;
+      height: 280px;
       background: var(--surface);
       border: 1px solid var(--border);
     }
     .carousel-slide {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      opacity: 0;
-      transition: opacity .7s ease;
-      pointer-events: none;
+      position: absolute; inset: 0; display: flex;
+      opacity: 0; transition: opacity .6s ease; pointer-events: none;
     }
-    .carousel-slide.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    /* Left half — image */
+    .carousel-slide.active { opacity: 1; pointer-events: auto; }
+
     .carousel-img-half {
-      width: 50%;
+      width: 46%;
       flex-shrink: 0;
       position: relative;
       overflow: hidden;
     }
     .carousel-img-half img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center top;
-      display: block;
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center top; display: block;
     }
-    /* fade from image into info panel */
     .carousel-img-half::after {
       content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to right, transparent 60%, var(--surface) 100%);
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, transparent 55%, var(--surface) 100%);
     }
-    /* Right half — info */
     .carousel-info-half {
       flex: 1;
-      padding: 28px 28px 28px 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      padding: 24px 24px 24px 18px;
+      display: flex; flex-direction: column; justify-content: center;
       min-width: 0;
       background: var(--surface);
     }
     .carousel-badge {
-      display: inline-block;
-      align-self: flex-start;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--accent-light);
-      background: var(--accent-dim);
-      border: 1px solid rgba(99,102,241,0.35);
-      border-radius: 4px;
-      padding: 2px 8px;
-      margin-bottom: 10px;
+      display: inline-block; align-self: flex-start;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: #fbbf24; background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 4px; padding: 2px 8px; margin-bottom: 10px;
     }
-    .carousel-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.25;
-      margin-bottom: 6px;
-    }
+    .carousel-title { font-size: 20px; font-weight: 700; line-height: 1.25; margin-bottom: 6px; }
     .carousel-meta-row {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      font-size: 12px; color: var(--muted); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
-    .carousel-rating {
-      color: #fbbf24;
-      font-weight: 600;
-    }
-    .carousel-votes {
-      color: var(--muted);
-      font-size: 12px;
-      margin-left: 4px;
-    }
+    .carousel-rating { color: #fbbf24; font-weight: 700; }
+    .carousel-votes { color: var(--muted); font-size: 11px; }
     .carousel-logline {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.55;
-      margin-bottom: 14px;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 12px;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .carousel-genres {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-bottom: 14px;
-    }
+    .carousel-genres { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
     .carousel-genre-chip {
-      font-size: 10px;
-      font-weight: 500;
-      background: var(--surface3);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 2px 8px;
-      color: var(--muted);
+      font-size: 10px; font-weight: 500;
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 7px; color: var(--muted);
     }
-    .carousel-providers {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .carousel-prov-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 5px;
-      border: 1px solid;
-    }
-    /* Prev / Next arrows */
+    .carousel-providers { display: flex; gap: 5px; flex-wrap: wrap; }
+    .carousel-prov-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 5px; border: 1px solid; }
+
     .carousel-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 3;
-      background: rgba(5,20,36,0.7);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      width: 36px; height: 36px;
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+      background: rgba(6,15,26,0.75); border: 1px solid var(--border);
+      border-radius: 50%; width: 34px; height: 34px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      color: var(--text);
-      transition: background .15s, border-color .15s;
+      cursor: pointer; color: var(--text); transition: background .15s;
     }
     .carousel-btn:hover { background: var(--accent); border-color: var(--accent); }
     .carousel-btn .material-symbols-outlined { font-size: 20px; }
-    .carousel-btn.carousel-prev { left: 12px; }
-    .carousel-btn.carousel-next { right: 12px; }
-    /* Dot indicators */
-    .carousel-dots {
-      position: absolute;
-      bottom: 12px;
-      right: 20px;
-      display: flex;
-      gap: 6px;
-      z-index: 3;
-    }
+    .carousel-btn.carousel-prev { left: 10px; }
+    .carousel-btn.carousel-next { right: 10px; }
+    .carousel-dots { position: absolute; bottom: 10px; right: 16px; display: flex; gap: 5px; z-index: 3; }
     .carousel-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.25);
-      cursor: pointer;
-      transition: background .2s, transform .2s;
-      border: none;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); cursor: pointer;
+      transition: background .2s, transform .2s; border: none;
     }
-    .carousel-dot.active {
-      background: var(--accent);
-      transform: scale(1.4);
-    }
+    .carousel-dot.active { background: var(--accent); transform: scale(1.4); }
 
-    /* ── Card grid ────────────────────────────────────────────────────────────── */
+    /* ── Card grid ── */
+    #grid-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    #grid-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+      color: var(--text);
+    }
+    #stats { font-size: 12px; color: var(--muted); }
+
     #grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
     }
 
-    /* ── Provider icon toggle buttons ────────────────────────────────────────────── */
-    .provider-icon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-      gap: 8px;
-    }
-    .prov-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      opacity: 0.3;
-      transition: opacity .2s, transform .15s;
-      font-family: inherit;
-    }
-    .prov-btn.active { opacity: 1; }
-    .prov-btn:hover { transform: scale(1.08); opacity: 0.75; }
-    .prov-btn.active:hover { opacity: 0.9; }
-    .prov-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .3px;
-      transition: box-shadow .2s;
-    }
-    .prov-btn.active .prov-icon { box-shadow: 0 0 12px currentColor; }
-    .prov-jhs .prov-icon { background: rgba(139,92,246,0.22); color: #a78bfa; border: 1.5px solid rgba(139,92,246,0.5); }
-    .prov-prv .prov-icon { background: rgba(14,165,233,0.22);  color: #38bdf8; border: 1.5px solid rgba(14,165,233,0.5); }
-    .prov-lgp .prov-icon { background: rgba(249,115,22,0.22);  color: #fb923c; border: 1.5px solid rgba(249,115,22,0.5); }
-    .prov-snl .prov-icon { background: rgba(239,68,68,0.22);   color: #f87171; border: 1.5px solid rgba(239,68,68,0.5); }
-    .prov-snx .prov-icon { background: rgba(251,146,60,0.22);  color: #fdba74; border: 1.5px solid rgba(251,146,60,0.5); }
-    .prov-zee .prov-icon { background: rgba(168,85,247,0.22);  color: #c084fc; border: 1.5px solid rgba(168,85,247,0.5); }
-    .prov-vim .prov-icon { background: rgba(124,58,237,0.22);  color: #a78bfa; border: 1.5px solid rgba(124,58,237,0.5); }
-    .prov-name { font-size: 9px; color: var(--muted); font-weight: 500; text-align: center; white-space: nowrap; }
-
+    /* ── Card ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border2);
@@ -528,13 +541,14 @@
       display: flex;
       flex-direction: column;
       transition: border-color .2s, box-shadow .2s, transform .2s;
+      cursor: default;
     }
-    .card:hover { border-color: rgba(99,102,241,0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(99,102,241,0.1); transform: translateY(-2px); }
-    .card.is-seen {
-      background: var(--seen-bg);
-      border-color: var(--seen-border);
-      opacity: .6;
+    .card:hover {
+      border-color: rgba(99,102,241,0.4);
+      box-shadow: 0 10px 36px rgba(0,0,0,0.5), 0 0 24px rgba(99,102,241,0.08);
+      transform: translateY(-3px);
     }
+    .card.is-seen { opacity: .55; }
     .card.is-seen:hover { opacity: .8; }
 
     /* Poster */
@@ -546,572 +560,400 @@
       overflow: hidden;
       flex-shrink: 0;
     }
-    .card-poster {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform .3s ease;
-    }
-    .card:hover .card-poster { transform: scale(1.04); }
+    .card-poster { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease; }
+    .card:hover .card-poster { transform: scale(1.05); }
     .card-poster-fallback {
-      position: absolute;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      font-weight: 700;
-      color: var(--surface4);
-      background: var(--surface2);
+      position: absolute; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      font-size: 44px; font-weight: 700; color: var(--surface4); background: var(--surface2);
     }
+
+    /* IMDb overlay badge on poster */
+    .card-imdb-overlay {
+      position: absolute;
+      bottom: 8px; left: 8px;
+      display: flex; align-items: center; gap: 3px;
+      background: rgba(0,0,0,0.72);
+      border-radius: 5px;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      backdrop-filter: blur(6px);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .imdb-star { color: #fbbf24; }
+    .imdb-score { color: #fff; }
+    .imdb-votes { color: rgba(255,255,255,0.55); font-weight: 400; font-size: 10px; margin-left: 2px; }
+
+    /* Seen badge on poster */
+    .seen-badge {
+      position: absolute; top: 8px; right: 8px; z-index: 2;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(74,222,128,0.18);
+      border: 1.5px solid rgba(74,222,128,0.7);
+      color: #4ade80;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+    .seen-badge .material-symbols-outlined { font-size: 13px; font-variation-settings: 'FILL' 1; }
+
+    /* Hover overlay */
+    .card-overlay {
+      position: absolute; inset: 0; z-index: 3;
+      background: linear-gradient(to top,
+        rgba(6,15,26,0.98) 0%,
+        rgba(6,15,26,0.94) 40%,
+        rgba(6,15,26,0.70) 70%,
+        rgba(6,15,26,0.15) 100%);
+      opacity: 0;
+      transition: opacity .22s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 10px 10px 10px;
+    }
+    .card:hover .card-overlay { opacity: 1; }
+    .card-overlay-desc {
+      font-size: 10.5px;
+      color: rgba(221,238,255,0.88);
+      line-height: 1.5;
+      margin-bottom: 9px;
+      overflow-y: auto;
+      max-height: 120px;
+      scrollbar-width: none;
+    }
+    .card-overlay-desc::-webkit-scrollbar { display: none; }
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+    .action-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      background: rgba(6,15,26,0.65);
+      color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all .15s;
+      backdrop-filter: blur(4px);
+      flex-shrink: 0;
+    }
+    .action-btn .material-symbols-outlined { font-size: 17px; }
+    .action-btn:hover { transform: scale(1.12); }
+    .action-btn:disabled { opacity: .35; cursor: default; transform: none !important; }
+
+    .action-btn.seen-btn:hover       { background: #16a34a; border-color: #4ade80; color: #fff; box-shadow: 0 0 14px rgba(74,222,128,0.5); }
+    .action-btn.watch-btn:hover      { background: var(--accent); border-color: var(--accent-light); color: #fff; box-shadow: 0 0 14px var(--accent-glow); }
+    .action-btn.dismiss-btn:hover    { background: #dc2626; border-color: #f87171; color: #fff; box-shadow: 0 0 14px rgba(239,68,68,0.5); }
+
+    .action-btn.seen-btn.is-seen     { background: rgba(74,222,128,0.22); border-color: #4ade80; color: #4ade80; }
+    .action-btn.watch-btn.is-watchlisted { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-light); }
+    .action-btn.dismiss-btn.is-dismissed { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #f87171; }
 
     /* Card body */
     .card-body {
-      padding: 10px 12px 12px;
+      padding: 9px 11px 11px;
       display: flex;
       flex-direction: column;
       gap: 5px;
       flex: 1;
       min-width: 0;
     }
-
-    .card-title-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 6px;
-    }
-
     .card-title {
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.3;
-      color: var(--text);
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      flex: 1;
+      font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--text);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-
-    .card-year { font-size: 12px; color: var(--muted); }
-    .card-logline {
-      font-size: 11px;
-      color: var(--muted);
-      font-style: italic;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      line-height: 1.4;
-    }
-    .card-logline.expanded {
-      display: block;
-      -webkit-line-clamp: unset;
-      overflow: visible;
-    }
-    .logline-toggle {
-      font-size: 10px;
-      color: var(--accent, #a78bfa);
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      font-family: inherit;
-      font-style: italic;
-    }
-
+    .card-sub { font-size: 11px; color: var(--muted); }
     .provider-badges { display: flex; gap: 4px; flex-wrap: wrap; }
     .badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 9999px;
-      letter-spacing: .3px;
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      border-radius: 9999px; letter-spacing: .2px;
     }
-    .badge-jhs-card { background: rgba(139,92,246,0.18); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
-    .badge-prv-card { background: rgba(14,165,233,0.18); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); }
-    .badge-lgp-card { background: rgba(249,115,22,0.18); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
-    .badge-snl-card { background: rgba(239,68,68,0.18);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
-    .badge-snx-card { background: rgba(251,146,60,0.18); color: #fdba74; border: 1px solid rgba(251,146,60,0.3); }
-    .badge-zee-card { background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
-    .badge-vim-card { background: rgba(124,58,237,0.18); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+    .badge-jhs-card { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+    .badge-prv-card { background: rgba(14,165,233,0.15);  color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); }
+    .badge-lgp-card { background: rgba(249,115,22,0.15);  color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+    .badge-snl-card { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-snx-card { background: rgba(251,146,60,0.15);  color: #fdba74; border: 1px solid rgba(251,146,60,0.3); }
+    .badge-zee-card { background: rgba(168,85,247,0.15);  color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .badge-vim-card { background: rgba(6,182,212,0.15);   color: #67e8f9; border: 1px solid rgba(6,182,212,0.3); }
     .badge-other    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
 
-    .card-meta {
-      font-size: 11px;
-      color: var(--muted);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-    .meta-chip {
-      background: var(--surface2);
-      border-radius: 4px;
-      padding: 1px 6px;
-      border: 1px solid var(--border);
-    }
+    /* ── Loading / empty ── */
+    #loading { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 15px; }
 
-    .card-imdb {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      background: rgba(245,197,24,0.1);
-      border: 1px solid rgba(245,197,24,0.2);
-      border-radius: 4px;
-      padding: 2px 6px;
-      white-space: nowrap;
-      align-self: flex-start;
-    }
-    .imdb-star { color: #f5c518; font-size: 12px; }
-    .imdb-score { font-weight: 700; color: var(--text); }
-    .imdb-votes { color: var(--muted); font-size: 10px; }
-
-    .card-info  { font-size: 11px; color: var(--muted); }
-    .card-credit { font-size: 11px; color: var(--muted); }
-    .card-credit span { color: var(--text); }
-
-    /* ── Search ──────────────────────────────────────────────────────────────── */
-    #search-input {
-      margin-left: auto;
-      width: 260px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 9999px;
-      padding: 7px 16px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    #search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
-    #search-input::placeholder { color: var(--muted); }
-
-    .card-footer { display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 4px; }
-
-    .seen-btn {
-      width: 100%;
-      padding: 5px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .seen-btn:hover { border-color: var(--accent); color: var(--accent-light); background: var(--accent-dim); }
-    .seen-btn.is-seen { background: rgba(22,101,52,0.2); border-color: rgba(22,101,52,0.45); color: #4ade80; }
-    .seen-btn:disabled { opacity: .35; cursor: default; }
-
-    /* ── Loading / empty states ──────────────────────────────────────────────── */
-    #loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-      font-size: 15px;
-    }
-
-    /* ── Dismiss button ────────────────────────────────────────────────────────── */
-    .dismiss-btn {
-      width: 100%;
-      padding: 5px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .dismiss-btn:hover { border-color: #ef4444; color: #f87171; }
-    .dismiss-btn.is-dismissed { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); color: #f87171; }
-    .dismiss-btn:disabled { opacity: .35; cursor: default; }
-
-    /* ── Watchlist button ──────────────────────────────────────────────────────── */
-    .watch-btn {
-      width: 100%;
-      padding: 5px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
-      white-space: nowrap;
-    }
-    .watch-btn:hover { border-color: var(--accent); color: var(--accent-light); background: var(--accent-dim); }
-    .watch-btn.is-watchlisted { background: var(--accent-dim); border-color: rgba(99,102,241,0.5); color: var(--accent-light); }
-    .watch-btn.remove-wl:hover { border-color: #ef4444; color: #f87171; }
-    .watch-btn:disabled { opacity: .35; cursor: default; }
-
-    /* ── Tabs ────────────────────────────────────────────────────────────────── */
-    .header-tabs {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      flex-shrink: 0;
-    }
-    .tab {
-      background: transparent;
-      border: none;
-      border-radius: 9999px;
-      color: rgba(212,228,250,0.5);
-      padding: 6px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: color .15s, background .15s;
-      white-space: nowrap;
-    }
-    .tab:hover { color: var(--text); }
-    .tab.active {
-      background: var(--accent);
-      color: #fff;
-      font-weight: 600;
-    }
-    .tab-badge {
-      display: inline-block;
-      background: rgba(255,255,255,0.25);
-      color: #fff;
-      border-radius: 9999px;
-      padding: 1px 6px;
-      font-size: 10px;
-      font-weight: 700;
-      margin-left: 5px;
-      vertical-align: middle;
-    }
-    .tab:not(.active) .tab-badge {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    /* ── My Lists pane ──────────────────────────────────────────────────────── */
-    #mylists-pane { padding: 24px; }
+    /* ── My Lists pane ── */
+    #mylists-pane { padding: 24px 28px; }
     .mylist-section { margin-bottom: 48px; }
-    .mylist-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text); letter-spacing: -.3px; }
+    .mylist-section h2 {
+      font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text);
+      letter-spacing: -.3px; display: flex; align-items: center; gap: 10px;
+      padding-left: 10px; border-left: 3px solid var(--accent);
+    }
     .mylist-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
     }
-    .empty-state { color: var(--muted); font-size: 14px; padding: 12px 0; }
+    .empty-state { color: var(--muted); font-size: 13px; padding: 10px 0; }
 
-    /* ── Watchlist filter bar ───────────────────────────────────────────────── */
-    .wl-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-    .wl-row { display: flex; align-items: center; gap: 8px; }
-    .wl-type-btns { display: flex; gap: 4px; }
-    .wl-type-btn {
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-      color: var(--muted); padding: 5px 14px; font-size: 13px; font-family: inherit; cursor: pointer;
-      transition: all .15s;
-    }
-    .wl-type-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .wl-controls select {
-      width: 150px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-      color: var(--text); font-size: 13px; padding: 5px 10px; cursor: pointer;
-    }
-    .wl-count { font-size: 12px; color: var(--muted); margin-left: 4px; }
-
-    /* ── Tracking add area ──────────────────────────────────────────────────── */
-    .tracking-add { display: flex; gap: 8px; margin-bottom: 12px; max-width: 600px; }
-    .tracking-add input {
-      flex: 1;
+    /* Watchlist filter bar */
+    .wl-filter-bar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 14px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color .15s;
+      border-radius: 14px; padding: 10px 16px; margin-bottom: 20px;
+    }
+    .wl-seg {
+      display: flex; background: var(--surface3);
+      border-radius: 9px; padding: 3px; gap: 1px; flex-shrink: 0;
+    }
+    .wl-type-btn {
+      background: transparent; border: none; border-radius: 7px;
+      color: rgba(190,210,235,0.5); padding: 5px 13px; font-size: 12px;
+      font-weight: 500; font-family: inherit; cursor: pointer;
+      transition: all .15s; white-space: nowrap;
+    }
+    .wl-type-btn:hover { color: var(--text); }
+    .wl-type-btn.active { background: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 0 10px var(--accent-glow); }
+    .wl-vdivider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 4px; }
+    .wl-sel {
+      width: auto; background: var(--surface3); border: 1px solid var(--border2);
+      border-radius: 8px; color: rgba(190,210,235,0.55); font-size: 12px; font-family: inherit;
+      padding: 5px 10px; cursor: pointer; outline: none;
+      transition: border-color .15s, color .15s;
+    }
+    .wl-sel:hover { border-color: var(--border); color: var(--text); }
+    .wl-sel:focus { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 2px var(--accent-dim); }
+    .wl-sel.is-active { border-color: rgba(99,102,241,0.5); color: var(--accent-light); background: var(--accent-dim); }
+    .wl-sel option { background: var(--surface3); color: var(--text); }
+    .wl-spacer { flex: 1; min-width: 4px; }
+    .wl-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .wl-reset-link {
+      font-size: 11px; color: var(--accent-light); cursor: pointer;
+      background: none; border: none; font-family: inherit;
+      text-decoration: underline; text-underline-offset: 2px;
+      opacity: 0.7; white-space: nowrap; padding: 0;
+    }
+    .wl-reset-link:hover { opacity: 1; }
+    .wl-reset-link.hidden { display: none; }
+
+    /* Tracking */
+    .tracking-add { display: flex; gap: 8px; margin-bottom: 12px; max-width: 580px; }
+    .tracking-add input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 14px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
     }
     .tracking-add input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
     .tracking-add input::placeholder { color: var(--muted); }
     .tracking-add button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 20px;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
-      white-space: nowrap;
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 18px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;
     }
-    .tracking-add button:hover { background: #7275f5; box-shadow: 0 0 16px var(--accent-glow); }
+    .tracking-add button:hover { background: #7275f5; }
     .tracking-add button:disabled { opacity: .5; cursor: default; }
 
-    /* Search results list */
     #tracking-results {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 16px;
-      max-width: 600px;
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 14px; max-width: 580px; overflow: hidden;
     }
     .search-result-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border2);
-      transition: background .12s;
+      display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border2); transition: background .12s;
     }
     .search-result-item:last-child { border-bottom: none; }
     .search-result-item:hover { background: var(--surface2); }
-    .search-result-thumb {
-      width: 38px;
-      height: 57px;
-      object-fit: cover;
-      border-radius: 4px;
-      background: var(--surface2);
-      flex-shrink: 0;
-    }
+    .search-result-thumb { width: 36px; height: 54px; object-fit: cover; border-radius: 4px; background: var(--surface2); flex-shrink: 0; }
     .search-result-thumb-fallback {
-      width: 38px;
-      height: 57px;
-      border-radius: 4px;
-      background: var(--surface2);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--surface4);
+      width: 36px; height: 54px; border-radius: 4px; background: var(--surface2); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--surface4);
     }
     .search-result-info { flex: 1; min-width: 0; }
     .search-result-title { font-size: 13px; font-weight: 600; }
     .search-result-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .search-result-btn {
-      background: var(--accent-dim);
-      color: var(--accent-light);
-      border: 1px solid rgba(99,102,241,0.4);
-      border-radius: 6px;
-      padding: 5px 12px;
-      font-size: 12px;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all .15s;
+      background: var(--accent-dim); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 6px; padding: 5px 11px; font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap;
     }
     .search-result-btn:hover { background: var(--accent); color: #fff; }
 
     /* Tracking cards */
     .tracking-card {
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: row;
-      transition: border-color .2s;
+      background: var(--surface); border: 1px solid var(--border2); border-radius: 12px;
+      overflow: hidden; display: flex; flex-direction: row; transition: border-color .2s;
     }
     .tracking-card:hover { border-color: rgba(99,102,241,0.3); }
-    .tracking-card.is-available { border-color: rgba(22,101,52,0.5); box-shadow: 0 0 12px rgba(74,222,128,0.08); }
+    .tracking-card.is-available { border-color: rgba(22,101,52,0.5); box-shadow: 0 0 12px rgba(74,222,128,0.07); }
     .tracking-poster-wrap {
-      position: relative;
-      width: 90px;
-      min-width: 90px;
-      background: var(--surface2);
-      overflow: hidden;
-      flex-shrink: 0;
-      align-self: stretch;
+      position: relative; width: 88px; min-width: 88px;
+      background: var(--surface2); overflow: hidden; flex-shrink: 0; align-self: stretch;
     }
     .tracking-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
     .tracking-poster-fallback {
-      position: absolute;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--surface4);
-      background: var(--surface2);
+      position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 700; color: var(--surface4); background: var(--surface2);
     }
-    .tracking-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+    .tracking-body { padding: 11px 13px; display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
     .tracking-title { font-size: 13px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .tracking-meta  { font-size: 11px; color: var(--muted); }
     .available-badge {
-      font-size: 11px;
-      font-weight: 700;
-      color: #4ade80;
-      background: rgba(74,222,128,0.12);
-      border: 1px solid rgba(74,222,128,0.3);
-      border-radius: 9999px;
-      padding: 3px 10px;
-      display: inline-block;
+      font-size: 11px; font-weight: 700; color: #4ade80;
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 9999px; padding: 2px 9px; display: inline-block;
     }
-    .tracking-footer { display: flex; gap: 5px; margin-top: auto; padding-top: 8px; }
+    .tracking-footer { display: flex; gap: 5px; margin-top: auto; padding-top: 7px; }
     .remove-tracking-btn {
-      flex: 1;
-      padding: 5px 8px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 11px;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
+      flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: 11px; font-family: inherit; cursor: pointer;
     }
     .remove-tracking-btn:hover { border-color: #ef4444; color: #f87171; }
     .add-to-watchlist-btn {
-      flex: 1;
-      padding: 5px 8px;
-      border-radius: 7px;
-      border: 1px solid rgba(99,102,241,0.4);
-      background: var(--accent-dim);
-      color: var(--accent-light);
-      font-size: 11px;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .15s;
+      flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(99,102,241,0.4);
+      background: var(--accent-dim); color: var(--accent-light); font-size: 11px; font-family: inherit; cursor: pointer;
     }
     .add-to-watchlist-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    /* ── Stats pane ─────────────────────────────────────────────────────────── */
-    /* ── Analytics Dashboard ────────────────────────────────────────────────── */
-    #stats-pane { padding: 32px; }
-
-    .analytics-title {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -.5px;
-      margin-bottom: 24px;
-    }
-
-    /* Stat cards — 4 columns, icon + value */
-    .stat-headline {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-    @media (max-width: 720px) { .stat-headline { grid-template-columns: repeat(2, 1fr); } }
-
+    /* ── Analytics ── */
+    #stats-pane { padding: 28px 32px; }
+    .analytics-header { margin-bottom: 24px; }
+    .analytics-title { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -.6px; line-height: 1.1; }
+    .analytics-subtitle { font-size: 13px; color: var(--muted); margin-top: 5px; }
+    .stat-headline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+    @media (max-width: 1100px) { .stat-headline { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px)  { .stat-headline { grid-template-columns: repeat(2, 1fr); } }
     .stat-card {
-      background: var(--surface);
-      border-radius: 14px;
-      padding: 18px 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      border: 1px solid var(--border2);
-      transition: box-shadow .2s;
+      background: var(--surface); border-radius: 14px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px; border: 1px solid var(--border2);
     }
     .stat-card-icon {
-      width: 52px; height: 52px;
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      font-size: 26px;
+      width: 44px; height: 44px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
+    .stat-card-icon .material-symbols-outlined { font-size: 22px; font-variation-settings: 'FILL' 1; }
     .stat-card-body { min-width: 0; flex: 1; }
-    .stat-card-label { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
-    .stat-card-value { font-size: 26px; font-weight: 700; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stat-card-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; letter-spacing: .03em; text-transform: uppercase; font-weight: 600; }
+    .stat-card-value { font-size: 22px; font-weight: 700; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stat-card-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .stat-card[data-stat="watched"]  { border-color: rgba(99,102,241,0.45); box-shadow: 0 0 24px rgba(99,102,241,0.1); }
-    .stat-card[data-stat="watched"]  .stat-card-icon  { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .stat-card[data-stat="watched"]  { border-color: rgba(99,102,241,0.4); }
+    .stat-card[data-stat="watched"]  .stat-card-icon  { background: rgba(99,102,241,0.14); color: #818cf8; }
     .stat-card[data-stat="watched"]  .stat-card-value { color: #818cf8; }
-
-    .stat-card[data-stat="runtime"]  { border-color: rgba(14,165,233,0.45); box-shadow: 0 0 24px rgba(14,165,233,0.1); }
-    .stat-card[data-stat="runtime"]  .stat-card-icon  { background: rgba(14,165,233,0.15); color: #38bdf8; }
+    .stat-card[data-stat="runtime"]  { border-color: rgba(14,165,233,0.4); }
+    .stat-card[data-stat="runtime"]  .stat-card-icon  { background: rgba(14,165,233,0.14); color: #38bdf8; }
     .stat-card[data-stat="runtime"]  .stat-card-value { color: #38bdf8; }
-
-    .stat-card[data-stat="rating"]   { border-color: rgba(234,179,8,0.45);  box-shadow: 0 0 24px rgba(234,179,8,0.1);  }
-    .stat-card[data-stat="rating"]   .stat-card-icon  { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+    .stat-card[data-stat="rating"]   { border-color: rgba(234,179,8,0.4); }
+    .stat-card[data-stat="rating"]   .stat-card-icon  { background: rgba(234,179,8,0.14); color: #fbbf24; }
     .stat-card[data-stat="rating"]   .stat-card-value { color: #fbbf24; }
-
-    .stat-card[data-stat="platform"] { border-color: rgba(139,92,246,0.45); box-shadow: 0 0 24px rgba(139,92,246,0.1); }
-    .stat-card[data-stat="platform"] .stat-card-icon  { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .stat-card[data-stat="platform"] { border-color: rgba(139,92,246,0.4); }
+    .stat-card[data-stat="platform"] .stat-card-icon  { background: rgba(139,92,246,0.14); color: #a78bfa; }
     .stat-card[data-stat="platform"] .stat-card-value { color: #a78bfa; }
+    .stat-card[data-stat="director"] { border-color: rgba(16,185,129,0.4); }
+    .stat-card[data-stat="director"] .stat-card-icon  { background: rgba(16,185,129,0.14); color: #34d399; }
+    .stat-card[data-stat="director"] .stat-card-value { color: #34d399; font-size: 17px; }
 
-    /* 2×2 chart grid */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 720px) { .charts-grid { grid-template-columns: 1fr; } }
-
-    .chart-panel {
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 14px;
-      padding: 20px 20px 14px;
+    .chart-panel { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 18px 20px 16px; }
+    .chart-panel-title {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(165,180,252,0.45); margin-bottom: 16px;
     }
-    .chart-panel-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
 
     /* Vertical bar chart */
-    .vchart {
-      display: flex;
-      align-items: flex-end;
-      height: 160px;
-      gap: 5px;
-      border-bottom: 1px solid var(--border2);
-      padding-bottom: 2px;
-    }
-    .vchart-col {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100%;
-      justify-content: flex-end;
-    }
+    .vchart { display: flex; align-items: flex-end; height: 150px; gap: 5px; border-bottom: 1px solid var(--border2); padding-bottom: 2px; }
+    .vchart-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
     .vchart-value { font-size: 10px; font-weight: 700; color: var(--text); margin-bottom: 4px; text-align: center; line-height: 1; }
     .vchart-bar {
-      width: 55%;
-      max-width: 38px;
+      width: 55%; max-width: 36px;
       background: linear-gradient(to top, var(--accent) 0%, #818cf8 100%);
       border-radius: 4px 4px 0 0;
-      box-shadow: 0 0 10px rgba(99,102,241,0.45), 0 -3px 10px rgba(99,102,241,0.25);
+      box-shadow: 0 0 8px rgba(99,102,241,0.4);
       min-height: 3px;
-      transition: height .5s ease;
     }
     .vchart-labels { display: flex; gap: 5px; margin-top: 8px; }
-    .vchart-xlabel {
-      flex: 1; min-width: 0;
-      font-size: 9px; color: var(--muted);
-      text-align: center;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .vchart-xlabel { flex: 1; min-width: 0; font-size: 9px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Horizontal bar chart (genre) */
+    .hchart { display: flex; flex-direction: column; gap: 9px; }
+    .hchart-row { display: flex; align-items: center; gap: 9px; }
+    .hchart-label { width: 72px; font-size: 11px; color: var(--muted); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hchart-bar-track { flex: 1; background: var(--surface3); border-radius: 3px; height: 9px; overflow: hidden; }
+    .hchart-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(to right, var(--accent) 0%, #818cf8 100%); box-shadow: 0 0 6px rgba(99,102,241,0.3); }
+    .hchart-count { width: 22px; font-size: 11px; font-weight: 700; color: var(--text); text-align: right; flex-shrink: 0; }
+
+    /* Chip/pill filter buttons */
+    .chip-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+    .chip {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 9999px;
+      color: var(--muted); font-size: 11px; font-weight: 500; font-family: inherit;
+      padding: 4px 10px; cursor: pointer; white-space: nowrap;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent-light); }
+    .chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-light); }
+    .chip.hidden { display: none; }
+
+    /* Reset filters link */
+    #filters-reset {
+      display: none; padding: 2px 16px 10px;
+      font-size: 11px; color: var(--accent-light);
+      cursor: pointer; background: none; border: none;
+      font-family: inherit; text-decoration: underline; text-underline-offset: 2px; opacity: 0.7;
+    }
+    #filters-reset:hover { opacity: 1; }
+    #filters-reset.visible { display: block; }
+
+    /* IMDb min rating input */
+    .rating-input-row { display: flex; align-items: center; gap: 8px; }
+    .rating-input-row input[type="number"] {
+      width: 64px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text); font-size: 13px;
+      padding: 5px 7px; font-family: inherit; -moz-appearance: textfield;
+    }
+    .rating-input-row input::-webkit-inner-spin-button,
+    .rating-input-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .rating-input-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+    .rating-hint { font-size: 11px; color: var(--muted); }
+
+    /* Library stats bar */
+    #library-stats-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .lstat-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 6px 12px; white-space: nowrap;
+    }
+    .lstat-icon { font-size: 14px; color: var(--accent-light); font-variation-settings: 'FILL' 1; }
+    .lstat-value { font-size: 14px; font-weight: 700; color: var(--text); }
+    .lstat-label { font-size: 12px; color: var(--muted); }
+
+    /* Tracking badge overlay on poster */
+    .tracking-badge-overlay {
+      position: absolute; top: 8px; left: 8px; z-index: 2;
+      font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      border-radius: 4px; padding: 2px 6px; backdrop-filter: blur(4px);
+    }
+    .tracking-badge-overlay.badge-tracking {
+      background: rgba(6,15,26,0.82); border: 1px solid rgba(99,102,241,0.5); color: var(--accent-light);
+    }
+    .tracking-badge-overlay.badge-available {
+      background: rgba(6,40,20,0.88); border: 1px solid rgba(74,222,128,0.5); color: #4ade80;
     }
 
-    /* ── Responsive ──────────────────────────────────────────────────────────── */
-    @media (max-width: 900px) {
-      #grid { grid-template-columns: 1fr; }
-      .mylist-grid { grid-template-columns: 1fr; }
-    }
+    /* ── Responsive ── */
+    @media (max-width: 900px) { #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
     @media (max-width: 640px) {
       #layout { flex-direction: column; }
-      #filters { width: 100%; min-height: unset; border-right: none; border-bottom: 1px solid var(--border2); }
+      #filters { width: 100%; min-height: unset; position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border2); }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Streaming <span>Tracker</span></h1>
+  <div class="logo">Streaming <span>Tracker</span></div>
   <div class="header-tabs">
     <button class="tab active" data-tab="discover">Discover</button>
     <button class="tab" data-tab="mylists">My Library<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
@@ -1127,164 +969,260 @@
 <div id="discover-pane">
 <div id="layout">
 
-  <!-- ── Filters ─────────────────────────────────────────────────────────── -->
+  <!-- ── Sidebar ── -->
   <aside id="filters">
+    <div class="filters-heading">Filters</div>
+    <button id="filters-reset" onclick="resetAllFilters()">Reset filters</button>
 
-    <div class="filter-section">
-      <h3>Provider</h3>
-      <div class="provider-icon-grid">
-        <button class="prov-btn prov-jhs active" data-prov="jhs" title="JioHotstar">
-          <div class="prov-icon">JH</div>
-          <span class="prov-name">Hotstar</span>
-        </button>
-        <button class="prov-btn prov-prv active" data-prov="prv" title="Prime Video">
-          <div class="prov-icon">PV</div>
-          <span class="prov-name">Prime</span>
-        </button>
-        <button class="prov-btn prov-lgp active" data-prov="lgp" title="Lionsgate Play">
-          <div class="prov-icon">LG</div>
-          <span class="prov-name">Lionsgate</span>
-        </button>
-        <button class="prov-btn prov-snl active" data-prov="snl" title="SonyLIV">
-          <div class="prov-icon">SL</div>
-          <span class="prov-name">SonyLIV</span>
-        </button>
-        <button class="prov-btn prov-snx active" data-prov="snx" title="Sun NXT">
-          <div class="prov-icon">SN</div>
-          <span class="prov-name">Sun NXT</span>
-        </button>
-        <button class="prov-btn prov-zee active" data-prov="zee" title="ZEE5">
-          <div class="prov-icon">Z5</div>
-          <span class="prov-name">ZEE5</span>
-        </button>
-        <button class="prov-btn prov-vim active" data-prov="vim" title="Voot">
-          <div class="prov-icon">VT</div>
-          <span class="prov-name">Voot</span>
-        </button>
+    <!-- Provider (open by default) -->
+    <div class="filter-section" id="fs-provider">
+      <button class="filter-header" data-target="fs-provider">
+        <span>Provider</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <div class="provider-icon-grid">
+            <button class="prov-btn prov-jhs active" data-prov="jhs" title="JioHotstar">
+              <div class="prov-icon">
+                <img src="assets/providers/jhs.png" alt="JioHotstar"
+                     onerror="this.style.display='none'">
+              </div>
+              <span class="prov-name">Hotstar</span>
+            </button>
+            <button class="prov-btn prov-prv active" data-prov="prv" title="Prime Video">
+              <div class="prov-icon">
+                <img src="assets/providers/prv.png" alt="Prime Video"
+                     onerror="this.style.display='none'">
+              </div>
+              <span class="prov-name">Prime</span>
+            </button>
+            <button class="prov-btn prov-lgp active" data-prov="lgp" title="Lionsgate Play">
+              <div class="prov-icon">
+                <img src="assets/providers/lgp.png" alt="Lionsgate"
+                     onerror="this.style.display='none'">
+              </div>
+              <span class="prov-name">Lionsgate</span>
+            </button>
+            <button class="prov-btn prov-snl active" data-prov="snl" title="SonyLIV">
+              <div class="prov-icon">
+                <img src="assets/providers/snl.png" alt="SonyLIV"
+                     onerror="this.style.display='none'">
+              </div>
+              <span class="prov-name">SonyLIV</span>
+            </button>
+            <button class="prov-btn prov-snx active" data-prov="snx" title="Sun NXT">
+              <div class="prov-icon">SN</div>
+              <span class="prov-name">Sun NXT</span>
+            </button>
+            <button class="prov-btn prov-zee active" data-prov="zee" title="ZEE5">
+              <div class="prov-icon">
+                <img src="assets/providers/zee.png" alt="ZEE5"
+                     onerror="this.style.display='none'">
+              </div>
+              <span class="prov-name">ZEE5</span>
+            </button>
+            <button class="prov-btn prov-vim active" data-prov="vim" title="Voot">
+              <div class="prov-icon">
+                <img src="assets/providers/vim.png" alt="Voot"
+                     onerror="this.style.display='none'">
+              </div>
+              <span class="prov-name">Voot</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="filter-section">
-      <h3>Type</h3>
-      <div class="type-btns">
-        <button class="type-btn active" data-value="both">Both</button>
-        <button class="type-btn" data-value="movie">Movies</button>
-        <button class="type-btn" data-value="show">Shows</button>
+    <!-- Type (open) -->
+    <div class="filter-section" id="fs-type">
+      <button class="filter-header" data-target="fs-type">
+        <span>Type</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <div class="type-btns">
+            <button class="type-btn active" data-value="both">Both</button>
+            <button class="type-btn" data-value="movie">Movies</button>
+            <button class="type-btn" data-value="show">Shows</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="filter-section">
-      <h3>Year</h3>
-      <div class="year-inputs">
-        <input type="number" id="year-from" min="1900" max="2099" value="1900" placeholder="From">
-        <span class="year-sep">–</span>
-        <input type="number" id="year-to"   min="1900" max="2099" value="2025" placeholder="To">
+    <!-- Year (collapsed) -->
+    <div class="filter-section collapsed" id="fs-year">
+      <button class="filter-header" data-target="fs-year">
+        <span>Year</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <div class="year-inputs">
+            <input type="number" id="year-from" min="1900" max="2099" value="1900" placeholder="From">
+            <span class="year-sep">–</span>
+            <input type="number" id="year-to"   min="1900" max="2099" value="2025" placeholder="To">
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="filter-section">
-      <h3>Genre</h3>
-      <input type="search" class="filter-search" id="genre-search" placeholder="Search genres…">
-      <div class="genre-list" id="genre-list">
-        <span style="color:var(--muted);font-size:12px">Loading…</span>
+    <!-- Genre (collapsed) -->
+    <div class="filter-section collapsed" id="fs-genre">
+      <button class="filter-header" data-target="fs-genre">
+        <span>Genre</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <input type="search" class="filter-search" id="genre-search" placeholder="Search genres…">
+          <div class="chip-grid" id="genre-list" style="margin-top:2px">
+            <span style="color:var(--muted);font-size:12px">Loading…</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="filter-section">
-      <h3>Language</h3>
-      <input type="search" class="filter-search" id="lang-search" placeholder="Search languages…">
-      <div class="genre-list" id="lang-list">
-        <span style="color:var(--muted);font-size:12px">Loading…</span>
+    <!-- Language (collapsed) -->
+    <div class="filter-section collapsed" id="fs-lang">
+      <button class="filter-header" data-target="fs-lang">
+        <span>Language</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <input type="search" class="filter-search" id="lang-search" placeholder="Search languages…">
+          <div class="chip-grid" id="lang-list" style="margin-top:2px">
+            <span style="color:var(--muted);font-size:12px">Loading…</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="filter-section">
-      <h3>Sort by</h3>
-      <select id="sort-select">
-        <option value="popular">Popular</option>
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
-        <option value="rating">Top Rated</option>
-      </select>
+    <!-- Sort (open) -->
+    <div class="filter-section" id="fs-sort">
+      <button class="filter-header" data-target="fs-sort">
+        <span>Sort by</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <select id="sort-select">
+            <option value="popular">Popular</option>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="filter-section">
-      <div class="toggle-row">
-        <span>Hide watched</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="hide-seen">
-          <span class="toggle-track"></span>
-        </label>
+    <!-- IMDb Rating (collapsed) -->
+    <div class="filter-section collapsed" id="fs-rating">
+      <button class="filter-header" data-target="fs-rating">
+        <span>IMDb Rating</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <div class="rating-input-row">
+            <input type="number" id="rating-min" min="0" max="10" step="0.5" placeholder="0">
+            <span class="rating-hint">minimum ★</span>
+          </div>
+        </div>
       </div>
-      <div class="toggle-row">
-        <span>Hide saved</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="hide-watchlisted">
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-      <div class="toggle-row">
-        <span>Hide dismissed</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="hide-dismissed" checked>
-          <span class="toggle-track"></span>
-        </label>
+    </div>
+
+    <!-- Visibility toggles (open) -->
+    <div class="filter-section" id="fs-toggles">
+      <button class="filter-header" data-target="fs-toggles">
+        <span>Visibility</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="filter-body">
+        <div class="filter-body-inner">
+          <div class="toggle-row">
+            <span>Hide watched</span>
+            <label class="toggle-switch"><input type="checkbox" id="hide-seen" checked><span class="toggle-track"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>Hide saved</span>
+            <label class="toggle-switch"><input type="checkbox" id="hide-watchlisted" checked><span class="toggle-track"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>Hide dismissed</span>
+            <label class="toggle-switch"><input type="checkbox" id="hide-dismissed" checked><span class="toggle-track"></span></label>
+          </div>
+        </div>
       </div>
     </div>
 
   </aside>
 
-  <!-- ── Main content ──────────────────────────────────────────────────── -->
+  <!-- ── Main content ── -->
   <div id="main">
-    <div id="stats"></div>
-    <div id="new-this-month" style="display:none">
-      <h3>New &amp; Latest Releases</h3>
-      <div id="new-releases-layout"></div>
+    <div id="discover-stats-bar"></div>
+
+    <div id="top-picks" style="display:none">
+      <h2>Top Rated <span class="section-badge">IMDb 8+</span></h2>
+      <div id="top-picks-layout"></div>
     </div>
+
     <div id="loading">Loading titles…</div>
+    <div id="grid-header" style="display:none">
+      <span id="grid-title">All Titles</span>
+      <span id="stats"></span>
+    </div>
     <div id="grid" style="display:none"></div>
   </div>
 
 </div>
-</div><!-- #discover-pane -->
+</div>
 
-<!-- ── My Lists pane ──────────────────────────────────────────────────── -->
+<!-- ── My Library pane ── -->
 <div id="mylists-pane" hidden>
 
-  <div id="lib-discover" style="display:none; margin-bottom:40px;">
-    <h3 style="font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:16px;color:var(--text)">Top Picks You Haven't Seen</h3>
+  <div id="library-stats-bar"></div>
+
+  <div id="lib-discover" style="display:none; margin-bottom:36px;">
+    <h2 style="font-size:16px;font-weight:700;letter-spacing:-.3px;margin-bottom:12px;color:var(--text);display:flex;align-items:center;gap:8px">
+      Best in Your Watchlist <span class="section-badge">Top Rated</span>
+    </h2>
     <div id="lib-carousel-layout"></div>
   </div>
 
   <section class="mylist-section">
     <h2>Watchlist</h2>
-    <div class="wl-controls">
-      <div class="wl-row">
-        <div class="wl-type-btns">
-          <button class="wl-type-btn active" data-value="both">All</button>
-          <button class="wl-type-btn" data-value="movie">Movies</button>
-          <button class="wl-type-btn" data-value="show">Shows</button>
-        </div>
-        <span class="wl-count" id="wl-count"></span>
+    <div class="wl-filter-bar">
+      <div class="wl-seg">
+        <button class="wl-type-btn active" data-value="both">All</button>
+        <button class="wl-type-btn" data-value="movie">Movies</button>
+        <button class="wl-type-btn" data-value="show">Shows</button>
       </div>
-      <div class="wl-row">
-        <select id="wl-provider-select">
-          <option value="">All platforms</option>
-          <option value="jhs">JioHotstar</option>
-          <option value="prv">Prime Video</option>
-          <option value="lgp">Lionsgate Play</option>
-          <option value="snl">SonyLIV</option>
-          <option value="snx">Sun NXT</option>
-          <option value="zee">ZEE5</option>
-          <option value="vim">Voot</option>
-        </select>
-        <select id="wl-sort-select">
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="rating">Top Rated</option>
-          <option value="az">A – Z</option>
-        </select>
-      </div>
+      <div class="wl-vdivider"></div>
+      <select class="wl-sel" id="wl-lang-select">
+        <option value="">Language</option>
+      </select>
+      <select class="wl-sel" id="wl-provider-select">
+        <option value="">Platform</option>
+        <option value="jhs">JioHotstar</option>
+        <option value="prv">Prime Video</option>
+        <option value="lgp">Lionsgate Play</option>
+        <option value="snl">SonyLIV</option>
+        <option value="snx">Sun NXT</option>
+        <option value="zee">ZEE5</option>
+        <option value="vim">Voot</option>
+      </select>
+      <select class="wl-sel" id="wl-sort-select">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="rating">Top Rated</option>
+        <option value="az">A – Z</option>
+      </select>
+      <div class="wl-spacer"></div>
+      <span class="wl-count" id="wl-count"></span>
+      <button class="wl-reset-link hidden" id="wl-reset-btn">Reset</button>
     </div>
     <p id="watchlist-empty" class="empty-state"></p>
     <div id="watchlist-grid" class="mylist-grid"></div>
@@ -1303,9 +1241,8 @@
 
 </div>
 
-<!-- ── Stats pane ─────────────────────────────────────────────────────────── -->
-<div id="stats-pane" hidden>
-</div>
+<!-- ── Analytics pane ── -->
+<div id="stats-pane" hidden></div>
 
 <script>
 // ── Firebase config ────────────────────────────────────────────────────────────
@@ -1324,25 +1261,26 @@ const auth = firebase.auth();
 const db   = firebase.database();
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let currentUser   = null;
-let allTitles     = {};   // id → title object
-let seenMap       = {};   // id → true
-let watchlistMap  = {};   // id → true
-let trackingMap   = {};   // id → { name, year, posterUrl, contentType, addedAt }
-let dismissedMap  = {};   // id → true
+let currentUser  = null;
+let allTitles    = {};
+let seenMap      = {};
+let watchlistMap = {};
+let trackingMap  = {};
+let dismissedMap = {};
 
 const filters = {
-  providers:   new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
-  type:        'both',
-  yearFrom:    1900,
-  yearTo:      2025,
-  genres:      new Set(),
-  audioLangs:  new Set(),
-  hideSeen:         false,
-  hideWatchlisted:  false,
+  providers:        new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
+  type:             'both',
+  yearFrom:         1900,
+  yearTo:           2025,
+  genres:           new Set(),
+  audioLangs:       new Set(),
+  hideSeen:         true,
+  hideWatchlisted:  true,
   hideDismissed:    true,
-  searchQuery: '',
-  sortBy:      'popular',
+  searchQuery:      '',
+  sortBy:           'popular',
+  minRating:        0,
 };
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
@@ -1360,14 +1298,19 @@ auth.onAuthStateChanged(user => {
       watchlistMap = snap.val() || {};
       renderGrid(getFiltered());
       if (!document.getElementById('mylists-pane').hidden) {
+        renderLibraryStats();
         renderLibraryCarousel();
         renderWatchlistGrid();
       }
       updateMyListsBadge();
+      renderDiscoverStats();
     });
     db.ref('/tracking').on('value', snap => {
       trackingMap = snap.val() || {};
-      if (!document.getElementById('mylists-pane').hidden) renderTrackingList();
+      if (!document.getElementById('mylists-pane').hidden) {
+        renderLibraryStats();
+        renderTrackingList();
+      }
       updateMyListsBadge();
     });
     db.ref('/dismissed').on('value', snap => {
@@ -1382,33 +1325,29 @@ auth.onAuthStateChanged(user => {
     db.ref('/watchlist').off();
     db.ref('/tracking').off();
     db.ref('/dismissed').off();
-    watchlistMap  = {};
-    dismissedMap  = {};
-    trackingMap  = {};
+    watchlistMap = {}; dismissedMap = {}; trackingMap = {};
     updateMyListsBadge();
+    renderDiscoverStats();
   }
   renderGrid(getFiltered());
 });
 
 authBtn.addEventListener('click', () => {
-  if (currentUser) {
-    auth.signOut();
-  } else {
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-  }
+  if (currentUser) auth.signOut();
+  else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 });
 
 // ── Data loading ───────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const [titlesSnap, seenSnap] = await Promise.all([
-      db.ref('/titles').get(),
-      db.ref('/seen').get(),
-    ]);
-
+    const titlesSnap = await db.ref('/titles').get();
     allTitles = titlesSnap.val() || {};
-    seenMap   = seenSnap.val()   || {};
-
+    try {
+      const seenSnap = await db.ref('/seen').get();
+      seenMap = seenSnap.val() || {};
+    } catch (_) {
+      seenMap = {};
+    }
     buildFiltersUI();
     applyAndRender();
   } catch (err) {
@@ -1421,8 +1360,7 @@ async function loadData() {
 function buildFiltersUI() {
   const genreSet = new Set();
   const langSet  = new Set();
-  let   minYear  = Infinity;
-  let   maxYear  = -Infinity;
+  let   minYear  = Infinity, maxYear = -Infinity;
 
   Object.values(allTitles).forEach(t => {
     (t.genres || []).forEach(g => genreSet.add(g));
@@ -1430,7 +1368,6 @@ function buildFiltersUI() {
     if (t.year) { minYear = Math.min(minYear, t.year); maxYear = Math.max(maxYear, t.year); }
   });
 
-  // Year input bounds
   if (isFinite(minYear)) {
     const fromEl = document.getElementById('year-from');
     const toEl   = document.getElementById('year-to');
@@ -1440,381 +1377,318 @@ function buildFiltersUI() {
     filters.yearTo   = maxYear;
   }
 
-  // Genre checkboxes
   const genreList = document.getElementById('genre-list');
   genreList.innerHTML = '';
   [...genreSet].sort().forEach(g => {
-    const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" class="genre-cb" value="${escHtml(g)}"> ${escHtml(toTitleCase(g))}`;
-    genreList.appendChild(lbl);
-  });
-  genreList.querySelectorAll('.genre-cb').forEach(cb =>
-    cb.addEventListener('change', () => {
-      if (cb.checked) filters.genres.add(cb.value);
-      else            filters.genres.delete(cb.value);
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.value = g;
+    btn.textContent = toTitleCase(g);
+    btn.addEventListener('click', () => {
+      if (filters.genres.has(g)) { filters.genres.delete(g); btn.classList.remove('active'); }
+      else                        { filters.genres.add(g);    btn.classList.add('active'); }
       applyAndRender();
-    })
-  );
+    });
+    genreList.appendChild(btn);
+  });
   document.getElementById('genre-search').addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();
-    genreList.querySelectorAll('label').forEach(lbl => {
-      const checked = lbl.querySelector('input').checked;
-      const matches = lbl.textContent.trim().toLowerCase().startsWith(q);
-      lbl.classList.toggle('hidden', q.length > 0 && !matches && !checked);
+    genreList.querySelectorAll('.chip').forEach(chip => {
+      chip.classList.toggle('hidden', q.length > 0 && !chip.textContent.toLowerCase().includes(q) && !chip.classList.contains('active'));
     });
   });
 
-  // Audio language checkboxes
   const langList = document.getElementById('lang-list');
   langList.innerHTML = '';
   [...langSet].sort((a, b) => langLabel(a).localeCompare(langLabel(b))).forEach(code => {
-    const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" class="lang-cb" value="${escHtml(code)}"> ${escHtml(langLabel(code))}`;
-    langList.appendChild(lbl);
-  });
-  langList.querySelectorAll('.lang-cb').forEach(cb =>
-    cb.addEventListener('change', () => {
-      if (cb.checked) filters.audioLangs.add(cb.value);
-      else            filters.audioLangs.delete(cb.value);
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.value = code;
+    btn.textContent = langLabel(code);
+    btn.addEventListener('click', () => {
+      if (filters.audioLangs.has(code)) { filters.audioLangs.delete(code); btn.classList.remove('active'); }
+      else                               { filters.audioLangs.add(code);    btn.classList.add('active'); }
       applyAndRender();
-    })
-  );
+    });
+    langList.appendChild(btn);
+  });
   document.getElementById('lang-search').addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();
-    langList.querySelectorAll('label').forEach(lbl => {
-      const checked = lbl.querySelector('input').checked;
-      const matches = lbl.textContent.trim().toLowerCase().startsWith(q);
-      lbl.classList.toggle('hidden', q.length > 0 && !matches && !checked);
+    langList.querySelectorAll('.chip').forEach(chip => {
+      chip.classList.toggle('hidden', q.length > 0 && !chip.textContent.toLowerCase().includes(q) && !chip.classList.contains('active'));
     });
   });
-
 }
 
 // ── Filter logic ───────────────────────────────────────────────────────────────
 function getFiltered() {
   const results = Object.values(allTitles).filter(t => {
     if (filters.providers.size > 0) {
-      const provs = t.providers || [];
-      if (!provs.some(p => filters.providers.has(p))) return false;
+      if (!(t.providers || []).some(p => filters.providers.has(p))) return false;
     }
     if (filters.type !== 'both' && t.contentType !== filters.type) return false;
     if (t.year && (t.year < filters.yearFrom || t.year > filters.yearTo)) return false;
     if (filters.genres.size > 0) {
-      const tGenres = t.genres || [];
-      if (!tGenres.some(g => filters.genres.has(g))) return false;
+      if (!(t.genres || []).some(g => filters.genres.has(g))) return false;
     }
-    if (filters.hideSeen && seenMap[String(t.id)]) return false;
+    if (filters.hideSeen      && seenMap[String(t.id)])      return false;
     if (filters.hideWatchlisted && watchlistMap[String(t.id)]) return false;
     if (filters.hideDismissed && dismissedMap[String(t.id)]) return false;
     if (filters.audioLangs.size > 0) {
-      const tLangs = t.audioLanguages || [];
-      if (!tLangs.some(l => filters.audioLangs.has(l))) return false;
+      if (!(t.audioLanguages || []).some(l => filters.audioLangs.has(l))) return false;
     }
+    if ((filters.minRating || 0) > 0 && (t.imdbRating || 0) < filters.minRating) return false;
     if (filters.searchQuery) {
-      const q       = filters.searchQuery.toLowerCase();
-      const inName  = (t.name     || '').toLowerCase().includes(q);
-      const inDir   = (t.director || '').toLowerCase().includes(q);
-      const inCast  = (t.actors   || []).some(a => a.toLowerCase().includes(q));
-      if (!inName && !inDir && !inCast) return false;
+      const q = filters.searchQuery.toLowerCase();
+      if (!(t.name     || '').toLowerCase().includes(q) &&
+          !(t.director || '').toLowerCase().includes(q) &&
+          !(t.actors   || []).some(a => a.toLowerCase().includes(q))) return false;
     }
     return true;
   });
 
   switch (filters.sortBy) {
-    case 'newest':  results.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));          break;
-    case 'oldest':  results.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));    break;
-    case 'rating':  results.sort((a, b) => (b.imdbRating ?? 0) - (a.imdbRating ?? 0)); break;
+    case 'newest': results.sort((a, b) => (b.year ?? 0) - (a.year ?? 0)); break;
+    case 'oldest': results.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999)); break;
+    case 'rating': results.sort((a, b) => (b.imdbRating ?? 0) - (a.imdbRating ?? 0)); break;
   }
-
   return results;
 }
 
 function applyAndRender() {
   renderGrid(getFiltered());
-  renderNewThisMonth();
+  renderTopPicks();
+  renderDiscoverStats();
+  updateResetLink();
 }
 
-let _carouselTitles = [];
-let _carouselIdx    = 0;
-let _carouselTimer  = null;
+// ── Discover stats bar ─────────────────────────────────────────────────────────
+function renderDiscoverStats() {
+  const bar = document.getElementById('discover-stats-bar');
+  if (!bar) return;
+  const total = Object.keys(allTitles).length;
+  if (!total) { bar.style.display = 'none'; return; }
 
-function renderNewThisMonth() {
-  const container = document.getElementById('new-this-month');
-  const layout    = document.getElementById('new-releases-layout');
-  const minYear   = new Date().getFullYear() - 2;
-
-  const recent = Object.values(allTitles)
-    .filter(t => {
-      if (!t.year || t.year < minYear) return false;
-      if (filters.type !== 'both' && t.contentType !== filters.type) return false;
-      if (filters.hideSeen && seenMap[String(t.id)]) return false;
-      if (filters.hideDismissed && dismissedMap[String(t.id)]) return false;
-      return true;
-    })
-    .sort((a, b) => (b.year - a.year) || ((b.imdbRating || 0) - (a.imdbRating || 0)))
-    .slice(0, 10);
-
-  if (!recent.length) { container.style.display = 'none'; clearInterval(_carouselTimer); return; }
-
-  clearInterval(_carouselTimer);
-  _carouselTitles = recent;
-  _carouselIdx    = 0;
-
-  const provColors = {
-    jhs: { bg: 'rgba(139,92,246,0.18)', color: '#a78bfa', border: 'rgba(139,92,246,0.5)' },
-    prv: { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8', border: 'rgba(14,165,233,0.5)' },
-    lgp: { bg: 'rgba(249,115,22,0.18)',  color: '#fb923c', border: 'rgba(249,115,22,0.5)' },
-    snl: { bg: 'rgba(239,68,68,0.18)',   color: '#f87171', border: 'rgba(239,68,68,0.5)'  },
-    snx: { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.5)' },
-    zee: { bg: 'rgba(168,85,247,0.18)',  color: '#c084fc', border: 'rgba(168,85,247,0.5)' },
-    vim: { bg: 'rgba(124,58,237,0.18)',  color: '#a78bfa', border: 'rgba(124,58,237,0.5)' },
-  };
-
-  function makeCarouselSlide(t, active) {
-    const imgSrc   = t.backdropUrl || t.posterUrl || '';
-    const genres   = (t.genres || []).slice(0, 4)
-      .map(g => `<span class="carousel-genre-chip">${escHtml(toTitleCase(g))}</span>`).join('');
-    const provs    = (t.providers || []).slice(0, 4).map(p => {
-      const c = provColors[p] || { bg: 'rgba(99,102,241,0.18)', color: '#818cf8', border: 'rgba(99,102,241,0.5)' };
-      return `<span class="carousel-prov-badge" style="background:${c.bg};color:${c.color};border-color:${c.border}">${escHtml(provLabel(p))}</span>`;
-    }).join('');
-    const typeLabel = t.contentType === 'show' ? 'TV Show' : 'Movie';
-    return `
-      <div class="carousel-slide${active ? ' active' : ''}">
-        <div class="carousel-img-half">
-          <img src="${imgSrc}" alt="" loading="lazy"
-               onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
-        </div>
-        <div class="carousel-info-half">
-          <div class="carousel-badge">New Release</div>
-          <div class="carousel-title">${escHtml(t.name || '')}</div>
-          <div class="carousel-meta-row">
-            <span>${t.year || ''}</span>
-            <span>·</span>
-            <span>${typeLabel}</span>
-            ${t.imdbRating ? `<span>·</span><span class="carousel-rating">★ ${t.imdbRating}</span>` : ''}
-            ${t.ageRating  ? `<span>·</span><span>${escHtml(t.ageRating)}</span>` : ''}
-          </div>
-          ${t.shortDescription ? `<div class="carousel-logline">${escHtml(t.shortDescription)}</div>` : ''}
-          ${genres ? `<div class="carousel-genres">${genres}</div>` : ''}
-          ${provs  ? `<div class="carousel-providers">${provs}</div>` : ''}
-        </div>
-      </div>`;
-  }
-
-  layout.innerHTML = `
-    <div class="carousel-wrapper" id="carousel-wrapper">
-      ${recent.map((t, i) => makeCarouselSlide(t, i === 0)).join('')}
-      <button class="carousel-btn carousel-prev" id="carousel-prev">
-        <span class="material-symbols-outlined">chevron_left</span>
-      </button>
-      <button class="carousel-btn carousel-next" id="carousel-next">
-        <span class="material-symbols-outlined">chevron_right</span>
-      </button>
-      <div class="carousel-dots" id="carousel-dots">
-        ${recent.map((_, i) => `<button class="carousel-dot${i === 0 ? ' active' : ''}"></button>`).join('')}
-      </div>
-    </div>`;
-
-  container.style.display = 'block';
-
-  const wrapper = document.getElementById('carousel-wrapper');
-
-  document.getElementById('carousel-prev').addEventListener('click', () => {
-    _carouselGoto((_carouselIdx - 1 + _carouselTitles.length) % _carouselTitles.length);
-    _carouselResetTimer();
-  });
-  document.getElementById('carousel-next').addEventListener('click', () => {
-    _carouselGoto((_carouselIdx + 1) % _carouselTitles.length);
-    _carouselResetTimer();
-  });
-  document.querySelectorAll('#carousel-dots .carousel-dot').forEach((dot, i) => {
-    dot.addEventListener('click', () => { _carouselGoto(i); _carouselResetTimer(); });
-  });
-
-  wrapper.addEventListener('mouseenter', () => clearInterval(_carouselTimer));
-  wrapper.addEventListener('mouseleave', () => _carouselStartTimer());
-
-  _carouselStartTimer();
-}
-
-function _carouselGoto(idx) {
-  const wrapper = document.getElementById('carousel-wrapper');
-  if (!wrapper) return;
-  wrapper.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === idx));
-  wrapper.querySelectorAll('.carousel-dot').forEach((d, i)  => d.classList.toggle('active',  i === idx));
-  _carouselIdx = idx;
-}
-
-function _carouselStartTimer() {
-  clearInterval(_carouselTimer);
-  _carouselTimer = setInterval(() => {
-    if (_carouselTitles.length) _carouselGoto((_carouselIdx + 1) % _carouselTitles.length);
-  }, 4500);
-}
-
-function _carouselResetTimer() {
-  clearInterval(_carouselTimer);
-  _carouselStartTimer();
-}
-
-// ── Library "Top Picks" carousel ───────────────────────────────────────────────
-let _libCarouselTitles = [];
-let _libCarouselIdx    = 0;
-let _libCarouselTimer  = null;
-
-const MIN_VOTES_THRESHOLD = 3000;
-
-function renderLibraryCarousel() {
-  const container = document.getElementById('lib-discover');
-  const layout    = document.getElementById('lib-carousel-layout');
+  const seenCount = Object.keys(seenMap).length;
+  const seenPct   = Math.round(seenCount / total * 100);
+  const wlCount   = Object.keys(watchlistMap).length;
   const thisYear  = new Date().getFullYear();
-  const minYear   = thisYear - 5;
+  const newCount  = Object.values(allTitles).filter(t => t.year === thisYear).length;
 
-  const picks = Object.values(allTitles)
-    .filter(t => {
-      if (!t.year || t.year < minYear) return false;
-      if ((t.imdbVotes || 0) < MIN_VOTES_THRESHOLD) return false;
-      if (!t.imdbRating) return false;
-      if (seenMap[String(t.id)])       return false;
-      if (watchlistMap[String(t.id)])  return false;
-      if (dismissedMap[String(t.id)])  return false;
-      return true;
-    })
-    .sort((a, b) => (b.imdbRating - a.imdbRating) || (b.imdbVotes - a.imdbVotes))
-    .slice(0, 10);
+  bar.innerHTML = `
+    <div class="dstat-pill">
+      <span class="material-symbols-outlined dstat-icon">movie</span>
+      <span class="dstat-value">${total.toLocaleString()}</span>
+      <span class="dstat-label">titles</span>
+    </div>
+    <div class="dstat-pill">
+      <span class="material-symbols-outlined dstat-icon">done_all</span>
+      <span class="dstat-value">${seenCount.toLocaleString()}</span>
+      <span class="dstat-label">watched · ${seenPct}%</span>
+    </div>
+    ${wlCount ? `
+    <div class="dstat-pill">
+      <span class="material-symbols-outlined dstat-icon">bookmark</span>
+      <span class="dstat-value">${wlCount}</span>
+      <span class="dstat-label">watchlist</span>
+    </div>` : ''}
+    ${newCount ? `
+    <div class="dstat-pill">
+      <span class="material-symbols-outlined dstat-icon">calendar_today</span>
+      <span class="dstat-value">${newCount}</span>
+      <span class="dstat-label">added in ${thisYear}</span>
+    </div>` : ''}
+  `;
+  bar.style.display = 'flex';
+}
 
-  if (!picks.length) {
-    container.style.display = 'none';
-    clearInterval(_libCarouselTimer);
-    return;
+// ── Top Picks carousel (Discover) ─────────────────────────────────────────────
+let _tpTitles = [], _tpIdx = 0, _tpTimer = null;
+const TOP_PICKS_RATING   = 8.0;
+const TOP_PICKS_MIN_YEAR = 2000;
+const TOP_PICKS_MIN_VOTES = 5000;
+
+const PROV_COLORS = {
+  jhs: { bg: 'rgba(139,92,246,0.18)', color: '#a78bfa', border: 'rgba(139,92,246,0.5)' },
+  prv: { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8', border: 'rgba(14,165,233,0.5)' },
+  lgp: { bg: 'rgba(249,115,22,0.18)',  color: '#fb923c', border: 'rgba(249,115,22,0.5)' },
+  snl: { bg: 'rgba(239,68,68,0.18)',   color: '#f87171', border: 'rgba(239,68,68,0.5)'  },
+  snx: { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.5)' },
+  zee: { bg: 'rgba(168,85,247,0.18)',  color: '#c084fc', border: 'rgba(168,85,247,0.5)' },
+  vim: { bg: 'rgba(6,182,212,0.18)',   color: '#67e8f9', border: 'rgba(6,182,212,0.5)'  },
+};
+
+function renderTopPicks() {
+  const container = document.getElementById('top-picks');
+  const layout    = document.getElementById('top-picks-layout');
+
+  const pool = Object.values(allTitles).filter(t =>
+    t.year >= TOP_PICKS_MIN_YEAR &&
+    t.imdbRating > TOP_PICKS_RATING &&
+    (t.imdbVotes || 0) >= TOP_PICKS_MIN_VOTES &&
+    (filters.type === 'both' || t.contentType === filters.type)
+  );
+
+  // Shuffle for variety
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
+  const picks = pool.slice(0, 12);
 
-  clearInterval(_libCarouselTimer);
-  _libCarouselTitles = picks;
-  _libCarouselIdx    = 0;
+  if (!picks.length) { container.style.display = 'none'; clearInterval(_tpTimer); return; }
 
-  const provColors = {
-    jhs: { bg: 'rgba(139,92,246,0.18)', color: '#a78bfa', border: 'rgba(139,92,246,0.5)' },
-    prv: { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8', border: 'rgba(14,165,233,0.5)' },
-    lgp: { bg: 'rgba(249,115,22,0.18)',  color: '#fb923c', border: 'rgba(249,115,22,0.5)' },
-    snl: { bg: 'rgba(239,68,68,0.18)',   color: '#f87171', border: 'rgba(239,68,68,0.5)'  },
-    snx: { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.5)' },
-    zee: { bg: 'rgba(168,85,247,0.18)',  color: '#c084fc', border: 'rgba(168,85,247,0.5)' },
-    vim: { bg: 'rgba(124,58,237,0.18)',  color: '#a78bfa', border: 'rgba(124,58,237,0.5)' },
-  };
-
-  function makeLibSlide(t, active) {
-    const imgSrc   = t.backdropUrl || t.posterUrl || '';
-    const genres   = (t.genres || []).slice(0, 4)
-      .map(g => `<span class="carousel-genre-chip">${escHtml(toTitleCase(g))}</span>`).join('');
-    const provs    = (t.providers || []).slice(0, 4).map(p => {
-      const c = provColors[p] || { bg: 'rgba(99,102,241,0.18)', color: '#818cf8', border: 'rgba(99,102,241,0.5)' };
-      return `<span class="carousel-prov-badge" style="background:${c.bg};color:${c.color};border-color:${c.border}">${escHtml(provLabel(p))}</span>`;
-    }).join('');
-    const typeLabel  = t.contentType === 'show' ? 'TV Show' : 'Movie';
-    const votesLabel = t.imdbVotes >= 1000
-      ? (t.imdbVotes >= 1000000 ? (t.imdbVotes / 1000000).toFixed(1) + 'M' : Math.round(t.imdbVotes / 1000) + 'k') + ' votes'
-      : t.imdbVotes + ' votes';
-    return `
-      <div class="carousel-slide${active ? ' active' : ''}">
-        <div class="carousel-img-half">
-          <img src="${imgSrc}" alt="" loading="lazy"
-               onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
-        </div>
-        <div class="carousel-info-half">
-          <div class="carousel-badge" style="background:rgba(99,102,241,0.25);color:var(--accent-light);border-color:rgba(99,102,241,0.4)">Top Rated</div>
-          <div class="carousel-title">${escHtml(t.name || '')}</div>
-          <div class="carousel-meta-row">
-            <span>${t.year || ''}</span>
-            <span>·</span>
-            <span>${typeLabel}</span>
-            ${t.imdbRating ? `<span>·</span><span class="carousel-rating">★ ${t.imdbRating}</span><span class="carousel-votes">${votesLabel}</span>` : ''}
-            ${t.ageRating  ? `<span>·</span><span>${escHtml(t.ageRating)}</span>` : ''}
-          </div>
-          ${t.shortDescription ? `<div class="carousel-logline">${escHtml(t.shortDescription)}</div>` : ''}
-          ${genres ? `<div class="carousel-genres">${genres}</div>` : ''}
-          ${provs  ? `<div class="carousel-providers">${provs}</div>` : ''}
-        </div>
-      </div>`;
-  }
+  clearInterval(_tpTimer);
+  _tpTitles = picks;
+  _tpIdx    = 0;
 
   layout.innerHTML = `
-    <div class="carousel-wrapper" id="lib-carousel-wrapper">
-      ${picks.map((t, i) => makeLibSlide(t, i === 0)).join('')}
-      <button class="carousel-btn carousel-prev" id="lib-carousel-prev">
+    <div class="carousel-wrapper" id="tp-wrapper">
+      ${picks.map((t, i) => makeCarouselSlide(t, i === 0, 'Top Pick')).join('')}
+      <button class="carousel-btn carousel-prev" id="tp-prev">
         <span class="material-symbols-outlined">chevron_left</span>
       </button>
-      <button class="carousel-btn carousel-next" id="lib-carousel-next">
+      <button class="carousel-btn carousel-next" id="tp-next">
         <span class="material-symbols-outlined">chevron_right</span>
       </button>
-      <div class="carousel-dots" id="lib-carousel-dots">
+      <div class="carousel-dots" id="tp-dots">
         ${picks.map((_, i) => `<button class="carousel-dot${i === 0 ? ' active' : ''}"></button>`).join('')}
       </div>
     </div>`;
 
   container.style.display = 'block';
 
-  const wrapper = document.getElementById('lib-carousel-wrapper');
-
-  document.getElementById('lib-carousel-prev').addEventListener('click', () => {
-    _libCarouselGoto((_libCarouselIdx - 1 + _libCarouselTitles.length) % _libCarouselTitles.length);
-    _libCarouselResetTimer();
-  });
-  document.getElementById('lib-carousel-next').addEventListener('click', () => {
-    _libCarouselGoto((_libCarouselIdx + 1) % _libCarouselTitles.length);
-    _libCarouselResetTimer();
-  });
-  document.querySelectorAll('#lib-carousel-dots .carousel-dot').forEach((dot, i) => {
-    dot.addEventListener('click', () => { _libCarouselGoto(i); _libCarouselResetTimer(); });
-  });
-
-  wrapper.addEventListener('mouseenter', () => clearInterval(_libCarouselTimer));
-  wrapper.addEventListener('mouseleave', () => _libCarouselStartTimer());
-
-  _libCarouselStartTimer();
+  const wrapper = document.getElementById('tp-wrapper');
+  document.getElementById('tp-prev').addEventListener('click', () => { _tpGoto((_tpIdx - 1 + _tpTitles.length) % _tpTitles.length); _tpResetTimer(); });
+  document.getElementById('tp-next').addEventListener('click', () => { _tpGoto((_tpIdx + 1) % _tpTitles.length); _tpResetTimer(); });
+  document.querySelectorAll('#tp-dots .carousel-dot').forEach((d, i) => d.addEventListener('click', () => { _tpGoto(i); _tpResetTimer(); }));
+  wrapper.addEventListener('mouseenter', () => clearInterval(_tpTimer));
+  wrapper.addEventListener('mouseleave', () => _tpStartTimer());
+  _tpStartTimer();
 }
 
-function _libCarouselGoto(idx) {
-  const wrapper = document.getElementById('lib-carousel-wrapper');
-  if (!wrapper) return;
-  wrapper.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === idx));
-  wrapper.querySelectorAll('.carousel-dot').forEach((d, i)  => d.classList.toggle('active',  i === idx));
-  _libCarouselIdx = idx;
+function _tpGoto(idx) {
+  const w = document.getElementById('tp-wrapper'); if (!w) return;
+  w.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === idx));
+  w.querySelectorAll('.carousel-dot').forEach((d, i)  => d.classList.toggle('active',  i === idx));
+  _tpIdx = idx;
+}
+function _tpStartTimer() {
+  clearInterval(_tpTimer);
+  _tpTimer = setInterval(() => { if (_tpTitles.length) _tpGoto((_tpIdx + 1) % _tpTitles.length); }, 5000);
+}
+function _tpResetTimer() { clearInterval(_tpTimer); _tpStartTimer(); }
+
+function makeCarouselSlide(t, active, badgeText) {
+  const imgSrc    = t.backdropUrl || t.posterUrl || '';
+  const genres    = (t.genres || []).slice(0, 4).map(g => `<span class="carousel-genre-chip">${escHtml(toTitleCase(g))}</span>`).join('');
+  const provs     = (t.providers || []).slice(0, 4).map(p => {
+    const c = PROV_COLORS[p] || { bg: 'rgba(99,102,241,0.18)', color: '#818cf8', border: 'rgba(99,102,241,0.5)' };
+    return `<span class="carousel-prov-badge" style="background:${c.bg};color:${c.color};border-color:${c.border}">${escHtml(provLabel(p))}</span>`;
+  }).join('');
+  const typeLabel = t.contentType === 'show' ? 'TV Show' : 'Movie';
+  const votes     = t.imdbVotes >= 1000000 ? (t.imdbVotes/1000000).toFixed(1)+'M' : t.imdbVotes >= 1000 ? Math.round(t.imdbVotes/1000)+'K' : (t.imdbVotes||'');
+  return `
+    <div class="carousel-slide${active ? ' active' : ''}">
+      <div class="carousel-img-half">
+        <img src="${escHtml(imgSrc)}" alt="" loading="lazy" onerror="this.style.background='var(--surface2)';this.removeAttribute('src')">
+      </div>
+      <div class="carousel-info-half">
+        <div class="carousel-badge">${escHtml(badgeText)}</div>
+        <div class="carousel-title">${escHtml(t.name || '')}</div>
+        <div class="carousel-meta-row">
+          <span>${t.year || ''}</span><span>·</span><span>${typeLabel}</span>
+          ${t.imdbRating ? `<span>·</span><span class="carousel-rating">★ ${t.imdbRating}</span>${votes ? `<span class="carousel-votes">${votes} votes</span>` : ''}` : ''}
+          ${t.ageRating  ? `<span>·</span><span>${escHtml(t.ageRating)}</span>` : ''}
+        </div>
+        ${t.shortDescription ? `<div class="carousel-logline">${escHtml(t.shortDescription)}</div>` : ''}
+        ${genres ? `<div class="carousel-genres">${genres}</div>` : ''}
+        ${provs  ? `<div class="carousel-providers">${provs}</div>` : ''}
+      </div>
+    </div>`;
 }
 
-function _libCarouselStartTimer() {
-  clearInterval(_libCarouselTimer);
-  _libCarouselTimer = setInterval(() => {
-    if (_libCarouselTitles.length) _libCarouselGoto((_libCarouselIdx + 1) % _libCarouselTitles.length);
-  }, 4500);
+// ── Library "Top Picks" carousel ───────────────────────────────────────────────
+let _libTitles = [], _libIdx = 0, _libTimer = null;
+
+function renderLibraryCarousel() {
+  const container = document.getElementById('lib-discover');
+  const layout    = document.getElementById('lib-carousel-layout');
+
+  if (!currentUser) { container.style.display = 'none'; clearInterval(_libTimer); return; }
+
+  const picks = Object.keys(watchlistMap)
+    .map(id => allTitles[id])
+    .filter(t => t && t.imdbRating)
+    .sort((a, b) => (b.imdbRating - a.imdbRating) || ((b.imdbVotes || 0) - (a.imdbVotes || 0)))
+    .slice(0, 15);
+
+  if (!picks.length) { container.style.display = 'none'; clearInterval(_libTimer); return; }
+
+  clearInterval(_libTimer);
+  _libTitles = picks;
+  _libIdx    = 0;
+
+  layout.innerHTML = `
+    <div class="carousel-wrapper" id="lib-wrapper">
+      ${picks.map((t, i) => makeCarouselSlide(t, i === 0, 'Watchlist Pick')).join('')}
+      <button class="carousel-btn carousel-prev" id="lib-prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button class="carousel-btn carousel-next" id="lib-next">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+      <div class="carousel-dots" id="lib-dots">
+        ${picks.map((_, i) => `<button class="carousel-dot${i === 0 ? ' active' : ''}"></button>`).join('')}
+      </div>
+    </div>`;
+
+  container.style.display = 'block';
+
+  const wrapper = document.getElementById('lib-wrapper');
+  document.getElementById('lib-prev').addEventListener('click', () => { _libGoto((_libIdx - 1 + _libTitles.length) % _libTitles.length); _libResetTimer(); });
+  document.getElementById('lib-next').addEventListener('click', () => { _libGoto((_libIdx + 1) % _libTitles.length); _libResetTimer(); });
+  document.querySelectorAll('#lib-dots .carousel-dot').forEach((d, i) => d.addEventListener('click', () => { _libGoto(i); _libResetTimer(); }));
+  wrapper.addEventListener('mouseenter', () => clearInterval(_libTimer));
+  wrapper.addEventListener('mouseleave', () => _libStartTimer());
+  _libStartTimer();
 }
 
-function _libCarouselResetTimer() {
-  clearInterval(_libCarouselTimer);
-  _libCarouselStartTimer();
+function _libGoto(idx) {
+  const w = document.getElementById('lib-wrapper'); if (!w) return;
+  w.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === idx));
+  w.querySelectorAll('.carousel-dot').forEach((d, i)  => d.classList.toggle('active',  i === idx));
+  _libIdx = idx;
 }
+function _libStartTimer() {
+  clearInterval(_libTimer);
+  _libTimer = setInterval(() => { if (_libTitles.length) _libGoto((_libIdx + 1) % _libTitles.length); }, 5000);
+}
+function _libResetTimer() { clearInterval(_libTimer); _libStartTimer(); }
 
 // ── Card rendering ─────────────────────────────────────────────────────────────
 function renderGrid(titles) {
   const grid    = document.getElementById('grid');
   const loading = document.getElementById('loading');
   const stats   = document.getElementById('stats');
+  const header  = document.getElementById('grid-header');
 
   const total    = Object.keys(allTitles).length;
   const seenCount = Object.keys(seenMap).length;
-  stats.textContent =
-    `Showing ${titles.length} of ${total} titles · ${seenCount} seen`;
 
   if (total === 0) {
-    loading.textContent = 'No titles loaded yet. Run the scraper first.';
-    loading.style.display = 'block';
-    grid.style.display    = 'none';
+    loading.textContent    = 'No titles loaded yet. Run the scraper first.';
+    loading.style.display  = 'block';
+    grid.style.display     = 'none';
+    header.style.display   = 'none';
     return;
   }
-  loading.style.display = 'none';
-  grid.style.display    = '';
 
+  loading.style.display  = 'none';
+  grid.style.display     = '';
+  header.style.display   = 'flex';
+
+  stats.textContent = `${titles.length.toLocaleString()} of ${total.toLocaleString()} · ${seenCount.toLocaleString()} seen`;
   grid.innerHTML = '';
   titles.forEach(t => grid.appendChild(makeCard(t)));
 }
@@ -1827,103 +1701,110 @@ function makeCard(t, opts = {}) {
   div.className = 'card' + (isSeen ? ' is-seen' : '');
   div.dataset.id = t.id;
 
+  const disabled = currentUser ? '' : 'disabled title="Sign in to track"';
+
   const provBadges = (t.providers || [])
     .map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`)
     .join('');
-
-  const imdbBlock = t.imdbRating
-    ? `<div class="card-imdb">
-         <span class="imdb-star">★</span>
-         <span class="imdb-score">${t.imdbRating.toFixed(1)}</span>
-         ${t.imdbVotes ? `<span class="imdb-votes">(${fmtVotes(t.imdbVotes)})</span>` : ''}
-       </div>`
-    : '';
-
-  const infoParts = [
-    t.runtime   ? `⏱ ${t.runtime} min` : null,
-    t.ageRating ? t.ageRating : null,
-  ].filter(Boolean).join(' · ');
-
-  const genreChipsMeta = (t.genres || []).slice(0, 3)
-    .map(g => `<span class="meta-chip">${escHtml(toTitleCase(g))}</span>`).join('');
-
-  const creditsBlock = [
-    t.director               ? `<div class="card-credit">Dir: <span>${escHtml(t.director)}</span></div>` : '',
-    t.actors && t.actors.length ? `<div class="card-credit">Cast: <span>${t.actors.map(escHtml).join(', ')}</span></div>` : '',
-  ].join('');
 
   const relLabel = t.releaseDate
     ? new Date(t.releaseDate + 'T00:00:00').toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
     : (t.year || '—');
 
-  const initial   = escHtml((t.name || '?')[0].toUpperCase());
-  const disabled   = currentUser ? '' : 'disabled title="Sign in to track"';
-  const btnLabel   = isSeen ? '✓ Seen — Undo' : 'Mark as seen';
-  const wBtnLabel  = isWatchlisted ? '✓ Watchlist' : '+ Watchlist';
-  const dBtnLabel  = isDismissed ? '✗ Dismissed — Undo' : 'Not Interested';
-
-  const posterBlock = t.posterUrl
+  const initial    = escHtml((t.name || '?')[0].toUpperCase());
+  const posterHtml = t.posterUrl
     ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
 
-  const footerHtml = opts.watchlistView
-    ? `<button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
-       <button class="watch-btn remove-wl" ${disabled}>Remove</button>`
-    : `<button class="seen-btn ${isSeen ? 'is-seen' : ''}" ${disabled}>${btnLabel}</button>
-       <button class="watch-btn ${isWatchlisted ? 'is-watchlisted' : ''}" ${disabled}>${wBtnLabel}</button>
-       <button class="dismiss-btn ${isDismissed ? 'is-dismissed' : ''}" ${disabled}>${dBtnLabel}</button>`;
+  const imdbHtml = t.imdbRating
+    ? `<div class="card-imdb-overlay">
+         <span class="imdb-star">★</span>
+         <span class="imdb-score">${t.imdbRating.toFixed(1)}</span>
+         ${t.imdbVotes ? `<span class="imdb-votes">${fmtVotes(t.imdbVotes)}</span>` : ''}
+       </div>`
+    : '';
+
+  const seenBadgeHtml = isSeen
+    ? `<div class="seen-badge"><span class="material-symbols-outlined">done</span></div>`
+    : '';
+
+  const descHtml = t.shortDescription
+    ? `<div class="card-overlay-desc">${escHtml(t.shortDescription)}</div>`
+    : '';
+
+  let seenBtnClass   = 'action-btn seen-btn'   + (isSeen        ? ' is-seen'        : '');
+  let watchBtnClass  = 'action-btn watch-btn'  + (isWatchlisted ? ' is-watchlisted' : '');
+  let dismissBtnClass = 'action-btn dismiss-btn' + (isDismissed   ? ' is-dismissed'   : '');
+
+  const seenTitle    = isSeen        ? 'Undo seen'          : 'Mark as seen';
+  const watchTitle   = isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist';
+  const dismissTitle = isDismissed   ? 'Undo dismiss'       : 'Not interested';
+
+  let actionsHtml;
+  if (opts.watchlistView) {
+    actionsHtml = `
+      <button class="${seenBtnClass}" ${disabled} title="${seenTitle}">
+        <span class="material-symbols-outlined">done</span>
+      </button>
+      <button class="action-btn dismiss-btn" ${disabled} title="Not interested">
+        <span class="material-symbols-outlined">close</span>
+      </button>`;
+  } else {
+    actionsHtml = `
+      <button class="${seenBtnClass}" ${disabled} title="${seenTitle}">
+        <span class="material-symbols-outlined">done</span>
+      </button>
+      <button class="${watchBtnClass}" ${disabled} title="${watchTitle}">
+        <span class="material-symbols-outlined">${isWatchlisted ? 'bookmark' : 'bookmark_add'}</span>
+      </button>
+      <button class="${dismissBtnClass}" ${disabled} title="${dismissTitle}">
+        <span class="material-symbols-outlined">close</span>
+      </button>`;
+  }
 
   div.innerHTML = `
     <div class="card-poster-wrap">
-      ${posterBlock}
+      ${posterHtml}
       <div class="card-poster-fallback" style="${t.posterUrl ? '' : 'display:flex'}">${initial}</div>
+      ${imdbHtml}
+      ${seenBadgeHtml}
+      <div class="card-overlay">
+        ${descHtml}
+        <div class="card-actions">${actionsHtml}</div>
+      </div>
     </div>
     <div class="card-body">
       <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
-      <div class="card-year">${relLabel} · ${t.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
-      ${imdbBlock}
+      <div class="card-sub">${relLabel} · ${t.contentType === 'show' ? 'Show' : 'Movie'}</div>
       <div class="provider-badges">${provBadges}</div>
-      ${t.shortDescription ? `<div class="card-logline">${escHtml(t.shortDescription)}</div><button class="logline-toggle">more</button>` : ''}
-      ${infoParts ? `<div class="card-info">${escHtml(infoParts)}</div>` : ''}
-      <div class="card-meta">${genreChipsMeta}</div>
-      ${creditsBlock}
-      <div class="card-footer">
-        ${footerHtml}
-      </div>
     </div>
   `;
 
-  const logline = div.querySelector('.card-logline');
-  const loglineToggle = div.querySelector('.logline-toggle');
-  if (logline && loglineToggle) {
-    loglineToggle.addEventListener('click', () => {
-      const expanded = logline.classList.toggle('expanded');
-      loglineToggle.textContent = expanded ? 'less' : 'more';
-    });
-  }
-
   div.querySelector('.seen-btn').addEventListener('click', () => toggleSeen(t.id, !isSeen));
   const wBtn = div.querySelector('.watch-btn');
-  if (wBtn) {
+  if (wBtn) wBtn.addEventListener('click', () => toggleWatchlist(t.id, !isWatchlisted));
+  const dBtn = div.querySelector('.dismiss-btn');
+  if (dBtn) {
     if (opts.watchlistView) {
-      wBtn.addEventListener('click', () => toggleWatchlist(t.id, false));
+      dBtn.addEventListener('click', async () => {
+        await toggleDismissed(t.id, true);
+        await toggleWatchlist(t.id, false);
+      });
     } else {
-      wBtn.addEventListener('click', () => toggleWatchlist(t.id, !isWatchlisted));
+      dBtn.addEventListener('click', () => toggleDismissed(t.id, !isDismissed));
     }
   }
-  div.querySelector('.dismiss-btn')?.addEventListener('click', () => toggleDismissed(t.id, !isDismissed));
+
   return div;
 }
 
-// ── Seen tracking ──────────────────────────────────────────────────────────────
+// ── Seen ───────────────────────────────────────────────────────────────────────
 async function toggleSeen(id, markSeen) {
   if (!currentUser) return;
   const key = String(id);
-
-  // Optimistic update — apply locally first, persist in background
   const prevSeen = seenMap[key];
-  const prevWatchlist = watchlistMap[key];
+  const prevWl   = watchlistMap[key];
   if (markSeen) { seenMap[key] = true; delete watchlistMap[key]; }
   else          { delete seenMap[key]; }
 
@@ -1931,25 +1812,21 @@ async function toggleSeen(id, markSeen) {
   if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
   const total = Object.keys(allTitles).length;
   document.getElementById('stats').textContent =
-    `Showing ${getFiltered().length} of ${total} titles · ${Object.keys(seenMap).length} seen`;
-  if (filters.hideSeen && markSeen) {
-    const card2 = document.querySelector(`.card[data-id="${id}"]`);
-    if (card2) card2.remove();
-  }
+    `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
+  if (filters.hideSeen && markSeen) document.querySelector(`.card[data-id="${id}"]`)?.remove();
+  renderDiscoverStats();
 
   try {
     if (markSeen) {
       await db.ref('/seen/' + key).set(true);
-      if (prevWatchlist) await db.ref('/watchlist/' + key).remove();
+      if (prevWl) await db.ref('/watchlist/' + key).remove();
     } else {
       await db.ref('/seen/' + key).remove();
     }
   } catch (err) {
-    // Roll back
     if (prevSeen) seenMap[key] = true; else delete seenMap[key];
-    if (prevWatchlist) watchlistMap[key] = true; else delete watchlistMap[key];
-    const card3 = document.querySelector(`.card[data-id="${id}"]`);
-    if (card3) card3.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    if (prevWl)   watchlistMap[key] = true; else delete watchlistMap[key];
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Seen toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -1958,23 +1835,18 @@ async function toggleSeen(id, markSeen) {
 // ── Watchlist ──────────────────────────────────────────────────────────────────
 async function toggleWatchlist(id, add) {
   if (!currentUser) return;
-  const key = String(id);
-
-  // Optimistic update
+  const key  = String(id);
   const prev = watchlistMap[key];
   if (add) watchlistMap[key] = true; else delete watchlistMap[key];
-
-  const card = document.querySelector(`.card[data-id="${id}"]`);
-  if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+  document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+  renderDiscoverStats();
 
   try {
     if (add) await db.ref('/watchlist/' + key).set(true);
     else     await db.ref('/watchlist/' + key).remove();
   } catch (err) {
-    // Roll back
     if (prev) watchlistMap[key] = true; else delete watchlistMap[key];
-    const card2 = document.querySelector(`.card[data-id="${id}"]`);
-    if (card2) card2.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Watchlist toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -1983,31 +1855,25 @@ async function toggleWatchlist(id, add) {
 // ── Dismiss ────────────────────────────────────────────────────────────────────
 async function toggleDismissed(id, dismiss) {
   if (!currentUser) return;
-  const key = String(id);
-
-  // Optimistic update
+  const key  = String(id);
   const prev = dismissedMap[key];
   if (dismiss) dismissedMap[key] = true; else delete dismissedMap[key];
 
   if (filters.hideDismissed && dismiss) {
-    const card = document.querySelector(`.card[data-id="${id}"]`);
-    if (card) card.remove();
+    document.querySelector(`.card[data-id="${id}"]`)?.remove();
     const total = Object.keys(allTitles).length;
     document.getElementById('stats').textContent =
-      `Showing ${getFiltered().length} of ${total} titles · ${Object.keys(seenMap).length} seen`;
+      `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
   } else {
-    const card = document.querySelector(`.card[data-id="${id}"]`);
-    if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
   }
 
   try {
     if (dismiss) await db.ref('/dismissed/' + key).set(true);
     else         await db.ref('/dismissed/' + key).remove();
   } catch (err) {
-    // Roll back
     if (prev) dismissedMap[key] = true; else delete dismissedMap[key];
-    const card2 = document.querySelector(`.card[data-id="${id}"]`);
-    if (card2) card2.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Dismiss toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -2020,13 +1886,81 @@ function updateMyListsBadge() {
   badge.hidden = (total === 0);
 }
 
-// ── My Lists rendering ─────────────────────────────────────────────────────────
-const wlFilters = { type: 'both', provider: '', sort: 'newest' };
+// ── My Library ─────────────────────────────────────────────────────────────────
+const wlFilters = { type: 'both', provider: '', sort: 'newest', lang: '' };
 
 function renderMyLists() {
+  renderLibraryStats();
   renderLibraryCarousel();
   renderWatchlistGrid();
   renderTrackingList();
+}
+
+function renderLibraryStats() {
+  const bar = document.getElementById('library-stats-bar');
+  if (!bar) return;
+  if (!currentUser) { bar.innerHTML = ''; return; }
+
+  const wlCount  = Object.keys(watchlistMap).length;
+  const trkCount = Object.keys(trackingMap).length;
+  const wl8plus  = Object.keys(watchlistMap)
+    .map(id => allTitles[id])
+    .filter(t => t && (t.imdbRating || 0) >= 8)
+    .length;
+
+  if (!wlCount && !trkCount) { bar.innerHTML = ''; return; }
+
+  bar.innerHTML = `
+    ${wlCount ? `<div class="lstat-pill">
+      <span class="material-symbols-outlined lstat-icon">bookmark</span>
+      <span class="lstat-value">${wlCount}</span>
+      <span class="lstat-label">on watchlist</span>
+    </div>` : ''}
+    ${trkCount ? `<div class="lstat-pill">
+      <span class="material-symbols-outlined lstat-icon">notifications</span>
+      <span class="lstat-value">${trkCount}</span>
+      <span class="lstat-label">tracked</span>
+    </div>` : ''}
+    ${wl8plus ? `<div class="lstat-pill">
+      <span style="font-size:13px;color:#fbbf24;line-height:1">★</span>
+      <span class="lstat-value">${wl8plus}</span>
+      <span class="lstat-label">rated 8+ in watchlist</span>
+    </div>` : ''}
+  `;
+}
+
+function populateWlLangSelect(allWlTitles) {
+  const sel = document.getElementById('wl-lang-select');
+  if (!sel) return;
+  const langSet = new Set();
+  allWlTitles.forEach(t => {
+    if (t.originalLanguage) langSet.add(t.originalLanguage);
+    (t.audioLanguages || []).forEach(l => langSet.add(l));
+  });
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Language</option>';
+  [...langSet].sort((a, b) => langLabel(a).localeCompare(langLabel(b))).forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = langLabel(code);
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+}
+
+function isWlFiltersActive() {
+  return wlFilters.type !== 'both' || wlFilters.provider || wlFilters.sort !== 'newest' || wlFilters.lang;
+}
+
+function updateWlResetBtn() {
+  const btn = document.getElementById('wl-reset-btn');
+  if (btn) btn.classList.toggle('hidden', !isWlFiltersActive());
+  // highlight active selects
+  ['wl-provider-select','wl-sort-select','wl-lang-select'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isDefault = (id === 'wl-sort-select') ? el.value === 'newest' : el.value === '';
+    el.classList.toggle('is-active', !isDefault);
+  });
 }
 
 function renderWatchlistGrid() {
@@ -2041,16 +1975,22 @@ function renderWatchlistGrid() {
   }
 
   const all = Object.keys(watchlistMap).map(id => allTitles[id]).filter(Boolean);
-
   if (!all.length) {
     grid.innerHTML = ''; count.textContent = '';
     empty.textContent = 'Your watchlist is empty. Add titles from the Discover tab.';
+    populateWlLangSelect([]);
+    updateWlResetBtn();
     return;
   }
 
+  populateWlLangSelect(all);
+
   let titles = all.slice();
-  if (wlFilters.type !== 'both') titles = titles.filter(t => t.contentType === wlFilters.type);
-  if (wlFilters.provider)        titles = titles.filter(t => (t.providers || []).includes(wlFilters.provider));
+  if (wlFilters.type !== 'both')  titles = titles.filter(t => t.contentType === wlFilters.type);
+  if (wlFilters.provider)         titles = titles.filter(t => (t.providers || []).includes(wlFilters.provider));
+  if (wlFilters.lang)             titles = titles.filter(t =>
+    (t.audioLanguages || []).includes(wlFilters.lang) || t.originalLanguage === wlFilters.lang
+  );
 
   switch (wlFilters.sort) {
     case 'newest': titles.sort((a, b) => (b.year ?? 0)    - (a.year ?? 0));           break;
@@ -2060,26 +2000,22 @@ function renderWatchlistGrid() {
   }
 
   count.textContent = titles.length < all.length
-    ? `Showing ${titles.length} of ${all.length}`
+    ? `${titles.length} of ${all.length}`
     : `${all.length} title${all.length !== 1 ? 's' : ''}`;
 
   empty.textContent = titles.length ? '' : 'No titles match the current filters.';
   grid.innerHTML = '';
   titles.forEach(t => grid.appendChild(makeCard(t, { watchlistView: true })));
+  updateWlResetBtn();
 }
 
 function renderTrackingList() {
   const grid  = document.getElementById('tracking-grid');
   const empty = document.getElementById('tracking-empty');
 
-  if (!currentUser) {
-    grid.innerHTML = '';
-    empty.textContent = 'Sign in to track titles.';
-    return;
-  }
+  if (!currentUser) { grid.innerHTML = ''; empty.textContent = 'Sign in to track titles.'; return; }
 
   const entries = Object.entries(trackingMap);
-
   if (!entries.length) {
     grid.innerHTML = '';
     empty.textContent = 'Nothing tracked yet. Paste a JustWatch URL above to start tracking.';
@@ -2090,61 +2026,62 @@ function renderTrackingList() {
   entries.forEach(([id, meta]) => grid.appendChild(makeTrackingCard(id, meta)));
 }
 
-// ── Stats ──────────────────────────────────────────────────────────────────────
+// ── Analytics ──────────────────────────────────────────────────────────────────
 function renderStats() {
   const pane = document.getElementById('stats-pane');
   const seenTitles = Object.keys(seenMap).map(id => allTitles[id]).filter(Boolean);
 
   if (!seenTitles.length) {
-    pane.innerHTML = '<p class="empty-state" style="padding:40px 24px">No watched titles yet — mark some as seen in Discover.</p>';
+    pane.innerHTML = '<p class="empty-state" style="padding:40px 32px">No watched titles yet — mark some as seen in Discover.</p>';
     return;
   }
 
-  // Headline numbers
   const totalWatched = seenTitles.length;
-  const totalMins    = seenTitles.reduce((s, t) => s + (t.runtime || 0), 0);
-  const totalHours   = (totalMins / 60).toFixed(1);
-  const rated        = seenTitles.filter(t => t.imdbRating);
-  const avgRating    = rated.length
-    ? (rated.reduce((s, t) => s + t.imdbRating, 0) / rated.length).toFixed(1) : '—';
+  const moviesCount  = seenTitles.filter(t => t.contentType === 'movie').length;
+  const showsCount   = seenTitles.filter(t => t.contentType === 'show').length;
+
+  const totalMins   = seenTitles.reduce((s, t) => s + (t.runtime || 0), 0);
+  const totalHours  = totalMins >= 60 ? (totalMins / 60).toFixed(1) + 'h' : totalMins + 'm';
+  const equivMovies = Math.round(totalMins / 110);
+
+  const rated     = seenTitles.filter(t => t.imdbRating);
+  const avgRating = rated.length ? (rated.reduce((s, t) => s + t.imdbRating, 0) / rated.length).toFixed(1) : '—';
+
   const platTally = {};
   seenTitles.forEach(t => (t.providers || []).forEach(p => { platTally[p] = (platTally[p] || 0) + 1; }));
-  const topPlatEntry = Object.entries(platTally).sort((a, b) => b[1] - a[1])[0];
+  const platRows     = Object.entries(platTally).sort((a, b) => b[1] - a[1]);
+  const topPlatEntry = platRows[0];
   const topPlatLabel = topPlatEntry ? provLabel(topPlatEntry[0]) : '—';
 
-  // By platform
-  const platRows = Object.entries(platTally).sort((a, b) => b[1] - a[1]);
+  const dirTally = {};
+  seenTitles.forEach(t => { if (t.director) dirTally[t.director] = (dirTally[t.director] || 0) + 1; });
+  const dirRows     = Object.entries(dirTally).sort((a, b) => b[1] - a[1]);
+  const topDirEntry = dirRows[0];
 
-  // By genre (top 10)
   const genreTally = {};
   seenTitles.forEach(t => (t.genres || []).forEach(g => { genreTally[g] = (genreTally[g] || 0) + 1; }));
   const genreRows = Object.entries(genreTally).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-  // By IMDB rating bracket
   const ratingBrackets = [
-    { label: 'Excellent  (8 – 10)', min: 8,  max: 11 },
-    { label: 'Great  (7 – 8)',      min: 7,  max: 8  },
-    { label: 'Good  (6 – 7)',       min: 6,  max: 7  },
-    { label: 'Average  (5 – 6)',    min: 5,  max: 6  },
-    { label: 'Poor  (< 5)',         min: 0,  max: 5  },
-    { label: 'Unrated',             min: null, max: null },
+    { label: '8 – 10', min: 8,   max: 11   },
+    { label: '7 – 8',  min: 7,   max: 8    },
+    { label: '6 – 7',  min: 6,   max: 7    },
+    { label: '5 – 6',  min: 5,   max: 6    },
+    { label: '< 5',    min: 0,   max: 5    },
+    { label: 'Unrated', min: null, max: null },
   ];
   const ratingRows = ratingBrackets
-    .map(b => {
-      const count = seenTitles.filter(t =>
-        b.min === null ? !t.imdbRating : (t.imdbRating && t.imdbRating >= b.min && t.imdbRating < b.max)
-      ).length;
-      return [b.label, count];
-    })
+    .map(b => [b.label, seenTitles.filter(t =>
+      b.min === null ? !t.imdbRating : (t.imdbRating && t.imdbRating >= b.min && t.imdbRating < b.max)
+    ).length])
     .filter(([, c]) => c > 0);
 
-  // By decade
   const decadeTally = {};
   seenTitles.forEach(t => {
     if (!t.year) return;
-    const d     = Math.floor(t.year / 10) * 10;
-    const label = d < 1990 ? 'Before 1990' : `${d}s`;
-    decadeTally[label] = (decadeTally[label] || 0) + 1;
+    const d = Math.floor(t.year / 10) * 10;
+    const key = d < 1990 ? 'Before 1990' : `${d}s`;
+    decadeTally[key] = (decadeTally[key] || 0) + 1;
   });
   const decadeRows = Object.entries(decadeTally).sort((a, b) => {
     const ya = a[0] === 'Before 1990' ? 0 : parseInt(a[0]);
@@ -2152,41 +2089,73 @@ function renderStats() {
     return ya - yb;
   });
 
-  function makeVChart(rows) {
+  // Vertical bar chart; optional colorFn(key) → extra CSS string for the bar
+  function makeVChart(rows, colorFn, labelFn) {
     const max = Math.max(...rows.map(([, c]) => c), 1);
-    const BAR_MAX = 130;
-    const cols = rows.map(([label, count]) => ({
-      label, count, h: Math.max(Math.round(count / max * BAR_MAX), 3)
-    }));
     return `
       <div class="vchart">
-        ${cols.map(({ count, h }) => `
-          <div class="vchart-col">
-            <div class="vchart-value">${count}</div>
-            <div class="vchart-bar" style="height:${h}px"></div>
-          </div>`).join('')}
+        ${rows.map(([key, count]) => {
+          const h     = Math.max(Math.round(count / max * 130), 3);
+          const extra = colorFn ? colorFn(key) : '';
+          return `
+            <div class="vchart-col">
+              <div class="vchart-value">${count}</div>
+              <div class="vchart-bar" style="${extra}height:${h}px"></div>
+            </div>`;
+        }).join('')}
       </div>
       <div class="vchart-labels">
-        ${cols.map(({ label }) => `<div class="vchart-xlabel">${escHtml(String(label))}</div>`).join('')}
+        ${rows.map(([key]) => `<div class="vchart-xlabel">${escHtml(String(labelFn ? labelFn(key) : key))}</div>`).join('')}
       </div>`;
   }
 
-  pane.innerHTML = `
-    <h1 class="analytics-title">Analytics Dashboard</h1>
+  // Horizontal bar chart for genre (handles many items cleanly)
+  function makeHChart(rows) {
+    const max = Math.max(...rows.map(([, c]) => c), 1);
+    return `<div class="hchart">
+      ${rows.map(([label, count]) => `
+        <div class="hchart-row">
+          <div class="hchart-label">${escHtml(toTitleCase(String(label)))}</div>
+          <div class="hchart-bar-track">
+            <div class="hchart-bar-fill" style="width:${Math.round(count / max * 100)}%"></div>
+          </div>
+          <div class="hchart-count">${count}</div>
+        </div>`).join('')}
+    </div>`;
+  }
 
+  // Brand color for each platform bar
+  const platColorFn = code => {
+    const c = PROV_COLORS[code];
+    return c ? `background:linear-gradient(to top,${c.color}bb,${c.color});box-shadow:0 0 10px ${c.color}44;` : '';
+  };
+
+  // Subtitle helpers
+  const typeSubtitle = [moviesCount && `${moviesCount} movie${moviesCount !== 1 ? 's' : ''}`,
+                        showsCount  && `${showsCount} show${showsCount  !== 1 ? 's' : ''}`]
+    .filter(Boolean).join(' · ');
+  const runtimeSub   = equivMovies > 1 ? `≈ ${equivMovies} movies` : totalMins > 0 ? `${totalMins} min` : '';
+
+  pane.innerHTML = `
+    <div class="analytics-header">
+      <h1 class="analytics-title">Your Watch History</h1>
+      <div class="analytics-subtitle">${totalWatched} title${totalWatched !== 1 ? 's' : ''} · all time</div>
+    </div>
     <div class="stat-headline">
       <div class="stat-card" data-stat="watched">
         <div class="stat-card-icon"><span class="material-symbols-outlined">desktop_windows</span></div>
         <div class="stat-card-body">
           <div class="stat-card-label">Titles Watched</div>
           <div class="stat-card-value">${totalWatched}</div>
+          ${typeSubtitle ? `<div class="stat-card-sub">${typeSubtitle}</div>` : ''}
         </div>
       </div>
       <div class="stat-card" data-stat="runtime">
         <div class="stat-card-icon"><span class="material-symbols-outlined">schedule</span></div>
         <div class="stat-card-body">
           <div class="stat-card-label">Total Runtime</div>
-          <div class="stat-card-value">${totalHours}h</div>
+          <div class="stat-card-value">${totalHours}</div>
+          ${runtimeSub ? `<div class="stat-card-sub">${runtimeSub}</div>` : ''}
         </div>
       </div>
       <div class="stat-card" data-stat="rating">
@@ -2194,6 +2163,7 @@ function renderStats() {
         <div class="stat-card-body">
           <div class="stat-card-label">Avg IMDb Rating</div>
           <div class="stat-card-value">${avgRating}</div>
+          <div class="stat-card-sub">${rated.length} rated</div>
         </div>
       </div>
       <div class="stat-card" data-stat="platform">
@@ -2201,87 +2171,78 @@ function renderStats() {
         <div class="stat-card-body">
           <div class="stat-card-label">Most Watched On</div>
           <div class="stat-card-value">${escHtml(topPlatLabel)}</div>
+          ${topPlatEntry ? `<div class="stat-card-sub">${topPlatEntry[1]} title${topPlatEntry[1] !== 1 ? 's' : ''}</div>` : ''}
         </div>
       </div>
+      ${topDirEntry ? `
+      <div class="stat-card" data-stat="director">
+        <div class="stat-card-icon"><span class="material-symbols-outlined">movie_creation</span></div>
+        <div class="stat-card-body">
+          <div class="stat-card-label">Top Director</div>
+          <div class="stat-card-value" title="${escHtml(topDirEntry[0])}">${escHtml(topDirEntry[0])}</div>
+          <div class="stat-card-sub">${topDirEntry[1]} title${topDirEntry[1] !== 1 ? 's' : ''}</div>
+        </div>
+      </div>` : ''}
     </div>
-
     <div class="charts-grid">
-      ${platRows.length ? `
-      <div class="chart-panel">
-        <div class="chart-panel-title">By streaming platform</div>
-        ${makeVChart(platRows.map(([p, c]) => [provLabel(p), c]))}
-      </div>` : ''}
-
-      ${genreRows.length ? `
-      <div class="chart-panel">
-        <div class="chart-panel-title">By genre</div>
-        ${makeVChart(genreRows)}
-      </div>` : ''}
-
-      ${ratingRows.length ? `
-      <div class="chart-panel">
-        <div class="chart-panel-title">By IMDb rating</div>
-        ${makeVChart(ratingRows.map(([l, c]) => [l.includes('(') ? l.split('(')[1].replace(')', '') : l, c]))}
-      </div>` : ''}
-
-      ${decadeRows.length ? `
-      <div class="chart-panel">
-        <div class="chart-panel-title">By decade</div>
-        ${makeVChart(decadeRows)}
-      </div>` : ''}
-    </div>
-  `;
+      ${platRows.length   ? `<div class="chart-panel"><div class="chart-panel-title">By streaming platform</div>${makeVChart(platRows, platColorFn, provLabel)}</div>` : ''}
+      ${genreRows.length  ? `<div class="chart-panel"><div class="chart-panel-title">By genre</div>${makeHChart(genreRows)}</div>` : ''}
+      ${ratingRows.length ? `<div class="chart-panel"><div class="chart-panel-title">By IMDb rating</div>${makeVChart(ratingRows)}</div>` : ''}
+      ${decadeRows.length ? `<div class="chart-panel"><div class="chart-panel-title">By decade</div>${makeVChart(decadeRows)}</div>` : ''}
+    </div>`;
 }
 
+// ── Tracking card ──────────────────────────────────────────────────────────────
 function makeTrackingCard(id, meta) {
   const matchedTitle = Object.values(allTitles).find(
-    t => t.name && t.name.toLowerCase() === (meta.name || '').toLowerCase()
-      && t.contentType === meta.contentType
+    t => t.name && t.name.toLowerCase() === (meta.name || '').toLowerCase() && t.contentType === meta.contentType
   );
   const isAvailable = !!matchedTitle;
   const div = document.createElement('div');
-  div.className = 'tracking-card' + (isAvailable ? ' is-available' : '');
+  div.className = 'card' + (isAvailable ? ' tracking-is-available' : '');
 
-  const initial    = escHtml((meta.name || '?')[0].toUpperCase());
-  const posterSrc  = matchedTitle?.posterUrl || meta.posterUrl || null;
+  const initial   = escHtml((meta.name || '?')[0].toUpperCase());
+  const posterSrc = matchedTitle?.posterUrl || meta.posterUrl || null;
+  const disabled  = currentUser ? '' : 'disabled';
+
   const posterHtml = posterSrc
-    ? `<img class="tracking-poster" src="${escHtml(posterSrc)}" alt="" loading="lazy"
+    ? `<img class="card-poster" src="${escHtml(posterSrc)}" alt="" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
 
-  const disabled = currentUser ? '' : 'disabled';
-
-  const availSection = isAvailable
-    ? `<div class="available-badge">Now on streaming ✓</div>
-       <div class="provider-badges">
-         ${(matchedTitle.providers || []).map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}
+  const imdbHtml = matchedTitle?.imdbRating
+    ? `<div class="card-imdb-overlay">
+         <span class="imdb-star">★</span>
+         <span class="imdb-score">${matchedTitle.imdbRating.toFixed(1)}</span>
+         ${matchedTitle.imdbVotes ? `<span class="imdb-votes">${fmtVotes(matchedTitle.imdbVotes)}</span>` : ''}
        </div>`
-    : `<div class="tracking-meta">Not yet on your platforms</div>`;
+    : '';
 
-  const addedDate = meta.addedAt
-    ? new Date(meta.addedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+  const badgeClass = isAvailable ? 'badge-available' : 'badge-tracking';
+  const badgeText  = isAvailable ? 'Available ✓' : 'Tracking';
+
+  const provBadges = isAvailable
+    ? (matchedTitle.providers || []).map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')
     : '';
 
   div.innerHTML = `
-    <div class="tracking-poster-wrap">
+    <div class="card-poster-wrap">
       ${posterHtml}
-      <div class="tracking-poster-fallback" style="${posterSrc ? '' : 'display:flex'}">${initial}</div>
+      <div class="card-poster-fallback" style="${posterSrc ? '' : 'display:flex'}">${initial}</div>
+      <div class="tracking-badge-overlay ${badgeClass}">${badgeText}</div>
+      ${imdbHtml}
     </div>
-    <div class="tracking-body">
-      <div class="tracking-title">${escHtml(meta.name || 'Unknown')}</div>
-      <div class="tracking-meta">${meta.contentType === 'show' ? 'TV Show' : 'Movie'}</div>
-      ${availSection}
-      ${addedDate ? `<div class="tracking-meta">Added ${addedDate}</div>` : ''}
-      <div class="tracking-footer">
-        ${isAvailable ? `<button class="add-to-watchlist-btn" ${disabled}>+ Watchlist</button>` : ''}
-        <button class="remove-tracking-btn" ${disabled}>Stop tracking</button>
+    <div class="card-body">
+      <div class="card-title">${escHtml(meta.name || 'Unknown')}</div>
+      <div class="card-sub">${meta.contentType === 'show' ? 'Show' : 'Movie'}${meta.year ? ' · ' + meta.year : ''}</div>
+      ${isAvailable ? `<div class="provider-badges">${provBadges}</div>` : `<div class="card-sub" style="color:var(--muted)">Not yet streaming</div>`}
+      <div style="margin-top:auto;padding-top:7px;display:flex;gap:5px">
+        ${isAvailable ? `<button class="add-to-watchlist-btn" ${disabled} style="flex:1;font-size:11px;padding:4px 6px">+ Watchlist</button>` : ''}
+        <button class="remove-tracking-btn" ${disabled} style="flex:1;font-size:11px;padding:4px 6px">Stop</button>
       </div>
-    </div>
-  `;
+    </div>`;
 
-  if (isAvailable) {
-    div.querySelector('.add-to-watchlist-btn')?.addEventListener('click', () => toggleWatchlist(matchedTitle.id, true));
-  }
+  if (isAvailable) div.querySelector('.add-to-watchlist-btn')?.addEventListener('click', () => toggleWatchlist(matchedTitle.id, true));
   div.querySelector('.remove-tracking-btn').addEventListener('click', async () => {
     try { await db.ref('/tracking/' + id).remove(); }
     catch (err) { alert('Could not remove: ' + err.message); }
@@ -2290,7 +2251,6 @@ function makeTrackingCard(id, meta) {
 }
 
 // ── Tracking URL parser ────────────────────────────────────────────────────────
-
 function extractFullPath(url) {
   const m = url.match(/justwatch\.com(\/[a-z]+\/(movie|show)\/[^?#/]+)/i);
   return m ? { fullPath: m[1], type: m[2] } : null;
@@ -2300,13 +2260,8 @@ async function jwFetchByPath(fullPath) {
   const query = `query GetTitleByPath($fullPath: String!, $country: Country!, $language: Language!) {
     urlV2(fullPath: $fullPath) {
       node {
-        objectId
-        objectType
-        content(country: $country, language: $language) {
-          title
-          posterUrl
-          originalReleaseYear
-        }
+        objectId objectType
+        content(country: $country, language: $language) { title posterUrl originalReleaseYear }
       }
     }
   }`;
@@ -2321,17 +2276,8 @@ async function jwFetchByPath(fullPath) {
   if (!node) throw new Error('Title not found');
   const c = node.content || {};
   let posterUrl = null;
-  if (c.posterUrl) {
-    posterUrl = 'https://images.justwatch.com' +
-      c.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
-  }
-  return {
-    objectId:    node.objectId,
-    name:        c.title        || '',
-    year:        c.originalReleaseYear || null,
-    contentType: node.objectType === 'MOVIE' ? 'movie' : 'show',
-    posterUrl,
-  };
+  if (c.posterUrl) posterUrl = 'https://images.justwatch.com' + c.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
+  return { objectId: node.objectId, name: c.title || '', year: c.originalReleaseYear || null, contentType: node.objectType === 'MOVIE' ? 'movie' : 'show', posterUrl };
 }
 
 document.getElementById('tracking-search-btn').addEventListener('click', async () => {
@@ -2339,34 +2285,22 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
   const parsed    = extractFullPath(urlVal);
   const container = document.getElementById('tracking-results');
   const btn       = document.getElementById('tracking-search-btn');
-  if (!parsed) {
-    alert('Paste a valid JustWatch URL (e.g. https://www.justwatch.com/in/movie/project-hail-mary)');
-    return;
-  }
+  if (!parsed) { alert('Paste a valid JustWatch URL'); return; }
 
-  btn.disabled = true;
-  btn.textContent = 'Finding…';
-  container.hidden = true;
-  container.innerHTML = '';
+  btn.disabled = true; btn.textContent = 'Finding…';
+  container.hidden = true; container.innerHTML = '';
 
   let meta;
   try {
     meta = await jwFetchByPath(parsed.fullPath);
   } catch (err) {
-    // CORS or network failure — fall back to slug-derived name, no poster
     const slug = parsed.fullPath.split('/').pop();
-    meta = {
-      objectId:    null,
-      name:        slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-      year:        null,
-      contentType: parsed.type,
-      posterUrl:   null,
-    };
+    meta = { objectId: null, name: slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), year: null, contentType: parsed.type, posterUrl: null };
   }
   btn.disabled = false; btn.textContent = 'Find';
 
   const thumbHtml = meta.posterUrl
-    ? `<img src="${escHtml(meta.posterUrl)}" style="width:48px;aspect-ratio:2/3;object-fit:cover;border-radius:4px" alt="">`
+    ? `<img src="${escHtml(meta.posterUrl)}" style="width:46px;aspect-ratio:2/3;object-fit:cover;border-radius:4px" alt="">`
     : `<div class="search-result-thumb-fallback">${escHtml((meta.name || '?')[0])}</div>`;
 
   container.innerHTML = `
@@ -2377,27 +2311,17 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
         <div class="search-result-meta">${meta.contentType === 'movie' ? 'Movie' : 'TV Show'}${meta.year ? ' · ' + meta.year : ''}</div>
       </div>
       <button class="search-result-btn" id="confirm-track-btn">Track this</button>
-    </div>
-  `;
+    </div>`;
   container.hidden = false;
 
   document.getElementById('confirm-track-btn').addEventListener('click', async () => {
     const slug = parsed.fullPath.split('/').pop();
     const key  = meta.objectId ? String(meta.objectId) : (parsed.type + '_' + slug);
     try {
-      await db.ref('/tracking/' + key).set({
-        name:        meta.name,
-        year:        meta.year,
-        posterUrl:   meta.posterUrl,
-        contentType: meta.contentType,
-        addedAt:     Date.now(),
-      });
+      await db.ref('/tracking/' + key).set({ name: meta.name, year: meta.year, posterUrl: meta.posterUrl, contentType: meta.contentType, addedAt: Date.now() });
       document.getElementById('tracking-url').value = '';
-      container.hidden = true;
-      container.innerHTML = '';
-    } catch (err) {
-      alert('Could not save: ' + err.message);
-    }
+      container.hidden = true; container.innerHTML = '';
+    } catch (err) { alert('Could not save: ' + err.message); }
   });
 });
 
@@ -2415,35 +2339,94 @@ document.querySelectorAll('.tab').forEach(btn => {
   });
 });
 
-// ── Year number inputs ─────────────────────────────────────────────────────────
-document.getElementById('year-from').addEventListener('change', function() {
-  const v = parseInt(this.value, 10);
-  if (isNaN(v)) return;
-  const toEl = document.getElementById('year-to');
-  if (v > +toEl.value) toEl.value = v;
-  filters.yearFrom = v;
-  applyAndRender();
-});
-document.getElementById('year-to').addEventListener('change', function() {
-  const v = parseInt(this.value, 10);
-  if (isNaN(v)) return;
-  const fromEl = document.getElementById('year-from');
-  if (v < +fromEl.value) fromEl.value = v;
-  filters.yearTo = v;
-  applyAndRender();
+// ── Accordion ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-header').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const section = document.getElementById(btn.dataset.target);
+    if (section) section.classList.toggle('collapsed');
+  });
 });
 
-// ── Other filter event listeners ───────────────────────────────────────────────
+// ── Reset filters ──────────────────────────────────────────────────────────────
+function isFiltersActive() {
+  if (filters.providers.size < 7) return true;
+  if (filters.type !== 'both') return true;
+  if (filters.genres.size > 0) return true;
+  if (filters.audioLangs.size > 0) return true;
+  if (!filters.hideSeen) return true;
+  if (!filters.hideWatchlisted) return true;
+  if (!filters.hideDismissed) return true;
+  if (filters.sortBy !== 'popular') return true;
+  if ((filters.minRating || 0) > 0) return true;
+  if (filters.searchQuery) return true;
+  return false;
+}
+
+function updateResetLink() {
+  const link = document.getElementById('filters-reset');
+  if (link) link.classList.toggle('visible', isFiltersActive());
+}
+
+function resetAllFilters() {
+  filters.providers = new Set(['jhs','prv','lgp','snl','snx','zee','vim']);
+  document.querySelectorAll('.prov-btn').forEach(btn => btn.classList.add('active'));
+
+  filters.type = 'both';
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.value === 'both'));
+
+  const fromEl = document.getElementById('year-from');
+  const toEl   = document.getElementById('year-to');
+  if (fromEl && toEl) {
+    filters.yearFrom = +fromEl.min || 1900; fromEl.value = fromEl.min || 1900;
+    filters.yearTo   = +toEl.max  || 2025; toEl.value   = toEl.max  || 2025;
+  }
+
+  filters.genres = new Set();
+  document.querySelectorAll('#genre-list .chip').forEach(c => { c.classList.remove('active', 'hidden'); });
+  document.getElementById('genre-search').value = '';
+
+  filters.audioLangs = new Set();
+  document.querySelectorAll('#lang-list .chip').forEach(c => { c.classList.remove('active', 'hidden'); });
+  document.getElementById('lang-search').value = '';
+
+  filters.sortBy = 'popular';
+  document.getElementById('sort-select').value = 'popular';
+
+  filters.minRating = 0;
+  document.getElementById('rating-min').value = '';
+
+  filters.hideSeen = true;
+  document.getElementById('hide-seen').checked = true;
+  filters.hideWatchlisted = true;
+  document.getElementById('hide-watchlisted').checked = true;
+  filters.hideDismissed = true;
+  document.getElementById('hide-dismissed').checked = true;
+
+  filters.searchQuery = '';
+  document.getElementById('search-input').value = '';
+
+  applyAndRender();
+}
+
+// ── Filter event listeners ─────────────────────────────────────────────────────
+document.getElementById('year-from').addEventListener('change', function() {
+  const v = parseInt(this.value, 10); if (isNaN(v)) return;
+  const toEl = document.getElementById('year-to');
+  if (v > +toEl.value) toEl.value = v;
+  filters.yearFrom = v; applyAndRender();
+});
+document.getElementById('year-to').addEventListener('change', function() {
+  const v = parseInt(this.value, 10); if (isNaN(v)) return;
+  const fromEl = document.getElementById('year-from');
+  if (v < +fromEl.value) fromEl.value = v;
+  filters.yearTo = v; applyAndRender();
+});
+
 document.querySelectorAll('.prov-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const prov = btn.dataset.prov;
-    if (filters.providers.has(prov)) {
-      filters.providers.delete(prov);
-      btn.classList.remove('active');
-    } else {
-      filters.providers.add(prov);
-      btn.classList.add('active');
-    }
+    if (filters.providers.has(prov)) { filters.providers.delete(prov); btn.classList.remove('active'); }
+    else                              { filters.providers.add(prov);    btn.classList.add('active'); }
     applyAndRender();
   });
 });
@@ -2457,27 +2440,16 @@ document.querySelectorAll('.type-btn').forEach(btn => {
   });
 });
 
-document.getElementById('sort-select').addEventListener('change', e => {
-  filters.sortBy = e.target.value;
+document.getElementById('sort-select').addEventListener('change', e => { filters.sortBy = e.target.value; applyAndRender(); });
+document.getElementById('rating-min').addEventListener('change', function() {
+  const v = parseFloat(this.value);
+  filters.minRating = isNaN(v) ? 0 : Math.max(0, Math.min(10, v));
   applyAndRender();
 });
+document.getElementById('hide-seen').addEventListener('change',       e => { filters.hideSeen = e.target.checked; applyAndRender(); });
+document.getElementById('hide-watchlisted').addEventListener('change', e => { filters.hideWatchlisted = e.target.checked; applyAndRender(); });
+document.getElementById('hide-dismissed').addEventListener('change',  e => { filters.hideDismissed = e.target.checked; applyAndRender(); });
 
-document.getElementById('hide-seen').addEventListener('change', e => {
-  filters.hideSeen = e.target.checked;
-  applyAndRender();
-});
-
-document.getElementById('hide-watchlisted').addEventListener('change', e => {
-  filters.hideWatchlisted = e.target.checked;
-  applyAndRender();
-});
-
-document.getElementById('hide-dismissed').addEventListener('change', e => {
-  filters.hideDismissed = e.target.checked;
-  applyAndRender();
-});
-
-// ── Watchlist filter/sort listeners ───────────────────────────────────────────
 document.querySelectorAll('.wl-type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.wl-type-btn').forEach(b => b.classList.remove('active'));
@@ -2486,45 +2458,36 @@ document.querySelectorAll('.wl-type-btn').forEach(btn => {
     renderWatchlistGrid();
   });
 });
-document.getElementById('wl-provider-select').addEventListener('change', e => {
-  wlFilters.provider = e.target.value;
-  renderWatchlistGrid();
-});
-document.getElementById('wl-sort-select').addEventListener('change', e => {
-  wlFilters.sort = e.target.value;
+document.getElementById('wl-lang-select').addEventListener('change',     e => { wlFilters.lang = e.target.value; renderWatchlistGrid(); });
+document.getElementById('wl-provider-select').addEventListener('change', e => { wlFilters.provider = e.target.value; renderWatchlistGrid(); });
+document.getElementById('wl-sort-select').addEventListener('change',     e => { wlFilters.sort = e.target.value; renderWatchlistGrid(); });
+document.getElementById('wl-reset-btn').addEventListener('click', () => {
+  wlFilters.type = 'both'; wlFilters.provider = ''; wlFilters.sort = 'newest'; wlFilters.lang = '';
+  document.querySelectorAll('.wl-type-btn').forEach(b => b.classList.toggle('active', b.dataset.value === 'both'));
+  document.getElementById('wl-provider-select').value = '';
+  document.getElementById('wl-sort-select').value = 'newest';
+  document.getElementById('wl-lang-select').value = '';
   renderWatchlistGrid();
 });
 
-document.getElementById('search-input').addEventListener('input', e => {
-  filters.searchQuery = e.target.value.trim();
-  applyAndRender();
-});
+document.getElementById('search-input').addEventListener('input', e => { filters.searchQuery = e.target.value.trim(); applyAndRender(); });
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function escHtml(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
 function provLabel(code) {
-  return { jhs: 'JioHotstar', prv: 'Prime', lgp: 'Lionsgate', snl: 'SonyLIV', snx: 'Sun NXT', zee: 'ZEE5', vim: 'Voot' }[code] || code.toUpperCase();
+  return { jhs:'JioHotstar', prv:'Prime', lgp:'Lionsgate', snl:'SonyLIV', snx:'Sun NXT', zee:'ZEE5', vim:'Voot' }[code] || code.toUpperCase();
 }
-
 function provBadgeClass(code) {
-  return { jhs: 'badge-jhs-card', prv: 'badge-prv-card', lgp: 'badge-lgp-card', snl: 'badge-snl-card', snx: 'badge-snx-card', zee: 'badge-zee-card', vim: 'badge-vim-card' }[code] || 'badge-other';
+  return { jhs:'badge-jhs-card', prv:'badge-prv-card', lgp:'badge-lgp-card', snl:'badge-snl-card', snx:'badge-snx-card', zee:'badge-zee-card', vim:'badge-vim-card' }[code] || 'badge-other';
 }
-
 function toTitleCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
-
 const _langDisplay = new Intl.DisplayNames(['en'], { type: 'language' });
-function langLabel(code) {
-  try { return _langDisplay.of(code) || code; } catch { return code; }
-}
-
+function langLabel(code) { try { return _langDisplay.of(code) || code; } catch { return code; } }
 function fmtVotes(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000)     return (n / 1_000).toFixed(0) + 'K';
+  if (n >= 1_000_000) return (n/1_000_000).toFixed(1)+'M';
+  if (n >= 1_000)     return (n/1_000).toFixed(0)+'K';
   return String(n);
 }
 
