@@ -739,14 +739,14 @@
       display: flex; background: var(--surface3);
       border-radius: 9px; padding: 3px; gap: 1px; flex-shrink: 0;
     }
-    .wl-type-btn {
+    .wl-type-btn, .hist-type-btn {
       background: transparent; border: none; border-radius: 7px;
       color: rgba(190,210,235,0.5); padding: 5px 13px; font-size: 12px;
       font-weight: 500; font-family: inherit; cursor: pointer;
       transition: all .15s; white-space: nowrap;
     }
-    .wl-type-btn:hover { color: var(--text); }
-    .wl-type-btn.active { background: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 0 10px var(--accent-glow); }
+    .wl-type-btn:hover, .hist-type-btn:hover { color: var(--text); }
+    .wl-type-btn.active, .hist-type-btn.active { background: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 0 10px var(--accent-glow); }
     .wl-vdivider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 4px; }
     .wl-sel {
       width: auto; background: var(--surface3); border: 1px solid var(--border2);
