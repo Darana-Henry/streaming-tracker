@@ -51,6 +51,7 @@ public class JustWatchClient {
         "      node {" +
         "        objectId" +
         "        objectType" +
+        "        ... on Show { seasons { id } }" +
         "        content(country: $country, language: $language) {" +
         "          title" +
         "          posterUrl" +
@@ -271,6 +272,9 @@ public class JustWatchClient {
                     t.imdbVotes = scoring.get("imdbVotes").getAsInt();
             }
         }
+
+        if ("show".equals(t.contentType) && hasArray(node, "seasons"))
+            t.numberOfSeasons = node.getAsJsonArray("seasons").size();
 
         t.providers = new ArrayList<>();
         Set<String> seen             = new HashSet<>();

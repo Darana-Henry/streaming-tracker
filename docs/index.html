@@ -959,6 +959,31 @@
       background: rgba(6,40,20,0.88); border: 1px solid rgba(74,222,128,0.5); color: #4ade80;
     }
 
+    /* ── Season modal ── */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:1000; }
+    .modal-overlay.hidden { display:none; }
+    .modal-box { background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(480px,90vw);max-height:90vh;overflow-y:auto; }
+    .modal-heading { font-size:16px;font-weight:700;margin-bottom:4px;color:var(--text); }
+    .modal-sub { font-size:12px;color:var(--muted);margin-bottom:20px; }
+    .season-check-all { display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:10px 0;border-bottom:1px solid var(--border2);margin-bottom:12px;cursor:pointer; }
+    .season-check-all input { accent-color:var(--accent);width:16px;height:16px;cursor:pointer; }
+    .season-checks { display:flex;flex-wrap:wrap;gap:8px; }
+    .season-check-item { display:flex;align-items:center;gap:6px;font-size:13px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .15s,border-color .15s; }
+    .season-check-item:has(input:checked) { background:var(--accent-dim);border-color:var(--accent); }
+    .season-check-item input { accent-color:var(--accent);cursor:pointer; }
+    .modal-actions { display:flex;justify-content:flex-end;gap:8px;margin-top:24px; }
+    .modal-btn { padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none; }
+    .modal-btn-ghost { background:transparent;color:var(--muted);border:1px solid var(--border); }
+    .modal-btn-ghost:hover { border-color:var(--accent);color:var(--text); }
+    .modal-btn-primary { background:var(--accent);color:#fff; }
+    .modal-btn-primary:hover { opacity:.9; }
+    /* ── Pending Seasons ── */
+    .seen-badge.season-badge { width:auto;border-radius:20px;padding:0 7px;font-size:11px;font-weight:700;min-width:28px; }
+    .pending-badge { position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;pointer-events:none; }
+    .pending-seasons-sub { font-size:11px;color:var(--muted);margin-top:2px;margin-bottom:4px; }
+    .update-seasons-btn { display:block;width:calc(100% - 16px);margin:4px 8px 8px;padding:7px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
+    .update-seasons-btn:hover { background:var(--accent);color:#fff; }
+
     /* ── Responsive ── */
     @media (max-width: 900px) { #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
     @media (max-width: 640px) {
@@ -974,6 +999,7 @@
   <div class="header-tabs">
     <button class="tab active" data-tab="discover">Discover</button>
     <button class="tab" data-tab="mylists">My Library<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
+    <button class="tab" data-tab="pending">Pending<span id="pending-count" class="tab-badge" hidden>0</span></button>
     <button class="tab" data-tab="stats">Analytics</button>
   </div>
   <input type="search" id="search-input" placeholder="Search titles, cast, director…">
@@ -1261,6 +1287,29 @@
 <!-- ── Analytics pane ── -->
 <div id="stats-pane" hidden></div>
 
+<!-- ── Pending Seasons pane ── -->
+<div id="pending-pane" hidden>
+  <div style="padding:28px 28px 0">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Pending Seasons</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Shows where more seasons are available than you've watched.</p>
+  </div>
+  <p id="pending-empty" class="empty-state" style="padding:0 28px 48px"></p>
+  <div id="pending-grid" class="mylist-grid" style="padding:0 28px 32px"></div>
+</div>
+
+<!-- ── Season selection modal ── -->
+<div id="season-modal-overlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-heading" id="season-modal-title"></div>
+    <div class="modal-sub" id="season-modal-sub"></div>
+    <div id="season-checkboxes"></div>
+    <div class="modal-actions">
+      <button id="season-modal-cancel" class="modal-btn modal-btn-ghost">Cancel</button>
+      <button id="season-modal-save" class="modal-btn modal-btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Firebase config ────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -1282,8 +1331,9 @@ let currentUser  = null;
 let allTitles    = {};
 let seenMap      = {};
 let watchlistMap = {};
-let trackingMap  = {};
-let dismissedMap = {};
+let trackingMap       = {};
+let dismissedMap      = {};
+let watchedSeasonsMap = {};
 
 const filters = {
   providers:        new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
@@ -1335,6 +1385,11 @@ auth.onAuthStateChanged(user => {
       renderGrid(getFiltered());
       if (!document.getElementById('mylists-pane').hidden) renderLibraryCarousel();
     });
+    db.ref('/watchedSeasons').on('value', snap => {
+      watchedSeasonsMap = snap.val() || {};
+      updatePendingBadge();
+      if (!document.getElementById('pending-pane').hidden) renderPendingSeasons();
+    });
   } else {
     userName.textContent = '';
     authBtn.textContent  = 'Sign in with Google';
@@ -1342,7 +1397,9 @@ auth.onAuthStateChanged(user => {
     db.ref('/watchlist').off();
     db.ref('/tracking').off();
     db.ref('/dismissed').off();
-    watchlistMap = {}; dismissedMap = {}; trackingMap = {};
+    db.ref('/watchedSeasons').off();
+    watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {};
+    updatePendingBadge();
     updateMyListsBadge();
     renderDiscoverStats();
   }
@@ -1477,6 +1534,7 @@ function applyAndRender() {
   renderTopPicks();
   renderDiscoverStats();
   updateResetLink();
+  updatePendingBadge();
 }
 
 // ── Discover stats bar ─────────────────────────────────────────────────────────
@@ -1776,8 +1834,11 @@ function makeCard(t, opts = {}) {
        </div>`
     : '';
 
+  const _ws = t.contentType === 'show' ? watchedSeasonsMap[String(t.id)] : null;
   const seenBadgeHtml = isSeen
-    ? `<div class="seen-badge"><span class="material-symbols-outlined">done</span></div>`
+    ? (_ws && t.numberOfSeasons
+        ? `<div class="seen-badge season-badge">${_ws.length}/${t.numberOfSeasons}</div>`
+        : `<div class="seen-badge"><span class="material-symbols-outlined">done</span></div>`)
     : '';
 
   const descHtml = t.shortDescription
@@ -1854,10 +1915,45 @@ function makeCard(t, opts = {}) {
 async function toggleSeen(id, markSeen) {
   if (!currentUser) return;
   const key = String(id);
+  const t   = allTitles[key];
+
+  if (markSeen && t && t.contentType === 'show') {
+    openSeasonModal(t, async (selectedSeasons) => {
+      const prevSeen = seenMap[key];
+      const prevWl   = watchlistMap[key];
+      seenMap[key] = true;
+      watchedSeasonsMap[key] = selectedSeasons;
+      delete watchlistMap[key];
+
+      const card = document.querySelector(`.card[data-id="${id}"]`);
+      if (card) card.replaceWith(makeCard(t));
+      if (filters.hideSeen) document.querySelector(`.card[data-id="${id}"]`)?.remove();
+      const total = Object.keys(allTitles).length;
+      document.getElementById('stats').textContent =
+        `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
+      renderDiscoverStats();
+      updatePendingBadge();
+
+      try {
+        await db.ref('/seen/' + key).set(true);
+        await db.ref('/watchedSeasons/' + key).set(selectedSeasons);
+        if (prevWl) await db.ref('/watchlist/' + key).remove();
+      } catch (err) {
+        if (prevSeen) seenMap[key] = true; else delete seenMap[key];
+        delete watchedSeasonsMap[key];
+        if (prevWl) watchlistMap[key] = true; else delete watchlistMap[key];
+        document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(t));
+        console.error('Seen toggle failed', err);
+        alert('Could not save: ' + err.message);
+      }
+    });
+    return;
+  }
+
   const prevSeen = seenMap[key];
   const prevWl   = watchlistMap[key];
   if (markSeen) { seenMap[key] = true; delete watchlistMap[key]; }
-  else          { delete seenMap[key]; }
+  else          { delete seenMap[key]; delete watchedSeasonsMap[key]; }
 
   const card = document.querySelector(`.card[data-id="${id}"]`);
   if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
@@ -1866,6 +1962,7 @@ async function toggleSeen(id, markSeen) {
     `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
   if (filters.hideSeen && markSeen) document.querySelector(`.card[data-id="${id}"]`)?.remove();
   renderDiscoverStats();
+  updatePendingBadge();
 
   try {
     if (markSeen) {
@@ -1873,6 +1970,7 @@ async function toggleSeen(id, markSeen) {
       if (prevWl) await db.ref('/watchlist/' + key).remove();
     } else {
       await db.ref('/seen/' + key).remove();
+      await db.ref('/watchedSeasons/' + key).remove();
     }
   } catch (err) {
     if (prevSeen) seenMap[key] = true; else delete seenMap[key];
@@ -1882,6 +1980,79 @@ async function toggleSeen(id, markSeen) {
     alert('Could not save: ' + err.message);
   }
 }
+
+// ── Season modal ───────────────────────────────────────────────────────────────
+let _seasonModalCallback = null;
+
+function openSeasonModal(t, onConfirm) {
+  const overlay = document.getElementById('season-modal-overlay');
+  const titleEl = document.getElementById('season-modal-title');
+  const subEl   = document.getElementById('season-modal-sub');
+  const grid    = document.getElementById('season-checkboxes');
+  const key     = String(t.id);
+  const n       = t.numberOfSeasons;
+  const existingWs = watchedSeasonsMap[key] || [];
+
+  titleEl.textContent = t.name;
+
+  if (n && n > 0) {
+    subEl.textContent = `${n} season${n > 1 ? 's' : ''} available`;
+    grid.innerHTML = `
+      <label class="season-check-all">
+        <input type="checkbox" id="season-all-cb"> All seasons (${n})
+      </label>
+      <div class="season-checks">
+        ${Array.from({length: n}, (_, i) => i + 1).map(s =>
+          `<label class="season-check-item">
+             <input type="checkbox" class="season-cb" value="${s}" ${existingWs.includes(s) ? 'checked' : ''}>
+             Season ${s}
+           </label>`
+        ).join('')}
+      </div>`;
+
+    const allCb  = document.getElementById('season-all-cb');
+    const getCbs = () => [...grid.querySelectorAll('.season-cb')];
+
+    const syncAll = () => {
+      const cbs = getCbs();
+      allCb.checked       = cbs.every(c => c.checked);
+      allCb.indeterminate = !allCb.checked && cbs.some(c => c.checked);
+    };
+    syncAll();
+
+    allCb.addEventListener('change', () => getCbs().forEach(cb => cb.checked = allCb.checked));
+    getCbs().forEach(cb => cb.addEventListener('change', syncAll));
+  } else {
+    subEl.textContent = 'Season count not available — mark all as watched?';
+    grid.innerHTML = `
+      <label class="season-check-all">
+        <input type="checkbox" id="season-all-cb" checked> All seasons
+      </label>`;
+  }
+
+  _seasonModalCallback = onConfirm;
+  overlay.classList.remove('hidden');
+}
+
+function closeSeasonModal() {
+  document.getElementById('season-modal-overlay').classList.add('hidden');
+  _seasonModalCallback = null;
+}
+
+document.getElementById('season-modal-cancel').addEventListener('click', closeSeasonModal);
+document.getElementById('season-modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSeasonModal();
+});
+document.getElementById('season-modal-save').addEventListener('click', () => {
+  const grid      = document.getElementById('season-checkboxes');
+  const allCb     = document.getElementById('season-all-cb');
+  const seasonCbs = [...grid.querySelectorAll('.season-cb')];
+  const selected  = seasonCbs.length > 0
+    ? seasonCbs.filter(cb => cb.checked).map(cb => parseInt(cb.value, 10))
+    : (allCb?.checked ? null : []);
+  if (_seasonModalCallback) _seasonModalCallback(selected);
+  closeSeasonModal();
+});
 
 // ── Watchlist ──────────────────────────────────────────────────────────────────
 async function toggleWatchlist(id, add) {
@@ -1935,6 +2106,106 @@ function updateMyListsBadge() {
   const badge = document.getElementById('my-lists-count');
   badge.textContent = total;
   badge.hidden = (total === 0);
+}
+
+// ── Pending Seasons ────────────────────────────────────────────────────────────
+function updatePendingBadge() {
+  const badge = document.getElementById('pending-count');
+  if (!badge) return;
+  const count = Object.keys(seenMap).filter(key => {
+    const t  = allTitles[key];
+    const ws = watchedSeasonsMap[key];
+    return t && t.contentType === 'show' && Array.isArray(ws) && t.numberOfSeasons && ws.length < t.numberOfSeasons;
+  }).length;
+  badge.textContent = count;
+  badge.hidden = count === 0;
+}
+
+function renderPendingSeasons() {
+  const grid  = document.getElementById('pending-grid');
+  const empty = document.getElementById('pending-empty');
+  if (!grid) return;
+
+  if (!currentUser) {
+    empty.textContent = 'Sign in to see pending seasons.';
+    grid.innerHTML    = '';
+    updatePendingBadge();
+    return;
+  }
+
+  const pendingShows = Object.keys(seenMap)
+    .filter(key => {
+      const t  = allTitles[key];
+      const ws = watchedSeasonsMap[key];
+      return t && t.contentType === 'show' && Array.isArray(ws) && t.numberOfSeasons && ws.length < t.numberOfSeasons;
+    })
+    .map(key => allTitles[key])
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  updatePendingBadge();
+
+  if (pendingShows.length === 0) {
+    empty.textContent = 'All caught up — no pending seasons!';
+    grid.innerHTML    = '';
+    return;
+  }
+  empty.textContent = '';
+  grid.innerHTML    = '';
+  pendingShows.forEach(t => grid.appendChild(makePendingCard(t)));
+}
+
+function makePendingCard(t) {
+  const key     = String(t.id);
+  const ws      = watchedSeasonsMap[key] || [];
+  const n       = t.numberOfSeasons;
+  const pending = n - ws.length;
+
+  const div      = document.createElement('div');
+  div.className  = 'card';
+  div.dataset.id = t.id;
+
+  const initial     = escHtml((t.name || '?')[0].toUpperCase());
+  const posterHtml  = t.posterUrl
+    ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const watchedLabel = ws.length > 0 ? ws.map(s => `S${s}`).join(', ') + ' watched' : 'None watched yet';
+
+  div.innerHTML = `
+    <div class="card-poster-wrap">
+      ${posterHtml}
+      <div class="card-poster-fallback" style="${t.posterUrl ? '' : 'display:flex'}">${initial}</div>
+      <div class="pending-badge">${pending} pending</div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
+      <div class="card-sub">${t.year || '—'} · Show · ${ws.length}/${n} seasons</div>
+      <div class="pending-seasons-sub">${escHtml(watchedLabel)}</div>
+      <div class="provider-badges">${(t.providers||[]).map(p=>`<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}</div>
+    </div>
+    <button class="update-seasons-btn">Update watched seasons</button>`;
+
+  div.querySelector('.update-seasons-btn').addEventListener('click', () => {
+    openSeasonModal(t, async (selectedSeasons) => {
+      if (selectedSeasons === null) selectedSeasons = Array.from({length: n}, (_, i) => i + 1);
+      const prevWs = watchedSeasonsMap[key];
+      watchedSeasonsMap[key] = selectedSeasons;
+      try {
+        await db.ref('/watchedSeasons/' + key).set(selectedSeasons);
+        renderPendingSeasons();
+        document.querySelectorAll(`.card[data-id="${t.id}"]`).forEach(c => {
+          if (c.closest('#pending-grid')) return;
+          c.replaceWith(makeCard(t));
+        });
+      } catch (err) {
+        watchedSeasonsMap[key] = prevWs;
+        console.error('Season update failed', err);
+        alert('Could not save: ' + err.message);
+      }
+    });
+  });
+
+  return div;
 }
 
 // ── My Library ─────────────────────────────────────────────────────────────────
@@ -2385,8 +2656,10 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.getElementById('discover-pane').hidden = (tab !== 'discover');
     document.getElementById('mylists-pane').hidden  = (tab !== 'mylists');
     document.getElementById('stats-pane').hidden    = (tab !== 'stats');
+    document.getElementById('pending-pane').hidden  = (tab !== 'pending');
     if (tab === 'mylists') renderMyLists();
     if (tab === 'stats')   renderStats();
+    if (tab === 'pending') renderPendingSeasons();
   });
 });
 

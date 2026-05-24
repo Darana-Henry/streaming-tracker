@@ -22,6 +22,7 @@ public class Title {
     public String streamingDate;  // ISO "YYYY-MM-DD", most recent availableFromTime across providers, may be null
     public String firstSeen;      // ISO "YYYY-MM-DD", date title first appeared in a scraper run
     public String contentType;          // "movie" or "show"
+    public Integer numberOfSeasons;    // shows only; null for movies
     public List<String> providers;
     public List<String> audioLanguages; // language codes available across streaming offers
 }
