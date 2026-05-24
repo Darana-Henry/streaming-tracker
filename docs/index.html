@@ -704,12 +704,23 @@
 
     /* ── My Lists pane ── */
     #mylists-pane { padding: 24px 28px; }
-    .mylist-section { margin-bottom: 48px; }
-    .mylist-section h2 {
-      font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text);
-      letter-spacing: -.3px; display: flex; align-items: center; gap: 10px;
-      padding-left: 10px; border-left: 3px solid var(--accent);
+    /* ── Library sub-tabs ── */
+    .lib-tabs { display:flex;gap:2px;border-bottom:1px solid var(--border2);margin-bottom:24px; }
+    .lib-tab {
+      background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+      border-radius:6px 6px 0 0;color:var(--muted);padding:8px 18px;font-size:13px;font-weight:500;
+      font-family:inherit;cursor:pointer;transition:color .15s,border-color .15s,background .15s;
+      white-space:nowrap;display:flex;align-items:center;gap:6px;
     }
+    .lib-tab:hover { color:var(--text);background:rgba(255,255,255,.03); }
+    .lib-tab.active { color:var(--accent-light);border-bottom-color:var(--accent);font-weight:600; }
+    .lib-tab-badge {
+      display:inline-flex;align-items:center;justify-content:center;
+      background:var(--accent-dim);color:var(--accent-light);border:1px solid rgba(99,102,241,.3);
+      border-radius:9999px;padding:1px 6px;font-size:10px;font-weight:700;min-width:20px;
+    }
+    .lib-tab-badge.hidden { display:none; }
+    #libtab-watchlist, #libtab-history, #libtab-tracking { padding-bottom: 40px; }
     .mylist-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -1235,8 +1246,15 @@
     <div id="lib-carousel-layout"></div>
   </div>
 
-  <section class="mylist-section">
-    <h2>Watchlist</h2>
+  <!-- ── Library sub-tabs ── -->
+  <div class="lib-tabs">
+    <button class="lib-tab active" data-libtab="watchlist">Watchlist<span id="lib-wl-badge" class="lib-tab-badge hidden">0</span></button>
+    <button class="lib-tab" data-libtab="history">History<span id="lib-hist-badge" class="lib-tab-badge hidden">0</span></button>
+    <button class="lib-tab" data-libtab="tracking">Coming to Streaming<span id="lib-trk-badge" class="lib-tab-badge hidden">0</span></button>
+  </div>
+
+  <!-- Watchlist pane -->
+  <div id="libtab-watchlist">
     <div class="wl-filter-bar">
       <div class="wl-seg">
         <button class="wl-type-btn active" data-value="both">All</button>
@@ -1269,10 +1287,46 @@
     </div>
     <p id="watchlist-empty" class="empty-state"></p>
     <div id="watchlist-grid" class="mylist-grid"></div>
-  </section>
+  </div>
 
-  <section class="mylist-section">
-    <h2>Coming to Streaming</h2>
+  <!-- History pane -->
+  <div id="libtab-history" hidden>
+    <div class="wl-filter-bar">
+      <div class="wl-seg">
+        <button class="hist-type-btn active" data-value="both">All</button>
+        <button class="hist-type-btn" data-value="movie">Movies</button>
+        <button class="hist-type-btn" data-value="show">Shows</button>
+      </div>
+      <div class="wl-vdivider"></div>
+      <select class="wl-sel" id="hist-lang-select">
+        <option value="">Language</option>
+      </select>
+      <select class="wl-sel" id="hist-provider-select">
+        <option value="">Platform</option>
+        <option value="jhs">JioHotstar</option>
+        <option value="prv">Prime Video</option>
+        <option value="lgp">Lionsgate Play</option>
+        <option value="snl">SonyLIV</option>
+        <option value="snx">Sun NXT</option>
+        <option value="zee">ZEE5</option>
+        <option value="vim">Voot</option>
+      </select>
+      <select class="wl-sel" id="hist-sort-select">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="rating">Top Rated</option>
+        <option value="az">A – Z</option>
+      </select>
+      <div class="wl-spacer"></div>
+      <span class="wl-count" id="hist-count"></span>
+      <button class="wl-reset-link hidden" id="hist-reset-btn">Reset</button>
+    </div>
+    <p id="history-empty" class="empty-state"></p>
+    <div id="history-grid" class="mylist-grid"></div>
+  </div>
+
+  <!-- Coming to Streaming pane -->
+  <div id="libtab-tracking" hidden>
     <div class="tracking-add">
       <input type="url" id="tracking-url" placeholder="Paste a JustWatch URL — e.g. https://www.justwatch.com/in/movie/project-hail-mary">
       <button id="tracking-search-btn">Find</button>
@@ -1280,7 +1334,7 @@
     <div id="tracking-results" hidden></div>
     <p id="tracking-empty" class="empty-state"></p>
     <div id="tracking-grid" class="mylist-grid"></div>
-  </section>
+  </div>
 
 </div>
 
@@ -1367,18 +1421,20 @@ auth.onAuthStateChanged(user => {
       if (!document.getElementById('mylists-pane').hidden) {
         renderLibraryStats();
         renderLibraryCarousel();
-        renderWatchlistGrid();
+        if (activeLibTab === 'watchlist') renderWatchlistGrid();
       }
       updateMyListsBadge();
+      updateLibTabBadges();
       renderDiscoverStats();
     });
     db.ref('/tracking').on('value', snap => {
       trackingMap = snap.val() || {};
       if (!document.getElementById('mylists-pane').hidden) {
         renderLibraryStats();
-        renderTrackingList();
+        if (activeLibTab === 'tracking') renderTrackingList();
       }
       updateMyListsBadge();
+      updateLibTabBadges();
     });
     db.ref('/dismissed').on('value', snap => {
       dismissedMap = snap.val() || {};
@@ -1388,7 +1444,9 @@ auth.onAuthStateChanged(user => {
     db.ref('/watchedSeasons').on('value', snap => {
       watchedSeasonsMap = snap.val() || {};
       updatePendingBadge();
+      updateLibTabBadges();
       if (!document.getElementById('pending-pane').hidden) renderPendingSeasons();
+      if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
     });
   } else {
     userName.textContent = '';
@@ -1933,6 +1991,8 @@ async function toggleSeen(id, markSeen) {
         `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
       renderDiscoverStats();
       updatePendingBadge();
+      updateLibTabBadges();
+      if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
 
       try {
         await db.ref('/seen/' + key).set(true);
@@ -1963,6 +2023,8 @@ async function toggleSeen(id, markSeen) {
   if (filters.hideSeen && markSeen) document.querySelector(`.card[data-id="${id}"]`)?.remove();
   renderDiscoverStats();
   updatePendingBadge();
+  updateLibTabBadges();
+  if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
 
   try {
     if (markSeen) {
@@ -2209,13 +2271,39 @@ function makePendingCard(t) {
 }
 
 // ── My Library ─────────────────────────────────────────────────────────────────
-const wlFilters = { type: 'both', provider: '', sort: 'newest', lang: '' };
+const wlFilters   = { type: 'both', provider: '', sort: 'newest', lang: '' };
+const histFilters = { type: 'both', provider: '', sort: 'newest', lang: '' };
+let   activeLibTab = 'watchlist';
+
+function getHistoryTitles() {
+  return Object.keys(seenMap).filter(key => {
+    const t = allTitles[key];
+    if (!t) return false;
+    if (t.contentType === 'movie') return true;
+    const ws = watchedSeasonsMap[key];
+    return Array.isArray(ws) && t.numberOfSeasons && ws.length === t.numberOfSeasons;
+  }).map(key => allTitles[key]);
+}
+
+function updateLibTabBadges() {
+  const wlCount   = Object.keys(watchlistMap).length;
+  const histCount = getHistoryTitles().length;
+  const trkCount  = Object.keys(trackingMap).length;
+  const wlB = document.getElementById('lib-wl-badge');
+  const hB  = document.getElementById('lib-hist-badge');
+  const tB  = document.getElementById('lib-trk-badge');
+  if (wlB) { wlB.textContent = wlCount;   wlB.classList.toggle('hidden', wlCount === 0); }
+  if (hB)  { hB.textContent  = histCount; hB.classList.toggle('hidden',  histCount === 0); }
+  if (tB)  { tB.textContent  = trkCount;  tB.classList.toggle('hidden',  trkCount === 0); }
+}
 
 function renderMyLists() {
   renderLibraryStats();
   renderLibraryCarousel();
-  renderWatchlistGrid();
-  renderTrackingList();
+  updateLibTabBadges();
+  if (activeLibTab === 'watchlist') renderWatchlistGrid();
+  if (activeLibTab === 'history')   renderHistory();
+  if (activeLibTab === 'tracking')  renderTrackingList();
 }
 
 function renderLibraryStats() {
@@ -2223,20 +2311,26 @@ function renderLibraryStats() {
   if (!bar) return;
   if (!currentUser) { bar.innerHTML = ''; return; }
 
-  const wlCount  = Object.keys(watchlistMap).length;
-  const trkCount = Object.keys(trackingMap).length;
-  const wl8plus  = Object.keys(watchlistMap)
+  const wlCount   = Object.keys(watchlistMap).length;
+  const trkCount  = Object.keys(trackingMap).length;
+  const histCount = getHistoryTitles().length;
+  const wl8plus   = Object.keys(watchlistMap)
     .map(id => allTitles[id])
     .filter(t => t && (t.imdbRating || 0) >= 8)
     .length;
 
-  if (!wlCount && !trkCount) { bar.innerHTML = ''; return; }
+  if (!wlCount && !trkCount && !histCount) { bar.innerHTML = ''; return; }
 
   bar.innerHTML = `
     ${wlCount ? `<div class="lstat-pill">
       <span class="material-symbols-outlined lstat-icon">bookmark</span>
       <span class="lstat-value">${wlCount}</span>
       <span class="lstat-label">on watchlist</span>
+    </div>` : ''}
+    ${histCount ? `<div class="lstat-pill">
+      <span class="material-symbols-outlined lstat-icon">history</span>
+      <span class="lstat-value">${histCount}</span>
+      <span class="lstat-label">watched</span>
     </div>` : ''}
     ${trkCount ? `<div class="lstat-pill">
       <span class="material-symbols-outlined lstat-icon">notifications</span>
@@ -2329,6 +2423,132 @@ function renderWatchlistGrid() {
   grid.innerHTML = '';
   titles.forEach(t => grid.appendChild(makeCard(t, { watchlistView: true })));
   updateWlResetBtn();
+}
+
+// ── History ────────────────────────────────────────────────────────────────────
+function populateHistLangSelect(titles) {
+  const sel = document.getElementById('hist-lang-select');
+  if (!sel) return;
+  const langSet = new Set();
+  titles.forEach(t => {
+    if (t.originalLanguage) langSet.add(t.originalLanguage);
+    (t.audioLanguages || []).forEach(l => langSet.add(l));
+  });
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Language</option>';
+  [...langSet].sort((a, b) => langLabel(a).localeCompare(langLabel(b))).forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = langLabel(code);
+    sel.appendChild(opt);
+  });
+  sel.value = langSet.has(current) ? current : '';
+}
+
+function isHistFiltersActive() {
+  return histFilters.type !== 'both' || histFilters.provider || histFilters.sort !== 'newest' || histFilters.lang;
+}
+
+function updateHistResetBtn() {
+  const btn = document.getElementById('hist-reset-btn');
+  if (btn) btn.classList.toggle('hidden', !isHistFiltersActive());
+  ['hist-provider-select', 'hist-sort-select', 'hist-lang-select'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('is-active', id === 'hist-sort-select' ? el.value !== 'newest' : el.value !== '');
+  });
+}
+
+function renderHistory() {
+  const grid  = document.getElementById('history-grid');
+  const empty = document.getElementById('history-empty');
+  const count = document.getElementById('hist-count');
+  if (!grid) return;
+
+  if (!currentUser) {
+    grid.innerHTML = ''; if (count) count.textContent = '';
+    empty.textContent = 'Sign in to see your history.';
+    return;
+  }
+
+  const all = getHistoryTitles();
+  populateHistLangSelect(all);
+
+  if (!all.length) {
+    grid.innerHTML = ''; if (count) count.textContent = '';
+    empty.textContent = 'Nothing here yet — mark titles as watched to build your history.';
+    updateHistResetBtn();
+    return;
+  }
+
+  let titles = all.slice();
+  if (histFilters.type !== 'both') titles = titles.filter(t => t.contentType === histFilters.type);
+  if (histFilters.provider)        titles = titles.filter(t => (t.providers || []).includes(histFilters.provider));
+  if (histFilters.lang)            titles = titles.filter(t =>
+    (t.audioLanguages || []).includes(histFilters.lang) || t.originalLanguage === histFilters.lang);
+
+  switch (histFilters.sort) {
+    case 'newest': titles.sort((a, b) => (b.year ?? 0)       - (a.year ?? 0));            break;
+    case 'oldest': titles.sort((a, b) => (a.year ?? 9999)    - (b.year ?? 9999));          break;
+    case 'rating': titles.sort((a, b) => (b.imdbRating ?? 0) - (a.imdbRating ?? 0));       break;
+    case 'az':     titles.sort((a, b) => (a.name || '').localeCompare(b.name || ''));       break;
+  }
+
+  if (count) count.textContent = titles.length < all.length
+    ? `${titles.length} of ${all.length}`
+    : `${all.length} title${all.length !== 1 ? 's' : ''}`;
+
+  empty.textContent = titles.length ? '' : 'No titles match the current filters.';
+  grid.innerHTML = '';
+  titles.forEach(t => grid.appendChild(makeHistoryCard(t)));
+  updateHistResetBtn();
+}
+
+function makeHistoryCard(t) {
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.dataset.id = t.id;
+
+  const initial    = escHtml((t.name || '?')[0].toUpperCase());
+  const posterHtml = t.posterUrl
+    ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const imdbHtml = t.imdbRating
+    ? `<div class="card-imdb-overlay">
+         <span class="imdb-star">★</span>
+         <span class="imdb-score">${t.imdbRating.toFixed(1)}</span>
+         ${t.imdbVotes ? `<span class="imdb-votes">${fmtVotes(t.imdbVotes)}</span>` : ''}
+       </div>`
+    : '';
+  const descHtml = t.shortDescription
+    ? `<div class="card-overlay-desc">${escHtml(t.shortDescription)}</div>`
+    : '';
+  const provBadges = (t.providers || [])
+    .map(p => `<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`)
+    .join('');
+
+  const subLabel = t.contentType === 'show' && t.numberOfSeasons
+    ? `${t.year || '—'} · ${t.numberOfSeasons} season${t.numberOfSeasons !== 1 ? 's' : ''} · Show`
+    : `${t.year || '—'} · ${t.contentType === 'show' ? 'Show' : 'Movie'}`;
+
+  div.innerHTML = `
+    <div class="card-poster-wrap">
+      ${posterHtml}
+      <div class="card-poster-fallback" style="${t.posterUrl ? '' : 'display:flex'}">${initial}</div>
+      ${imdbHtml}
+      <div class="seen-badge"><span class="material-symbols-outlined">done</span></div>
+      <div class="card-overlay">
+        ${descHtml}
+        <div class="card-actions"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
+      <div class="card-sub">${subLabel}</div>
+      <div class="provider-badges">${provBadges}</div>
+    </div>`;
+
+  return div;
 }
 
 function renderTrackingList() {
@@ -2795,6 +3015,41 @@ document.getElementById('wl-reset-btn').addEventListener('click', () => {
 });
 
 document.getElementById('search-input').addEventListener('input', e => { filters.searchQuery = e.target.value.trim(); applyAndRender(); });
+
+// ── Library sub-tab switching ──────────────────────────────────────────────────
+document.querySelectorAll('.lib-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lib-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    activeLibTab = btn.dataset.libtab;
+    document.getElementById('libtab-watchlist').hidden = (activeLibTab !== 'watchlist');
+    document.getElementById('libtab-history').hidden   = (activeLibTab !== 'history');
+    document.getElementById('libtab-tracking').hidden  = (activeLibTab !== 'tracking');
+    if (activeLibTab === 'watchlist') renderWatchlistGrid();
+    if (activeLibTab === 'history')   renderHistory();
+    if (activeLibTab === 'tracking')  renderTrackingList();
+  });
+});
+
+document.querySelectorAll('.hist-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.hist-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    histFilters.type = btn.dataset.value;
+    renderHistory();
+  });
+});
+document.getElementById('hist-lang-select').addEventListener('change',     e => { histFilters.lang = e.target.value; renderHistory(); });
+document.getElementById('hist-provider-select').addEventListener('change', e => { histFilters.provider = e.target.value; renderHistory(); });
+document.getElementById('hist-sort-select').addEventListener('change',     e => { histFilters.sort = e.target.value; renderHistory(); });
+document.getElementById('hist-reset-btn').addEventListener('click', () => {
+  histFilters.type = 'both'; histFilters.provider = ''; histFilters.sort = 'newest'; histFilters.lang = '';
+  document.querySelectorAll('.hist-type-btn').forEach(b => b.classList.toggle('active', b.dataset.value === 'both'));
+  document.getElementById('hist-provider-select').value = '';
+  document.getElementById('hist-sort-select').value = 'newest';
+  document.getElementById('hist-lang-select').value = '';
+  renderHistory();
+});
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function escHtml(str) {
