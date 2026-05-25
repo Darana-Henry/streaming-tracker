@@ -2794,7 +2794,7 @@ function makeTrackingCard(id, meta) {
 
 // ── Tracking URL parser ────────────────────────────────────────────────────────
 function extractFullPath(url) {
-  const m = url.match(/justwatch\.com(\/[a-z]+\/(movie|show)\/[^?#/]+)/i);
+  const m = url.match(/justwatch\.com(\/[a-z]+\/(movie|tv-show|show)\/[^?#/]+)/i);
   return m ? { fullPath: m[1], type: m[2] } : null;
 }
 
@@ -2837,7 +2837,7 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
     meta = await jwFetchByPath(parsed.fullPath);
   } catch (err) {
     const slug = parsed.fullPath.split('/').pop();
-    meta = { objectId: null, name: slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), year: null, contentType: parsed.type, posterUrl: null };
+    meta = { objectId: null, name: slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), year: null, contentType: parsed.type === 'movie' ? 'movie' : 'show', posterUrl: null };
   }
   btn.disabled = false; btn.textContent = 'Find';
 
