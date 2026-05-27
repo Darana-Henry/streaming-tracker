@@ -78,10 +78,11 @@ java -jar build/libs/streaming-tracker-1.0.jar
   posterUrl, backdropUrl,
   contentType, providers[]
 
-/seen/{justwatch_id}: true       ← written by frontend only
-/watchlist/{justwatch_id}: true  ← written by frontend only
-/dismissed/{justwatch_id}: true  ← written by frontend only
-/tracking/{id}: { name, year, posterUrl, contentType, addedAt }  ← written by frontend only
+/users/{uid}/seen/{justwatch_id}: true          ← written by frontend only
+/users/{uid}/watchlist/{justwatch_id}: true     ← written by frontend only
+/users/{uid}/dismissed/{justwatch_id}: true     ← written by frontend only
+/users/{uid}/watchedSeasons/{justwatch_id}: []  ← written by frontend only
+/users/{uid}/tracking/{id}: { name, year, posterUrl, contentType, addedAt }  ← written by frontend only
 ```
 
 Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot
@@ -98,11 +99,13 @@ Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl`
 ```json
 {
   "rules": {
-    "titles":    { ".read": true,           ".write": false          },
-    "seen":      { ".read": "auth != null", ".write": "auth != null" },
-    "watchlist": { ".read": "auth != null", ".write": "auth != null" },
-    "dismissed": { ".read": "auth != null", ".write": "auth != null" },
-    "tracking":  { ".read": "auth != null", ".write": "auth != null" }
+    "titles": { ".read": true, ".write": false },
+    "users": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
   }
 }
 ```
