@@ -1382,6 +1382,7 @@ const db   = firebase.database();
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let currentUser  = null;
+let currentUid   = null;
 let allTitles    = {};
 let seenMap      = {};
 let watchlistMap = {};
@@ -1404,6 +1405,8 @@ const filters = {
   minRating:        0,
 };
 
+function uRef(path) { return db.ref('/users/' + currentUid + '/' + path); }
+
 // ── Auth ───────────────────────────────────────────────────────────────────────
 const authBtn  = document.getElementById('auth-btn');
 const userName = document.getElementById('user-name');
@@ -1411,11 +1414,17 @@ const userName = document.getElementById('user-name');
 auth.onAuthStateChanged(user => {
   currentUser = user;
   if (user) {
+    currentUid = user.uid;
     userName.textContent = user.displayName || user.email;
     authBtn.textContent  = 'Sign out';
     authBtn.className    = 'signed-in';
 
-    db.ref('/watchlist').on('value', snap => {
+    uRef('seen').on('value', snap => {
+      seenMap = snap.val() || {};
+      renderGrid(getFiltered());
+      if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
+    });
+    uRef('watchlist').on('value', snap => {
       watchlistMap = snap.val() || {};
       renderGrid(getFiltered());
       if (!document.getElementById('mylists-pane').hidden) {
@@ -1427,7 +1436,7 @@ auth.onAuthStateChanged(user => {
       updateLibTabBadges();
       renderDiscoverStats();
     });
-    db.ref('/tracking').on('value', snap => {
+    uRef('tracking').on('value', snap => {
       trackingMap = snap.val() || {};
       if (!document.getElementById('mylists-pane').hidden) {
         renderLibraryStats();
@@ -1436,12 +1445,12 @@ auth.onAuthStateChanged(user => {
       updateMyListsBadge();
       updateLibTabBadges();
     });
-    db.ref('/dismissed').on('value', snap => {
+    uRef('dismissed').on('value', snap => {
       dismissedMap = snap.val() || {};
       renderGrid(getFiltered());
       if (!document.getElementById('mylists-pane').hidden) renderLibraryCarousel();
     });
-    db.ref('/watchedSeasons').on('value', snap => {
+    uRef('watchedSeasons').on('value', snap => {
       watchedSeasonsMap = snap.val() || {};
       updatePendingBadge();
       updateLibTabBadges();
@@ -1449,14 +1458,15 @@ auth.onAuthStateChanged(user => {
       if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
     });
   } else {
-    userName.textContent = '';
-    authBtn.textContent  = 'Sign in with Google';
-    authBtn.className    = '';
-    db.ref('/watchlist').off();
-    db.ref('/tracking').off();
-    db.ref('/dismissed').off();
-    db.ref('/watchedSeasons').off();
-    watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {};
+    if (currentUid) {
+      db.ref('/users/' + currentUid + '/seen').off();
+      db.ref('/users/' + currentUid + '/watchlist').off();
+      db.ref('/users/' + currentUid + '/tracking').off();
+      db.ref('/users/' + currentUid + '/dismissed').off();
+      db.ref('/users/' + currentUid + '/watchedSeasons').off();
+      currentUid = null;
+    }
+    seenMap = {}; watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {};
     updatePendingBadge();
     updateMyListsBadge();
     renderDiscoverStats();
@@ -1474,12 +1484,6 @@ async function loadData() {
   try {
     const titlesSnap = await db.ref('/titles').get();
     allTitles = titlesSnap.val() || {};
-    try {
-      const seenSnap = await db.ref('/seen').get();
-      seenMap = seenSnap.val() || {};
-    } catch (_) {
-      seenMap = {};
-    }
     buildFiltersUI();
     applyAndRender();
   } catch (err) {
@@ -1995,9 +1999,9 @@ async function toggleSeen(id, markSeen) {
       if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
 
       try {
-        await db.ref('/seen/' + key).set(true);
-        await db.ref('/watchedSeasons/' + key).set(selectedSeasons);
-        if (prevWl) await db.ref('/watchlist/' + key).remove();
+        await uRef('seen/' + key).set(true);
+        await uRef('watchedSeasons/' + key).set(selectedSeasons);
+        if (prevWl) await uRef('watchlist/' + key).remove();
       } catch (err) {
         if (prevSeen) seenMap[key] = true; else delete seenMap[key];
         delete watchedSeasonsMap[key];
@@ -2028,11 +2032,11 @@ async function toggleSeen(id, markSeen) {
 
   try {
     if (markSeen) {
-      await db.ref('/seen/' + key).set(true);
-      if (prevWl) await db.ref('/watchlist/' + key).remove();
+      await uRef('seen/' + key).set(true);
+      if (prevWl) await uRef('watchlist/' + key).remove();
     } else {
-      await db.ref('/seen/' + key).remove();
-      await db.ref('/watchedSeasons/' + key).remove();
+      await uRef('seen/' + key).remove();
+      await uRef('watchedSeasons/' + key).remove();
     }
   } catch (err) {
     if (prevSeen) seenMap[key] = true; else delete seenMap[key];
@@ -2126,8 +2130,8 @@ async function toggleWatchlist(id, add) {
   renderDiscoverStats();
 
   try {
-    if (add) await db.ref('/watchlist/' + key).set(true);
-    else     await db.ref('/watchlist/' + key).remove();
+    if (add) await uRef('watchlist/' + key).set(true);
+    else     await uRef('watchlist/' + key).remove();
   } catch (err) {
     if (prev) watchlistMap[key] = true; else delete watchlistMap[key];
     document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
@@ -2153,8 +2157,8 @@ async function toggleDismissed(id, dismiss) {
   }
 
   try {
-    if (dismiss) await db.ref('/dismissed/' + key).set(true);
-    else         await db.ref('/dismissed/' + key).remove();
+    if (dismiss) await uRef('dismissed/' + key).set(true);
+    else         await uRef('dismissed/' + key).remove();
   } catch (err) {
     if (prev) dismissedMap[key] = true; else delete dismissedMap[key];
     document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
@@ -2253,7 +2257,7 @@ function makePendingCard(t) {
       const prevWs = watchedSeasonsMap[key];
       watchedSeasonsMap[key] = selectedSeasons;
       try {
-        await db.ref('/watchedSeasons/' + key).set(selectedSeasons);
+        await uRef('watchedSeasons/' + key).set(selectedSeasons);
         renderPendingSeasons();
         document.querySelectorAll(`.card[data-id="${t.id}"]`).forEach(c => {
           if (c.closest('#pending-grid')) return;
@@ -2786,7 +2790,7 @@ function makeTrackingCard(id, meta) {
 
   if (isAvailable) div.querySelector('.add-to-watchlist-btn')?.addEventListener('click', () => toggleWatchlist(matchedTitle.id, true));
   div.querySelector('.remove-tracking-btn').addEventListener('click', async () => {
-    try { await db.ref('/tracking/' + id).remove(); }
+    try { await uRef('tracking/' + id).remove(); }
     catch (err) { alert('Could not remove: ' + err.message); }
   });
   return div;
@@ -2860,7 +2864,7 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
     const slug = parsed.fullPath.split('/').pop();
     const key  = meta.objectId ? String(meta.objectId) : (parsed.type + '_' + slug);
     try {
-      await db.ref('/tracking/' + key).set({ name: meta.name, year: meta.year, posterUrl: meta.posterUrl, contentType: meta.contentType, addedAt: Date.now() });
+      await uRef('tracking/' + key).set({ name: meta.name, year: meta.year, posterUrl: meta.posterUrl, contentType: meta.contentType, addedAt: Date.now() });
       document.getElementById('tracking-url').value = '';
       container.hidden = true; container.innerHTML = '';
     } catch (err) { alert('Could not save: ' + err.message); }
