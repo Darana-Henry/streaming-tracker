@@ -728,6 +728,12 @@
     }
     .empty-state { color: var(--muted); font-size: 13px; padding: 10px 0; }
 
+    /* Watchlist manual reorder (drag & drop) */
+    .card-draggable { cursor: grab; }
+    .card-draggable.dragging { opacity: .4; cursor: grabbing; }
+    .card-draggable.drag-over-before { box-shadow: inset 3px 0 0 var(--accent); }
+    .card-draggable.drag-over-after  { box-shadow: inset -3px 0 0 var(--accent); }
+
     /* Watchlist filter bar */
     .wl-filter-bar {
       display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
@@ -1276,7 +1282,8 @@
         <option value="vim">Voot</option>
       </select>
       <select class="wl-sel" id="wl-sort-select">
-        <option value="newest">Newest first</option>
+        <option value="manual">My order</option>
+        <option value="newest" selected>Newest first</option>
         <option value="oldest">Oldest first</option>
         <option value="rating">Top Rated</option>
         <option value="az">A – Z</option>
@@ -1426,6 +1433,7 @@ auth.onAuthStateChanged(user => {
     });
     uRef('watchlist').on('value', snap => {
       watchlistMap = snap.val() || {};
+      migrateLegacyWatchlistOrders();
       renderGrid(getFiltered());
       if (!document.getElementById('mylists-pane').hidden) {
         renderLibraryStats();
@@ -1869,8 +1877,9 @@ function makeCard(t, opts = {}) {
   const isWatchlisted = !!watchlistMap[String(t.id)];
   const isDismissed   = !!dismissedMap[String(t.id)];
   const div           = document.createElement('div');
-  div.className = 'card' + (isSeen ? ' is-seen' : '');
+  div.className = 'card' + (isSeen ? ' is-seen' : '') + (opts.draggableOrder ? ' card-draggable' : '');
   div.dataset.id = t.id;
+  if (opts.draggableOrder) div.draggable = true;
 
   const disabled = currentUser ? '' : 'disabled title="Sign in to track"';
 
@@ -2005,7 +2014,7 @@ async function toggleSeen(id, markSeen) {
       } catch (err) {
         if (prevSeen) seenMap[key] = true; else delete seenMap[key];
         delete watchedSeasonsMap[key];
-        if (prevWl) watchlistMap[key] = true; else delete watchlistMap[key];
+        if (prevWl) watchlistMap[key] = prevWl; else delete watchlistMap[key];
         document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(t));
         console.error('Seen toggle failed', err);
         alert('Could not save: ' + err.message);
@@ -2040,7 +2049,7 @@ async function toggleSeen(id, markSeen) {
     }
   } catch (err) {
     if (prevSeen) seenMap[key] = true; else delete seenMap[key];
-    if (prevWl)   watchlistMap[key] = true; else delete watchlistMap[key];
+    if (prevWl)   watchlistMap[key] = prevWl; else delete watchlistMap[key];
     document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Seen toggle failed', err);
     alert('Could not save: ' + err.message);
@@ -2121,19 +2130,41 @@ document.getElementById('season-modal-save').addEventListener('click', () => {
 });
 
 // ── Watchlist ──────────────────────────────────────────────────────────────────
+let wlMigrationInFlight = false;
+
+function migrateLegacyWatchlistOrders() {
+  if (wlMigrationInFlight || !currentUid) return;
+  const legacyIds = Object.keys(watchlistMap).filter(id => watchlistMap[id] === true);
+  if (!legacyIds.length) return;
+
+  wlMigrationInFlight = true;
+  const base    = Date.now();
+  const updates = {};
+  legacyIds.forEach((id, i) => {
+    const order = base + i;
+    watchlistMap[id] = { order };
+    updates['watchlist/' + id + '/order'] = order;
+  });
+
+  db.ref('/users/' + currentUid).update(updates)
+    .catch(err => console.error('Watchlist order migration failed', err))
+    .finally(() => { wlMigrationInFlight = false; });
+}
+
 async function toggleWatchlist(id, add) {
   if (!currentUser) return;
-  const key  = String(id);
-  const prev = watchlistMap[key];
-  if (add) watchlistMap[key] = true; else delete watchlistMap[key];
+  const key   = String(id);
+  const prev  = watchlistMap[key];
+  const value = add ? { order: Date.now() } : null;
+  if (add) watchlistMap[key] = value; else delete watchlistMap[key];
   document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
   renderDiscoverStats();
 
   try {
-    if (add) await uRef('watchlist/' + key).set(true);
+    if (add) await uRef('watchlist/' + key).set(value);
     else     await uRef('watchlist/' + key).remove();
   } catch (err) {
-    if (prev) watchlistMap[key] = true; else delete watchlistMap[key];
+    if (prev) watchlistMap[key] = prev; else delete watchlistMap[key];
     document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
     console.error('Watchlist toggle failed', err);
     alert('Could not save: ' + err.message);
@@ -2413,6 +2444,7 @@ function renderWatchlistGrid() {
   );
 
   switch (wlFilters.sort) {
+    case 'manual': titles.sort((a, b) => wlOrderOf(watchlistMap[String(a.id)]) - wlOrderOf(watchlistMap[String(b.id)])); break;
     case 'newest': titles.sort((a, b) => (b.year ?? 0)    - (a.year ?? 0));           break;
     case 'oldest': titles.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));        break;
     case 'rating': titles.sort((a, b) => (b.imdbRating ?? 0) - (a.imdbRating ?? 0)); break;
@@ -2423,10 +2455,95 @@ function renderWatchlistGrid() {
     ? `${titles.length} of ${all.length}`
     : `${all.length} title${all.length !== 1 ? 's' : ''}`;
 
+  const draggable = wlFilters.sort === 'manual';
   empty.textContent = titles.length ? '' : 'No titles match the current filters.';
   grid.innerHTML = '';
-  titles.forEach(t => grid.appendChild(makeCard(t, { watchlistView: true })));
+  titles.forEach(t => grid.appendChild(makeCard(t, { watchlistView: true, draggableOrder: draggable })));
   updateWlResetBtn();
+}
+
+function wlOrderOf(v) {
+  return (v && typeof v === 'object' && typeof v.order === 'number') ? v.order : 0;
+}
+
+// ── Watchlist manual reorder (drag & drop) ──────────────────────────────────────
+let wlDragId = null;
+
+function clearWlDragOverClasses(grid) {
+  grid.querySelectorAll('.drag-over-before,.drag-over-after').forEach(el =>
+    el.classList.remove('drag-over-before', 'drag-over-after'));
+}
+
+function initWatchlistDragReorder() {
+  const grid = document.getElementById('watchlist-grid');
+  if (!grid) return;
+
+  grid.addEventListener('dragstart', e => {
+    const card = e.target.closest('.card');
+    if (!card || wlFilters.sort !== 'manual') return;
+    wlDragId = card.dataset.id;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', wlDragId);
+  });
+
+  grid.addEventListener('dragend', e => {
+    e.target.closest('.card')?.classList.remove('dragging');
+    clearWlDragOverClasses(grid);
+    wlDragId = null;
+  });
+
+  grid.addEventListener('dragover', e => {
+    if (wlFilters.sort !== 'manual' || !wlDragId) return;
+    const card = e.target.closest('.card');
+    if (!card || card.dataset.id === wlDragId) return;
+    e.preventDefault();
+    const rect   = card.getBoundingClientRect();
+    const before = (e.clientX - rect.left) < rect.width / 2;
+    clearWlDragOverClasses(grid);
+    card.classList.toggle('drag-over-before', before);
+    card.classList.toggle('drag-over-after', !before);
+  });
+
+  grid.addEventListener('drop', async e => {
+    if (wlFilters.sort !== 'manual' || !wlDragId) return;
+    const card = e.target.closest('.card');
+    clearWlDragOverClasses(grid);
+    if (!card || card.dataset.id === wlDragId) return;
+    e.preventDefault();
+
+    const draggedId = wlDragId;
+    const rect       = card.getBoundingClientRect();
+    const before      = (e.clientX - rect.left) < rect.width / 2;
+
+    const ids = [...grid.querySelectorAll('.card')].map(el => el.dataset.id).filter(id => id !== draggedId);
+    let idx = ids.indexOf(card.dataset.id);
+    if (!before) idx += 1;
+
+    const prevId    = idx > 0            ? ids[idx - 1] : null;
+    const nextId    = idx < ids.length    ? ids[idx]     : null;
+    const prevOrder = prevId ? wlOrderOf(watchlistMap[prevId]) : null;
+    const nextOrder = nextId ? wlOrderOf(watchlistMap[nextId]) : null;
+
+    let newOrder;
+    if (prevOrder != null && nextOrder != null) newOrder = (prevOrder + nextOrder) / 2;
+    else if (prevOrder != null)                 newOrder = prevOrder + 1000;
+    else if (nextOrder != null)                 newOrder = nextOrder - 1000;
+    else                                         newOrder = Date.now();
+
+    const prevValue = watchlistMap[draggedId];
+    watchlistMap[draggedId] = { order: newOrder };
+    renderWatchlistGrid();
+
+    try {
+      await uRef('watchlist/' + draggedId + '/order').set(newOrder);
+    } catch (err) {
+      watchlistMap[draggedId] = prevValue;
+      renderWatchlistGrid();
+      console.error('Watchlist reorder failed', err);
+      alert('Could not save new order: ' + err.message);
+    }
+  });
 }
 
 // ── History ────────────────────────────────────────────────────────────────────
@@ -3009,6 +3126,7 @@ document.querySelectorAll('.wl-type-btn').forEach(btn => {
 document.getElementById('wl-lang-select').addEventListener('change',     e => { wlFilters.lang = e.target.value; renderWatchlistGrid(); });
 document.getElementById('wl-provider-select').addEventListener('change', e => { wlFilters.provider = e.target.value; renderWatchlistGrid(); });
 document.getElementById('wl-sort-select').addEventListener('change',     e => { wlFilters.sort = e.target.value; renderWatchlistGrid(); });
+initWatchlistDragReorder();
 document.getElementById('wl-reset-btn').addEventListener('click', () => {
   wlFilters.type = 'both'; wlFilters.provider = ''; wlFilters.sort = 'newest'; wlFilters.lang = '';
   document.querySelectorAll('.wl-type-btn').forEach(b => b.classList.toggle('active', b.dataset.value === 'both'));

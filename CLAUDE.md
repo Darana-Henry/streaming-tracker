@@ -79,7 +79,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
   contentType, providers[]
 
 /users/{uid}/seen/{justwatch_id}: true          ← written by frontend only
-/users/{uid}/watchlist/{justwatch_id}: true     ← written by frontend only
+/users/{uid}/watchlist/{justwatch_id}: { order }  ← written by frontend only; order is a sortable float used by "My order"
 /users/{uid}/dismissed/{justwatch_id}: true     ← written by frontend only
 /users/{uid}/watchedSeasons/{justwatch_id}: []  ← written by frontend only
 /users/{uid}/tracking/{id}: { name, year, posterUrl, contentType, addedAt }  ← written by frontend only
