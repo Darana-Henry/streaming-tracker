@@ -83,6 +83,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 /users/{uid}/dismissed/{justwatch_id}: true     ← written by frontend only
 /users/{uid}/watchedSeasons/{justwatch_id}: []  ← written by frontend only
 /users/{uid}/tracking/{id}: { name, year, posterUrl, contentType, addedAt }  ← written by frontend only
+/users/{uid}/customTitles/{id}: { id, name, year, contentType, posterUrl, addedAt, source }  ← written by frontend only; denormalized copy for titles marked seen that aren't in /titles (e.g. watched in a theater, or on an untracked service). id is either the JustWatch objectId (if resolved via URL) or "custom_<timestamp>"
 ```
 
 Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot
