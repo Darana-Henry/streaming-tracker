@@ -790,6 +790,23 @@
     .tracking-add button:hover { background: #7275f5; }
     .tracking-add button:disabled { opacity: .5; cursor: default; }
 
+    /* Log a Watch */
+    .log-watch-open-btn {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 7px 14px; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
+      white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 12px;
+    }
+    .log-watch-open-btn:hover { background: #7275f5; }
+    .logwatch-row { display: flex; gap: 12px; }
+    .logwatch-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; flex: 1; }
+    .logwatch-field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .logwatch-field input, .logwatch-field select {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+    }
+    .logwatch-field input:focus, .logwatch-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+    .logwatch-divider { font-size: 11px; color: var(--muted); text-align: center; margin: 2px 0 14px; }
+
     #tracking-results {
       background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
       margin-bottom: 14px; max-width: 580px; overflow: hidden;
@@ -1298,6 +1315,9 @@
 
   <!-- History pane -->
   <div id="libtab-history" hidden>
+    <button id="open-logwatch-btn" class="log-watch-open-btn" type="button">
+      <span class="material-symbols-outlined" style="font-size:16px">add</span> Log a Watch
+    </button>
     <div class="wl-filter-bar">
       <div class="wl-seg">
         <button class="hist-type-btn active" data-value="both">All</button>
@@ -1371,6 +1391,43 @@
   </div>
 </div>
 
+<!-- ── Log a Watch modal ── -->
+<div id="logwatch-modal-overlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-heading">Log a Watch</div>
+    <div class="modal-sub">For titles you've seen that aren't in your tracked catalog — e.g. in theaters, or on another service.</div>
+
+    <div class="tracking-add" style="margin-bottom:6px;max-width:none">
+      <input type="url" id="logwatch-url" placeholder="Paste a JustWatch URL (optional)">
+      <button id="logwatch-find-btn" type="button">Find</button>
+    </div>
+    <div class="logwatch-divider">— or fill in the details manually —</div>
+
+    <div class="logwatch-field">
+      <label for="logwatch-name">Name</label>
+      <input type="text" id="logwatch-name" placeholder="Title name">
+    </div>
+    <div class="logwatch-row">
+      <div class="logwatch-field">
+        <label for="logwatch-year">Year</label>
+        <input type="number" id="logwatch-year" placeholder="2023">
+      </div>
+      <div class="logwatch-field">
+        <label for="logwatch-type">Type</label>
+        <select id="logwatch-type">
+          <option value="movie">Movie</option>
+          <option value="show">Show</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="logwatch-cancel" class="modal-btn modal-btn-ghost">Cancel</button>
+      <button id="logwatch-save" class="modal-btn modal-btn-primary">Mark as Watched</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Firebase config ────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -1396,6 +1453,7 @@ let watchlistMap = {};
 let trackingMap       = {};
 let dismissedMap      = {};
 let watchedSeasonsMap = {};
+let customTitlesMap   = {};
 
 const filters = {
   providers:        new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
@@ -1413,6 +1471,7 @@ const filters = {
 };
 
 function uRef(path) { return db.ref('/users/' + currentUid + '/' + path); }
+function titleById(id) { return allTitles[id] || customTitlesMap[id]; }
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 const authBtn  = document.getElementById('auth-btn');
@@ -1458,6 +1517,13 @@ auth.onAuthStateChanged(user => {
       renderGrid(getFiltered());
       if (!document.getElementById('mylists-pane').hidden) renderLibraryCarousel();
     });
+    uRef('customTitles').on('value', snap => {
+      customTitlesMap = snap.val() || {};
+      if (!document.getElementById('mylists-pane').hidden) {
+        if (activeLibTab === 'history')   renderHistory();
+        if (activeLibTab === 'watchlist') renderWatchlistGrid();
+      }
+    });
     uRef('watchedSeasons').on('value', snap => {
       watchedSeasonsMap = snap.val() || {};
       updatePendingBadge();
@@ -1472,9 +1538,10 @@ auth.onAuthStateChanged(user => {
       db.ref('/users/' + currentUid + '/tracking').off();
       db.ref('/users/' + currentUid + '/dismissed').off();
       db.ref('/users/' + currentUid + '/watchedSeasons').off();
+      db.ref('/users/' + currentUid + '/customTitles').off();
       currentUid = null;
     }
-    seenMap = {}; watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {};
+    seenMap = {}; watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {}; customTitlesMap = {};
     updatePendingBadge();
     updateMyListsBadge();
     renderDiscoverStats();
@@ -1986,7 +2053,7 @@ function makeCard(t, opts = {}) {
 async function toggleSeen(id, markSeen) {
   if (!currentUser) return;
   const key = String(id);
-  const t   = allTitles[key];
+  const t   = titleById(key);
 
   if (markSeen && t && t.contentType === 'show') {
     openSeasonModal(t, async (selectedSeasons) => {
@@ -2029,7 +2096,7 @@ async function toggleSeen(id, markSeen) {
   else          { delete seenMap[key]; delete watchedSeasonsMap[key]; }
 
   const card = document.querySelector(`.card[data-id="${id}"]`);
-  if (card) card.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+  if (card) card.replaceWith(makeCard(titleById(key)));
   const total = Object.keys(allTitles).length;
   document.getElementById('stats').textContent =
     `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
@@ -2050,7 +2117,7 @@ async function toggleSeen(id, markSeen) {
   } catch (err) {
     if (prevSeen) seenMap[key] = true; else delete seenMap[key];
     if (prevWl)   watchlistMap[key] = prevWl; else delete watchlistMap[key];
-    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(titleById(key)));
     console.error('Seen toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -2157,7 +2224,7 @@ async function toggleWatchlist(id, add) {
   const prev  = watchlistMap[key];
   const value = add ? { order: Date.now() } : null;
   if (add) watchlistMap[key] = value; else delete watchlistMap[key];
-  document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+  document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(titleById(key)));
   renderDiscoverStats();
 
   try {
@@ -2165,7 +2232,7 @@ async function toggleWatchlist(id, add) {
     else     await uRef('watchlist/' + key).remove();
   } catch (err) {
     if (prev) watchlistMap[key] = prev; else delete watchlistMap[key];
-    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(titleById(key)));
     console.error('Watchlist toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -2312,12 +2379,13 @@ let   activeLibTab = 'watchlist';
 
 function getHistoryTitles() {
   return Object.keys(seenMap).filter(key => {
-    const t = allTitles[key];
+    const t = titleById(key);
     if (!t) return false;
     if (t.contentType === 'movie') return true;
     const ws = watchedSeasonsMap[key];
-    return Array.isArray(ws) && t.numberOfSeasons && ws.length === t.numberOfSeasons;
-  }).map(key => allTitles[key]);
+    if (!t.numberOfSeasons) return ws === null || (Array.isArray(ws) && ws.length > 0);
+    return Array.isArray(ws) && ws.length === t.numberOfSeasons;
+  }).map(key => titleById(key));
 }
 
 function updateLibTabBadges() {
@@ -2425,7 +2493,7 @@ function renderWatchlistGrid() {
     return;
   }
 
-  const all = Object.keys(watchlistMap).map(id => allTitles[id]).filter(Boolean);
+  const all = Object.keys(watchlistMap).map(id => titleById(id)).filter(Boolean);
   if (!all.length) {
     grid.innerHTML = ''; count.textContent = '';
     empty.textContent = 'Your watchlist is empty. Add titles from the Discover tab.';
@@ -2986,6 +3054,86 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
       container.hidden = true; container.innerHTML = '';
     } catch (err) { alert('Could not save: ' + err.message); }
   });
+});
+
+// ── Log a Watch ──────────────────────────────────────────────────────────────────
+document.getElementById('open-logwatch-btn').addEventListener('click', () => {
+  if (!currentUser) { alert('Sign in to log a watch.'); return; }
+  const urlField = document.getElementById('logwatch-url');
+  urlField.value = '';
+  delete urlField.dataset.objectId;
+  delete urlField.dataset.posterUrl;
+  document.getElementById('logwatch-name').value = '';
+  document.getElementById('logwatch-year').value = '';
+  document.getElementById('logwatch-type').value = 'movie';
+  document.getElementById('logwatch-modal-overlay').classList.remove('hidden');
+});
+
+function closeLogWatchModal() {
+  document.getElementById('logwatch-modal-overlay').classList.add('hidden');
+}
+
+document.getElementById('logwatch-cancel').addEventListener('click', closeLogWatchModal);
+document.getElementById('logwatch-modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeLogWatchModal();
+});
+
+document.getElementById('logwatch-find-btn').addEventListener('click', async () => {
+  const urlField = document.getElementById('logwatch-url');
+  const parsed   = extractFullPath(urlField.value.trim());
+  if (!parsed) { alert('Paste a valid JustWatch URL'); return; }
+
+  const btn = document.getElementById('logwatch-find-btn');
+  btn.disabled = true; btn.textContent = 'Finding…';
+  try {
+    const meta = await jwFetchByPath(parsed.fullPath);
+    document.getElementById('logwatch-name').value = meta.name || '';
+    document.getElementById('logwatch-year').value = meta.year || '';
+    document.getElementById('logwatch-type').value = meta.contentType;
+    if (meta.objectId) urlField.dataset.objectId = String(meta.objectId); else delete urlField.dataset.objectId;
+    if (meta.posterUrl) urlField.dataset.posterUrl = meta.posterUrl; else delete urlField.dataset.posterUrl;
+  } catch (err) {
+    const slug = parsed.fullPath.split('/').pop();
+    document.getElementById('logwatch-name').value = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    document.getElementById('logwatch-type').value = parsed.type === 'movie' ? 'movie' : 'show';
+    delete urlField.dataset.objectId;
+    delete urlField.dataset.posterUrl;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Find';
+  }
+});
+
+document.getElementById('logwatch-save').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const name = document.getElementById('logwatch-name').value.trim();
+  if (!name) { alert('Enter a title name'); return; }
+  const yearVal      = document.getElementById('logwatch-year').value.trim();
+  const year         = yearVal ? parseInt(yearVal, 10) : null;
+  const contentType  = document.getElementById('logwatch-type').value;
+  const urlField     = document.getElementById('logwatch-url');
+  const objectId     = urlField.dataset.objectId;
+  const posterUrl    = urlField.dataset.posterUrl || null;
+  const id           = objectId || ('custom_' + Date.now());
+
+  const finish = async (watchedSeasons) => {
+    const record = { id, name, year, contentType, posterUrl, addedAt: Date.now(), source: 'manual' };
+    try {
+      await uRef('customTitles/' + id).set(record);
+      await uRef('seen/' + id).set(true);
+      if (watchedSeasons !== undefined) await uRef('watchedSeasons/' + id).set(watchedSeasons);
+      closeLogWatchModal();
+    } catch (err) {
+      console.error('Log a watch failed', err);
+      alert('Could not save: ' + err.message);
+    }
+  };
+
+  if (contentType === 'show') {
+    closeLogWatchModal();
+    openSeasonModal({ id, name, numberOfSeasons: null }, selectedSeasons => finish(selectedSeasons));
+  } else {
+    finish(undefined);
+  }
 });
 
 // ── Tab switching ──────────────────────────────────────────────────────────────
