@@ -84,6 +84,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 /users/{uid}/watchedSeasons/{justwatch_id}: []  ← written by frontend only
 /users/{uid}/tracking/{id}: { name, year, posterUrl, contentType, addedAt }  ← written by frontend only
 /users/{uid}/customTitles/{id}: { id, name, year, contentType, posterUrl, addedAt, source }  ← written by frontend only; denormalized copy for titles marked seen that aren't in /titles (e.g. watched in a theater, or on an untracked service). id is either the JustWatch objectId (if resolved via URL) or "custom_<timestamp>"
+/users/{uid}/watchedDates/{id}: "YYYY-MM-DD"    ← written by frontend only; local-date a title was watched, powers the Diary tab (reverse-chronological list + calendar heatmap). Set to today when a title is marked seen (editable after the fact); removed when a title is un-marked seen. Titles marked seen before this feature existed have no entry until backfilled via the Diary tab's prompt, and are excluded from the Diary view until then.
 ```
 
 Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot
