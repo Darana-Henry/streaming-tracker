@@ -806,6 +806,9 @@
     }
     .logwatch-field input:focus, .logwatch-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
     .logwatch-divider { font-size: 11px; color: var(--muted); text-align: center; margin: 2px 0 14px; }
+    .logwatch-date-row { display: flex; align-items: center; gap: 8px; }
+    .logwatch-date-row .diary-backfill-unknown.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .diary-date-combo-disabled { opacity: .45; pointer-events: none; }
 
     #tracking-results {
       background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
@@ -881,7 +884,7 @@
 
     .diary-backfill-banner {
       background: var(--accent-dim); border: 1px solid rgba(99,102,241,.3); border-radius: 12px;
-      padding: 12px 16px; margin-bottom: 18px;
+      padding: 12px 16px; margin-top: 18px;
     }
     .diary-backfill-title { font-size: 12px; font-weight: 700; color: var(--accent-light); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 10px; }
     .diary-backfill-row {
@@ -890,17 +893,18 @@
     }
     .diary-backfill-row:first-of-type { border-top: none; }
     .diary-backfill-name { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .diary-backfill-row input[type="date"] {
-      background: var(--surface3); border: 1px solid var(--border); border-radius: 8px;
-      color: var(--text); font-size: 12px; font-family: inherit; padding: 5px 8px;
-      color-scheme: dark;
-    }
-    .diary-backfill-row button {
+    .diary-backfill-row button, .diary-backfill-save, .diary-backfill-unknown {
       background: var(--accent); border: none; border-radius: 8px; color: #fff;
       font-size: 12px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit;
+      flex-shrink: 0;
     }
-    .diary-backfill-row button:hover { background: #5457e6; }
-    .diary-backfill-row button:disabled { opacity: .5; cursor: default; }
+    .diary-backfill-row button:hover, .diary-backfill-save:hover, .diary-backfill-unknown:hover { background: #5457e6; }
+    .diary-backfill-row button:disabled, .diary-backfill-save:disabled, .diary-backfill-unknown:disabled { opacity: .5; cursor: default; }
+    .diary-backfill-unknown {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .diary-backfill-unknown:hover { background: rgba(255,255,255,.06); color: var(--text); }
 
     .diary-day-group { margin-bottom: 22px; }
     .diary-day-heading {
@@ -937,10 +941,38 @@
       backdrop-filter: blur(3px);
     }
     .diary-item-date:hover { background: rgba(6,15,26,0.75); border-color: var(--accent-light); }
-    .diary-item-date-input {
-      font-size: 11px; background: var(--surface3); border: 1px solid var(--accent); border-radius: 8px;
-      color: var(--text); font-family: inherit; padding: 3px 6px; flex-shrink: 0; color-scheme: dark;
+    .diary-item-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .diary-item-delete {
+      display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+      color: #fff; background: rgba(6,15,26,0.5); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px; cursor: pointer; backdrop-filter: blur(3px);
     }
+    .diary-item-delete:hover { background: rgba(220,38,38,0.65); border-color: rgba(248,113,113,0.6); }
+    .diary-item-date-edit { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+    .diary-date-combo { position: relative; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .diary-date-text {
+      font-size: 12px; background: var(--surface3); border: 1px solid var(--accent); border-radius: 8px;
+      color: var(--text); font-family: inherit; padding: 5px 8px; width: 128px;
+    }
+    .diary-date-text:focus { outline: none; }
+    .diary-date-text.diary-date-text-invalid { border-color: #ef4444; }
+    .diary-date-pick-btn {
+      display: flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+      background: var(--surface3); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); cursor: pointer; flex-shrink: 0;
+    }
+    .diary-date-pick-btn:hover { background: rgba(255,255,255,.06); color: var(--text); }
+    .diary-date-native {
+      position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; border: 0;
+      pointer-events: none; color-scheme: dark;
+    }
+    .diary-item-date-unknown-btn {
+      display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+      font-size: 12px; font-weight: 700; color: var(--muted); background: var(--surface3);
+      border: 1px solid var(--border); border-radius: 8px; cursor: pointer; flex-shrink: 0;
+    }
+    .diary-item-date-unknown-btn:hover { background: rgba(255,255,255,.06); color: var(--text); }
 
     .diary-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
     .diary-cal-nav-btn {
@@ -1513,9 +1545,9 @@
         <h2 class="diary-heading">Watch Diary</h2>
         <button id="diary-clear-filter" class="wl-reset-link hidden" type="button">Clear date filter</button>
       </div>
-      <div id="diary-backfill-banner" hidden></div>
       <p id="diary-empty" class="empty-state"></p>
       <div id="diary-list"></div>
+      <div id="diary-backfill-banner" hidden></div>
     </div>
 
     <!-- Right: full-year calendar -->
@@ -1583,6 +1615,12 @@
           <option value="movie">Movie</option>
           <option value="show">Show</option>
         </select>
+      </div>
+    </div>
+    <div class="logwatch-field">
+      <label>Watched date</label>
+      <div class="logwatch-date-row" id="logwatch-date-row">
+        <button type="button" id="logwatch-date-unknown-btn" class="diary-backfill-unknown">Don't know</button>
       </div>
     </div>
 
@@ -2311,6 +2349,46 @@ async function toggleSeen(id, markSeen) {
   }
 }
 
+async function deleteDiaryEntry(id) {
+  if (!currentUser) return;
+  const key      = String(id);
+  const isCustom = !!customTitlesMap[key];
+
+  const prevSeen    = seenMap[key];
+  const prevSeasons = watchedSeasonsMap[key];
+  const prevDate    = watchedDatesMap[key];
+  const prevCustom  = customTitlesMap[key];
+
+  delete seenMap[key];
+  delete watchedSeasonsMap[key];
+  delete watchedDatesMap[key];
+  if (isCustom) delete customTitlesMap[key];
+
+  const card = document.querySelector(`.card[data-id="${key}"]`);
+  if (card && titleById(key)) card.replaceWith(makeCard(titleById(key)));
+  renderDiscoverStats();
+  updatePendingBadge();
+  updateLibTabBadges();
+  if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
+  if (!document.getElementById('diary-pane').hidden) renderDiary();
+
+  try {
+    await uRef('seen/' + key).remove();
+    await uRef('watchedSeasons/' + key).remove();
+    await uRef('watchedDates/' + key).remove();
+    if (isCustom) await uRef('customTitles/' + key).remove();
+  } catch (err) {
+    if (prevSeen) seenMap[key] = true;
+    if (prevSeasons !== undefined) watchedSeasonsMap[key] = prevSeasons;
+    if (prevDate !== undefined) watchedDatesMap[key] = prevDate;
+    if (isCustom && prevCustom !== undefined) customTitlesMap[key] = prevCustom;
+    if (card) card.replaceWith(makeCard(titleById(key)));
+    if (!document.getElementById('diary-pane').hidden) renderDiary();
+    console.error('Failed to delete diary entry', err);
+    alert('Could not delete: ' + err.message);
+  }
+}
+
 // ── Season modal ───────────────────────────────────────────────────────────────
 let _seasonModalCallback = null;
 
@@ -2951,7 +3029,54 @@ function renderTrackingList() {
       card = makeDegradedTrackingCard(id, meta || {});
     }
     grid.appendChild(card);
+    if (meta && !meta.genres) enrichLegacyTrackingEntry(id, meta);
   });
+}
+
+// Titles tracked before rich metadata was fetched at add-time only have {name, year, posterUrl,
+// contentType}. Best-effort backfill: guess the JustWatch URL from the stored name, re-fetch, and
+// only accept the result if it plausibly matches — never overwrite with a mismatched title's data.
+const trackingEnrichAttempted = new Set();
+
+function slugifyForJustWatch(name) {
+  return (name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+async function enrichLegacyTrackingEntry(id, meta) {
+  if (trackingEnrichAttempted.has(id) || meta.genres || !meta.name) return;
+  trackingEnrichAttempted.add(id);
+
+  const guessedPath = meta.fullPath ||
+    `/in/${meta.contentType === 'show' ? 'tv-show' : 'movie'}/${slugifyForJustWatch(meta.name)}`;
+  if (guessedPath.endsWith('/')) return; // slug came out empty — nothing to guess
+
+  let fetched;
+  try {
+    fetched = await jwFetchByPath(guessedPath);
+  } catch {
+    return; // guess didn't resolve — leave the entry as-is
+  }
+
+  // A stored fullPath is already trusted (it's how this exact title was originally added);
+  // a guessed one needs a name/year sanity check before we attach its data to this entry.
+  if (!meta.fullPath) {
+    const nameMatches = fetched.name && fetched.name.toLowerCase() === meta.name.toLowerCase();
+    const yearMatches  = !meta.year || !fetched.year || Math.abs(fetched.year - meta.year) <= 1;
+    if (!nameMatches || !yearMatches) return;
+  }
+
+  const enriched = buildTrackingRecord(fetched, guessedPath);
+  enriched.addedAt = meta.addedAt || Date.now();
+  try {
+    await uRef('tracking/' + id).set(enriched);
+    trackingMap[id] = enriched;
+    renderTrackingList();
+  } catch (err) {
+    console.error('Failed to enrich tracking entry', id, err);
+  }
 }
 
 function makeDegradedTrackingCard(id, meta) {
@@ -2981,6 +3106,7 @@ function makeDegradedTrackingCard(id, meta) {
 // ── Diary ──────────────────────────────────────────────────────────────────────
 let diaryYear         = null; // number, local calendar year
 let diarySelectedDate = null; // 'YYYY-MM-DD' or null
+const UNKNOWN_DATE    = 'unknown'; // sentinel for watchedDates values: "I know I saw it, not when"
 
 function parseISODateLocal(s) {
   const [y, m, d] = s.split('-').map(Number);
@@ -2995,10 +3121,150 @@ function fmtDiaryDateShort(dateStr) {
   return parseISODateLocal(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+const DIARY_MONTH_MAP = {
+  jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3, may: 4,
+  jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7,
+  sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
+};
+
+function diaryISOFromParts(y, monthIdx, day) {
+  if (monthIdx < 0 || monthIdx > 11 || day < 1 || day > 31) return null;
+  const dt = new Date(y, monthIdx, day);
+  if (dt.getFullYear() !== y || dt.getMonth() !== monthIdx || dt.getDate() !== day) return null; // rejects rollovers like Feb 30
+  return `${y}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function diaryResolveShortYear(yStr, todayISO) {
+  const y = parseInt(yStr, 10);
+  if (yStr.length > 2) return y;
+  const currentYY = parseInt(todayISO.slice(2, 4), 10);
+  return y <= currentYY ? 2000 + y : 1900 + y;
+}
+
+function diaryResolveNearestPast(monthIdx, day, todayISO) {
+  const year = parseISODateLocal(todayISO).getFullYear();
+  let iso = diaryISOFromParts(year, monthIdx, day);
+  if (iso && iso > todayISO) iso = diaryISOFromParts(year - 1, monthIdx, day);
+  return iso;
+}
+
+// Parses free-text dates the way a calendar app's quick-add field does — "2 May 26", "May 2, 2026",
+// "2026-05-02", "2/5/26", "today", "yesterday" — into a 'YYYY-MM-DD' string, or null if unparseable.
+function parseDiaryDateInput(raw) {
+  const s = (raw || '').trim().toLowerCase();
+  if (!s) return null;
+
+  const today = todayLocalISO();
+  if (s === 'today') return today;
+  if (s === 'yesterday') {
+    const d = parseISODateLocal(today);
+    d.setDate(d.getDate() - 1);
+    return diaryISOFromParts(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  let iso = null;
+  let m;
+
+  if (!iso && (m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) {
+    iso = diaryISOFromParts(+m[1], +m[2] - 1, +m[3]);
+  }
+  // "2 may 26" / "2nd may, 2026"
+  if (!iso && (m = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)\.?,?\s+(\d{2,4})$/)) && DIARY_MONTH_MAP[m[2]] !== undefined) {
+    iso = diaryISOFromParts(diaryResolveShortYear(m[3], today), DIARY_MONTH_MAP[m[2]], +m[1]);
+  }
+  // "may 2 26" / "may 2nd, 2026"
+  if (!iso && (m = s.match(/^([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{2,4})$/)) && DIARY_MONTH_MAP[m[1]] !== undefined) {
+    iso = diaryISOFromParts(diaryResolveShortYear(m[3], today), DIARY_MONTH_MAP[m[1]], +m[2]);
+  }
+  // "2 may" (no year — assume the nearest occurrence that isn't in the future)
+  if (!iso && (m = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)$/)) && DIARY_MONTH_MAP[m[2]] !== undefined) {
+    iso = diaryResolveNearestPast(DIARY_MONTH_MAP[m[2]], +m[1], today);
+  }
+  // "may 2" (no year)
+  if (!iso && (m = s.match(/^([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?$/)) && DIARY_MONTH_MAP[m[1]] !== undefined) {
+    iso = diaryResolveNearestPast(DIARY_MONTH_MAP[m[1]], +m[2], today);
+  }
+  // numeric day-first: 2/5/26, 2-5-2026 (falls back to swapping if the first number can't be a month)
+  if (!iso && (m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))) {
+    let day = +m[1], month = +m[2];
+    if (month > 12 && day <= 12) { const t = day; day = month; month = t; }
+    if (month >= 1 && month <= 12) iso = diaryISOFromParts(diaryResolveShortYear(m[3], today), month - 1, day);
+  }
+
+  if (!iso || iso > today) return null; // diary dates can't be in the future
+  return iso;
+}
+
+// A text field (parsed via parseDiaryDateInput) paired with a calendar-icon button that opens a
+// native date picker — either path lands on the same ISO date, Gmail-quick-add style.
+function createDiaryDateCombo(initialISO) {
+  const wrap = document.createElement('div');
+  wrap.className = 'diary-date-combo';
+
+  const text = document.createElement('input');
+  text.type = 'text';
+  text.className = 'diary-date-text';
+  text.placeholder = 'e.g. 2 May 2026';
+  text.autocomplete = 'off';
+  if (initialISO) text.value = fmtDiaryDateShort(initialISO);
+
+  const pickBtn = document.createElement('button');
+  pickBtn.type = 'button';
+  pickBtn.className = 'diary-date-pick-btn';
+  pickBtn.title = 'Pick from calendar';
+  pickBtn.setAttribute('aria-label', 'Pick from calendar');
+  pickBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px">calendar_month</span>';
+
+  const native = document.createElement('input');
+  native.type = 'date';
+  native.className = 'diary-date-native';
+  native.tabIndex = -1;
+  native.max = todayLocalISO();
+  if (initialISO) native.value = initialISO;
+
+  // Keep the input's own blur from firing (and short-circuiting a caller's blur-commit) when this button is pressed.
+  pickBtn.addEventListener('mousedown', ev => ev.preventDefault());
+  pickBtn.addEventListener('click', () => {
+    if (typeof native.showPicker === 'function') native.showPicker();
+    else native.focus();
+  });
+
+  native.addEventListener('change', () => {
+    if (!native.value) return;
+    text.value = fmtDiaryDateShort(native.value);
+    text.classList.remove('diary-date-text-invalid');
+    wrap.dispatchEvent(new CustomEvent('diarydatepick', { detail: native.value }));
+  });
+
+  text.addEventListener('input', () => text.classList.remove('diary-date-text-invalid'));
+
+  wrap.appendChild(text);
+  wrap.appendChild(pickBtn);
+  wrap.appendChild(native);
+
+  wrap.textInput = text;
+  wrap.nativeInput = native;
+  wrap.getISO = () => {
+    const raw = text.value.trim();
+    return raw ? parseDiaryDateInput(raw) : '';
+  };
+  wrap.markInvalid = () => text.classList.add('diary-date-text-invalid');
+  wrap.focusText = () => text.focus();
+
+  return wrap;
+}
+
 function getDiaryEntries() {
   return Object.entries(watchedDatesMap)
     .map(([id, date]) => ({ id, date, t: titleById(id) }))
-    .filter(e => e.t && e.date);
+    .filter(e => e.t && e.date && e.date !== UNKNOWN_DATE);
+}
+
+function getUnknownDateEntries() {
+  return Object.entries(watchedDatesMap)
+    .filter(([, date]) => date === UNKNOWN_DATE)
+    .map(([id, date]) => ({ id, date, t: titleById(id) }))
+    .filter(e => e.t);
 }
 
 function getUndatedSeenTitles() {
@@ -3025,8 +3291,8 @@ function renderDiary() {
     return;
   }
 
-  renderDiaryBackfill();
   renderDiaryList();
+  renderDiaryBackfill();
   renderDiaryCalendar();
 }
 
@@ -3037,24 +3303,37 @@ function renderDiaryBackfill() {
   if (!undated.length) { banner.hidden = true; banner.innerHTML = ''; return; }
 
   banner.hidden = false;
-  banner.innerHTML = `<div class="diary-backfill-title">Add a watched date for ${undated.length} previously watched title${undated.length !== 1 ? 's' : ''} to include ${undated.length !== 1 ? 'them' : 'it'} here</div>`;
+  banner.innerHTML = `<div class="diary-backfill-title">Add a watched date for ${undated.length} previously watched title${undated.length !== 1 ? 's' : ''} to include ${undated.length !== 1 ? 'them' : 'it'} here — or mark it as unknown if you're not sure</div>`;
 
   undated
     .sort((a, b) => (a.t.name || '').localeCompare(b.t.name || ''))
     .forEach(({ id, t }) => {
       const row = document.createElement('div');
       row.className = 'diary-backfill-row';
-      row.innerHTML = `
-        <span class="diary-backfill-name">${escHtml(t.name || 'Unknown')}</span>
-        <input type="date" max="${todayLocalISO()}">
-        <button type="button">Save</button>`;
+      row.innerHTML = `<span class="diary-backfill-name">${escHtml(t.name || 'Unknown')}</span>`;
 
-      const input = row.querySelector('input');
-      const btn   = row.querySelector('button');
-      btn.addEventListener('click', async () => {
-        const val = input.value;
-        if (!val) { input.focus(); return; }
-        btn.disabled = true;
+      const dateCombo = createDiaryDateCombo('');
+      row.appendChild(dateCombo);
+
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'diary-backfill-save';
+      saveBtn.textContent = 'Save';
+      row.appendChild(saveBtn);
+
+      const unknownBtn = document.createElement('button');
+      unknownBtn.type = 'button';
+      unknownBtn.className = 'diary-backfill-unknown';
+      unknownBtn.textContent = "Don't know";
+      row.appendChild(unknownBtn);
+
+      const setBusy = busy => { saveBtn.disabled = busy; unknownBtn.disabled = busy; };
+
+      saveBtn.addEventListener('click', async () => {
+        const val = dateCombo.getISO();
+        if (val === null) { dateCombo.markInvalid(); dateCombo.focusText(); return; }
+        if (!val) { dateCombo.focusText(); return; }
+        setBusy(true);
         try {
           await uRef('watchedDates/' + id).set(val);
           watchedDatesMap[id] = val;
@@ -3062,7 +3341,19 @@ function renderDiaryBackfill() {
         } catch (err) {
           console.error('Failed to backfill watched date', err);
           alert('Could not save: ' + err.message);
-          btn.disabled = false;
+          setBusy(false);
+        }
+      });
+      unknownBtn.addEventListener('click', async () => {
+        setBusy(true);
+        try {
+          await uRef('watchedDates/' + id).set(UNKNOWN_DATE);
+          watchedDatesMap[id] = UNKNOWN_DATE;
+          renderDiary();
+        } catch (err) {
+          console.error('Failed to mark watched date unknown', err);
+          alert('Could not save: ' + err.message);
+          setBusy(false);
         }
       });
       banner.appendChild(row);
@@ -3074,9 +3365,10 @@ function renderDiaryList() {
   const emptyEl  = document.getElementById('diary-empty');
   const clearBtn = document.getElementById('diary-clear-filter');
 
-  let entries = getDiaryEntries();
+  let entries         = getDiaryEntries();
+  let unknownEntries  = diarySelectedDate ? [] : getUnknownDateEntries();
 
-  if (!entries.length) {
+  if (!entries.length && !unknownEntries.length) {
     listEl.innerHTML = '';
     emptyEl.textContent = 'Nothing logged yet — mark a title as watched to start your diary.';
     clearBtn.classList.add('hidden');
@@ -3090,7 +3382,7 @@ function renderDiaryList() {
     clearBtn.classList.add('hidden');
   }
 
-  if (!entries.length) {
+  if (!entries.length && !unknownEntries.length) {
     listEl.innerHTML = '';
     emptyEl.textContent = 'Nothing watched on this day.';
     return;
@@ -3114,6 +3406,18 @@ function renderDiaryList() {
     }
     groupDiv.appendChild(makeDiaryItem(e));
   });
+
+  if (unknownEntries.length) {
+    unknownEntries.sort((a, b) => (a.t.name || '').localeCompare(b.t.name || ''));
+    const unknownGroup = document.createElement('div');
+    unknownGroup.className = 'diary-day-group';
+    const heading = document.createElement('div');
+    heading.className = 'diary-day-heading';
+    heading.textContent = `Date unknown (${unknownEntries.length})`;
+    unknownGroup.appendChild(heading);
+    unknownEntries.forEach(e => unknownGroup.appendChild(makeDiaryItem(e)));
+    listEl.appendChild(unknownGroup);
+  }
 }
 
 function makeDiaryItem(e) {
@@ -3135,6 +3439,11 @@ function makeDiaryItem(e) {
     ? `${t.year || '—'} · ${t.numberOfSeasons} season${t.numberOfSeasons !== 1 ? 's' : ''} · Show`
     : `${t.year || '—'} · ${t.contentType === 'show' ? 'Show' : 'Movie'}`;
 
+  const isUnknown  = e.date === UNKNOWN_DATE;
+  const dateIcon   = isUnknown ? 'help' : 'edit_calendar';
+  const dateLabel  = isUnknown ? 'Unknown date' : fmtDiaryDateShort(e.date);
+  const dateTitle  = isUnknown ? 'Click to add the exact date' : 'Click to edit watched date';
+
   div.innerHTML = `
     ${bgHtml}
     <div class="diary-item-fallback" style="${bgUrl ? '' : 'display:flex'}">${initial}</div>
@@ -3143,10 +3452,15 @@ function makeDiaryItem(e) {
         <div class="diary-item-title">${escHtml(t.name || 'Unknown')}</div>
         <div class="diary-item-sub">${subLabel}</div>
       </div>
-      <button class="diary-item-date" type="button" title="Click to edit watched date">
-        <span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px">edit_calendar</span>
-        ${fmtDiaryDateShort(e.date)}
-      </button>
+      <div class="diary-item-actions">
+        <button class="diary-item-date" type="button" title="${dateTitle}">
+          <span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px">${dateIcon}</span>
+          ${dateLabel}
+        </button>
+        <button class="diary-item-delete" type="button" title="Remove this diary entry" aria-label="Remove this diary entry">
+          <span class="material-symbols-outlined" style="font-size:15px">delete</span>
+        </button>
+      </div>
     </div>`;
 
   div.querySelector('.diary-item-date').addEventListener('click', ev => {
@@ -3154,24 +3468,39 @@ function makeDiaryItem(e) {
     startDiaryDateEdit(div, e.id, e.date);
   });
 
+  div.querySelector('.diary-item-delete').addEventListener('click', ev => {
+    ev.stopPropagation();
+    if (!confirm(`Remove "${t.name || 'this title'}" from your diary? This un-marks it as seen.`)) return;
+    deleteDiaryEntry(e.id);
+  });
+
   return div;
 }
 
 function startDiaryDateEdit(rowDiv, id, currentDate) {
   const btn = rowDiv.querySelector('.diary-item-date');
-  const input = document.createElement('input');
-  input.type = 'date';
-  input.className = 'diary-item-date-input';
-  input.value = currentDate;
-  input.max = todayLocalISO();
-  btn.replaceWith(input);
-  input.focus();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'diary-item-date-edit';
+
+  const combo = createDiaryDateCombo(currentDate === UNKNOWN_DATE ? '' : currentDate);
+
+  const unknownBtn = document.createElement('button');
+  unknownBtn.type = 'button';
+  unknownBtn.className = 'diary-item-date-unknown-btn';
+  unknownBtn.title = "Don't know the exact date";
+  unknownBtn.setAttribute('aria-label', "Mark date as unknown");
+  unknownBtn.textContent = '?';
+
+  wrap.appendChild(combo);
+  wrap.appendChild(unknownBtn);
+  btn.replaceWith(wrap);
+  combo.focusText();
 
   let settled = false;
-  const commit = async () => {
+  const finalize = async newDate => {
     if (settled) return;
     settled = true;
-    const newDate = input.value;
     if (!newDate || newDate === currentDate) { renderDiary(); return; }
     const prev = watchedDatesMap[id];
     watchedDatesMap[id] = newDate;
@@ -3185,11 +3514,26 @@ function startDiaryDateEdit(rowDiv, id, currentDate) {
       alert('Could not save: ' + err.message);
     }
   };
-  input.addEventListener('change', commit);
-  input.addEventListener('blur', commit);
-  input.addEventListener('keydown', ev => {
+
+  const attemptTextCommit = () => {
+    if (settled) return;
+    const raw = combo.textInput.value.trim();
+    if (!raw) { finalize(''); return; }
+    const iso = parseDiaryDateInput(raw);
+    if (iso === null) { combo.markInvalid(); return; } // leave editing open so the user can fix it
+    finalize(iso);
+  };
+
+  combo.textInput.addEventListener('blur', attemptTextCommit);
+  combo.textInput.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); attemptTextCommit(); }
     if (ev.key === 'Escape') { settled = true; renderDiary(); }
   });
+  combo.addEventListener('diarydatepick', ev => finalize(ev.detail));
+
+  // Prevent the text input's blur from firing (and short-circuiting the click) when the unknown button is pressed.
+  unknownBtn.addEventListener('mousedown', ev => ev.preventDefault());
+  unknownBtn.addEventListener('click', () => finalize(UNKNOWN_DATE));
 }
 
 const DIARY_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -3461,7 +3805,7 @@ function makeTrackingCard(id, meta) {
   div.className = 'card' + (isAvailable ? ' tracking-is-available' : '');
 
   const initial   = escHtml((meta.name || '?')[0].toUpperCase());
-  const posterSrc = matchedTitle?.posterUrl || meta.posterUrl || null;
+  const posterSrc = matchedTitle?.posterUrl || meta.posterUrl || meta.backdropUrl || null;
   const disabled  = currentUser ? '' : 'disabled';
 
   const posterHtml = posterSrc
@@ -3469,14 +3813,18 @@ function makeTrackingCard(id, meta) {
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
 
-  const imdbRating = Number(matchedTitle?.imdbRating) || 0;
+  const imdbRating = Number(matchedTitle?.imdbRating ?? meta.imdbRating) || 0;
+  const imdbVotes  = matchedTitle?.imdbVotes ?? meta.imdbVotes;
   const imdbHtml = imdbRating
     ? `<div class="card-imdb-overlay">
          <span class="imdb-star">★</span>
          <span class="imdb-score">${imdbRating.toFixed(1)}</span>
-         ${matchedTitle.imdbVotes ? `<span class="imdb-votes">${fmtVotes(matchedTitle.imdbVotes)}</span>` : ''}
+         ${imdbVotes ? `<span class="imdb-votes">${fmtVotes(imdbVotes)}</span>` : ''}
        </div>`
     : '';
+
+  const descText = matchedTitle?.shortDescription || meta.shortDescription;
+  const descHtml = descText ? `<div class="card-overlay-desc">${escHtml(descText)}</div>` : '';
 
   const badgeClass = isAvailable ? 'badge-available' : 'badge-tracking';
   const badgeText  = isAvailable ? 'Available ✓' : 'Tracking';
@@ -3491,10 +3839,11 @@ function makeTrackingCard(id, meta) {
       <div class="card-poster-fallback" style="${posterSrc ? '' : 'display:flex'}">${initial}</div>
       <div class="tracking-badge-overlay ${badgeClass}">${badgeText}</div>
       ${imdbHtml}
+      <div class="card-overlay">${descHtml}</div>
     </div>
     <div class="card-body">
       <div class="card-title">${escHtml(meta.name || 'Unknown')}</div>
-      <div class="card-sub">${meta.contentType === 'show' ? 'Show' : 'Movie'}${meta.year ? ' · ' + meta.year : ''}</div>
+      <div class="card-sub">${meta.year || '—'} · ${meta.contentType === 'show' ? 'Show' : 'Movie'}</div>
       ${isAvailable ? `<div class="provider-badges">${provBadges}</div>` : `<div class="card-sub" style="color:var(--muted)">Not yet streaming</div>`}
       <div style="margin-top:auto;padding-top:7px;display:flex;gap:5px">
         ${isAvailable ? `<button class="add-to-watchlist-btn" ${disabled} style="flex:1;font-size:11px;padding:4px 6px">+ Watchlist</button>` : ''}
@@ -3524,28 +3873,95 @@ function extractFullPath(url) {
   return m ? { fullPath: m[1], type: m[2] } : null;
 }
 
-async function jwFetchByPath(fullPath) {
-  const query = `query GetTitleByPath($fullPath: String!, $country: Country!, $language: Language!) {
-    urlV2(fullPath: $fullPath) {
-      node {
+// Mirrors JustWatchClient.java's proven query — these fields are known to work against the same endpoint.
+const JW_TITLE_QUERY = `query GetTitleByPath($fullPath: String!, $country: Country!, $language: Language!) {
+  urlV2(fullPath: $fullPath) {
+    node {
+      ... on MovieOrShow {
         objectId objectType
-        content(country: $country, language: $language) { title posterUrl originalReleaseYear }
+        ... on Show { seasons { id } }
+        content(country: $country, language: $language) {
+          title
+          posterUrl
+          backdrops { backdropUrl }
+          externalIds { imdbId }
+          originalReleaseYear
+          originalReleaseDate
+          shortDescription
+          runtime
+          ... on MovieOrShowContent { ageCertification }
+          genres { shortName technicalName }
+          scoring { imdbScore imdbVotes }
+          credits { role name }
+        }
       }
     }
-  }`;
+  }
+}`;
+
+function jwParseNode(node) {
+  const c = node.content || {};
+  let posterUrl = null, backdropUrl = null;
+  if (c.posterUrl) posterUrl = 'https://images.justwatch.com' + c.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
+  if (c.backdrops && c.backdrops[0] && c.backdrops[0].backdropUrl) {
+    backdropUrl = 'https://images.justwatch.com' + c.backdrops[0].backdropUrl.replace('{profile}', 's1920').replace('{format}', 'jpg');
+  }
+  const genres = (c.genres || []).map(g => g.technicalName || g.shortName).filter(Boolean);
+  let director = null;
+  const actors = [];
+  (c.credits || []).forEach(cr => {
+    if (cr.role === 'DIRECTOR' && !director) director = cr.name;
+    if (cr.role === 'ACTOR' && actors.length < 3) actors.push(cr.name);
+  });
+  return {
+    objectId:         node.objectId,
+    name:             c.title || '',
+    year:             c.originalReleaseYear || null,
+    contentType:      node.objectType === 'MOVIE' ? 'movie' : 'show',
+    posterUrl, backdropUrl,
+    imdbId:           c.externalIds?.imdbId || null,
+    releaseDate:      c.originalReleaseDate || null,
+    shortDescription: c.shortDescription || null,
+    runtime:          c.runtime || null,
+    ageRating:        c.ageCertification || null,
+    genres,
+    director,
+    actors,
+    imdbRating:       c.scoring?.imdbScore ?? null,
+    imdbVotes:        c.scoring?.imdbVotes ?? null,
+    numberOfSeasons:  node.seasons ? node.seasons.length : null,
+  };
+}
+
+async function jwFetchByPath(fullPath) {
   const resp = await fetch('https://apis.justwatch.com/graphql', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ query, variables: { fullPath, country: 'IN', language: 'en' } }),
+    body: JSON.stringify({ query: JW_TITLE_QUERY, variables: { fullPath, country: 'IN', language: 'en' } }),
   });
   if (!resp.ok) throw new Error('JustWatch request failed');
   const json = await resp.json();
   const node = json?.data?.urlV2?.node;
   if (!node) throw new Error('Title not found');
-  const c = node.content || {};
-  let posterUrl = null;
-  if (c.posterUrl) posterUrl = 'https://images.justwatch.com' + c.posterUrl.replace('{profile}', 's332').replace('{format}', 'webp');
-  return { objectId: node.objectId, name: c.title || '', year: c.originalReleaseYear || null, contentType: node.objectType === 'MOVIE' ? 'movie' : 'show', posterUrl };
+  return jwParseNode(node);
+}
+
+// Builds the /tracking/{id} record. fullPath (when known) lets us reliably re-fetch this exact
+// title later to enrich records that were saved before this field existed.
+function buildTrackingRecord(meta, fullPath) {
+  return {
+    name: meta.name, year: meta.year, posterUrl: meta.posterUrl, contentType: meta.contentType, addedAt: Date.now(),
+    fullPath:         fullPath || null,
+    backdropUrl:      meta.backdropUrl || null,
+    genres:           meta.genres && meta.genres.length ? meta.genres : null,
+    director:         meta.director || null,
+    actors:           meta.actors && meta.actors.length ? meta.actors : null,
+    shortDescription: meta.shortDescription || null,
+    runtime:          meta.runtime || null,
+    ageRating:        meta.ageRating || null,
+    imdbRating:       meta.imdbRating || null,
+    imdbVotes:        meta.imdbVotes || null,
+  };
 }
 
 document.getElementById('tracking-search-btn').addEventListener('click', async () => {
@@ -3586,7 +4002,7 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
     const slug = parsed.fullPath.split('/').pop();
     const key  = meta.objectId ? String(meta.objectId) : (parsed.type + '_' + slug);
     try {
-      await uRef('tracking/' + key).set({ name: meta.name, year: meta.year, posterUrl: meta.posterUrl, contentType: meta.contentType, addedAt: Date.now() });
+      await uRef('tracking/' + key).set(buildTrackingRecord(meta, parsed.fullPath));
       document.getElementById('tracking-url').value = '';
       container.hidden = true; container.innerHTML = '';
     } catch (err) { alert('Could not save: ' + err.message); }
@@ -3594,6 +4010,25 @@ document.getElementById('tracking-search-btn').addEventListener('click', async (
 });
 
 // ── Log a Watch ──────────────────────────────────────────────────────────────────
+let logWatchDateCombo    = null;
+let logWatchDateIsUnknown = false;
+
+function resetLogWatchDateField() {
+  const row        = document.getElementById('logwatch-date-row');
+  const unknownBtn = document.getElementById('logwatch-date-unknown-btn');
+  if (logWatchDateCombo) logWatchDateCombo.remove();
+  logWatchDateIsUnknown = false;
+  unknownBtn.classList.remove('active');
+  logWatchDateCombo = createDiaryDateCombo(todayLocalISO());
+  row.insertBefore(logWatchDateCombo, unknownBtn);
+}
+
+document.getElementById('logwatch-date-unknown-btn').addEventListener('click', () => {
+  logWatchDateIsUnknown = !logWatchDateIsUnknown;
+  document.getElementById('logwatch-date-unknown-btn').classList.toggle('active', logWatchDateIsUnknown);
+  logWatchDateCombo.classList.toggle('diary-date-combo-disabled', logWatchDateIsUnknown);
+});
+
 document.getElementById('open-logwatch-btn').addEventListener('click', () => {
   if (!currentUser) { alert('Sign in to log a watch.'); return; }
   const urlField = document.getElementById('logwatch-url');
@@ -3603,6 +4038,7 @@ document.getElementById('open-logwatch-btn').addEventListener('click', () => {
   document.getElementById('logwatch-name').value = '';
   document.getElementById('logwatch-year').value = '';
   document.getElementById('logwatch-type').value = 'movie';
+  resetLogWatchDateField();
   document.getElementById('logwatch-modal-overlay').classList.remove('hidden');
 });
 
@@ -3644,6 +4080,20 @@ document.getElementById('logwatch-save').addEventListener('click', async () => {
   if (!currentUser) return;
   const name = document.getElementById('logwatch-name').value.trim();
   if (!name) { alert('Enter a title name'); return; }
+
+  let watchedDate;
+  if (logWatchDateIsUnknown) {
+    watchedDate = UNKNOWN_DATE;
+  } else {
+    const raw = logWatchDateCombo.textInput.value.trim();
+    watchedDate = raw ? logWatchDateCombo.getISO() : todayLocalISO();
+    if (watchedDate === null) {
+      logWatchDateCombo.markInvalid();
+      logWatchDateCombo.focusText();
+      return;
+    }
+  }
+
   const yearVal      = document.getElementById('logwatch-year').value.trim();
   const year         = yearVal ? parseInt(yearVal, 10) : null;
   const contentType  = document.getElementById('logwatch-type').value;
@@ -3657,7 +4107,7 @@ document.getElementById('logwatch-save').addEventListener('click', async () => {
     try {
       await uRef('customTitles/' + id).set(record);
       await uRef('seen/' + id).set(true);
-      await uRef('watchedDates/' + id).set(todayLocalISO());
+      await uRef('watchedDates/' + id).set(watchedDate);
       if (watchedSeasons !== undefined) await uRef('watchedSeasons/' + id).set(watchedSeasons);
       closeLogWatchModal();
     } catch (err) {
