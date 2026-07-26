@@ -54,7 +54,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 
 | Flag | Values | Default |
 |---|---|---|
-| `--providers` | comma-separated: `jhs` `prv` `lgp` `snl` `snx` `zee` `vim` | all seven |
+| `--providers` | comma-separated: `jhs` `prv` `lgp` `snl` `snx` `zee` `vim` `nfx` | all eight |
 | `--year-from` | integer year | `1900` |
 | `--year-to` | integer year | current year |
 | `--content-type` | `movies` \| `shows` \| `both` | `both` |
@@ -62,7 +62,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 ### What the scraper does
 
 1. Fetches the JustWatch genre list for `en_IN` and caches it in memory.
-2. Paginates through `/content/titles/en_IN/popular` (40 per page, 400 ms delay between pages).
+2. Paginates through `/content/titles/en_IN/popular` (up to 40 per page, 400 ms delay between pages; the page size is halved and the page retried whenever a show's nested season/episode data pushes a query over JustWatch's GraphQL complexity limit).
 3. Builds a flat map of `{ titleId: titleObject }`.
 4. Authenticates with Firebase using a short-lived OAuth2 token derived from the service account private key (no external JWT library — pure JDK crypto).
 5. Overwrites `/titles` in Firebase with a single PUT.  `/seen` is never touched.
@@ -92,7 +92,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 /users/{uid}/watchedEpisodes/{justwatch_id}/{episodeId}: "YYYY-MM-DD"  ← written by frontend only; presence means that episode is watched, and the value doubles as the date shown in the Now Watching tab's calendar/day-popover. Deliberately kept separate from watchedDates — episode watches never appear in the Movie Log.
 ```
 
-Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot
+Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot, `nfx` Netflix
 
 ## GitHub Pages deployment
 
@@ -107,6 +107,7 @@ Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl`
 {
   "rules": {
     "titles": { ".read": true, ".write": false },
+    "episodes": { ".read": true, ".write": false },
     "users": {
       "$uid": {
         ".read":  "auth != null && auth.uid === $uid",
