@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.streamingtracker.model.Episode;
 import com.streamingtracker.model.Title;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -51,7 +52,9 @@ public class JustWatchClient {
         "      node {" +
         "        objectId" +
         "        objectType" +
-        "        ... on Show { seasons { id } }" +
+        "        ... on Show { seasons { id episodes { id content(country: $country, language: $language) {" +
+        "          title episodeNumber seasonNumber originalReleaseDate shortDescription runtime" +
+        "        } } } }" +
         "        content(country: $country, language: $language) {" +
         "          title" +
         "          posterUrl" +
@@ -273,8 +276,10 @@ public class JustWatchClient {
             }
         }
 
-        if ("show".equals(t.contentType) && hasArray(node, "seasons"))
+        if ("show".equals(t.contentType) && hasArray(node, "seasons")) {
             t.numberOfSeasons = node.getAsJsonArray("seasons").size();
+            t.episodes = parseEpisodes(node.getAsJsonArray("seasons"));
+        }
 
         t.providers = new ArrayList<>();
         Set<String> seen             = new HashSet<>();
@@ -310,6 +315,33 @@ public class JustWatchClient {
 
         if (t.providers.isEmpty()) return null;
         return t;
+    }
+
+    private static List<Episode> parseEpisodes(JsonArray seasons) {
+        List<Episode> episodes = new ArrayList<>();
+        for (JsonElement seasonEl : seasons) {
+            JsonObject season = seasonEl.getAsJsonObject();
+            if (!hasArray(season, "episodes")) continue;
+            for (JsonElement epEl : season.getAsJsonArray("episodes")) {
+                JsonObject epNode = epEl.getAsJsonObject();
+                if (!epNode.has("content") || epNode.get("content").isJsonNull()) continue;
+                JsonObject content = epNode.getAsJsonObject("content");
+
+                Episode ep = new Episode();
+                ep.id               = str(epNode, "id");
+                Integer epNum       = intOrNull(content, "episodeNumber");
+                Integer seasonNum   = intOrNull(content, "seasonNumber");
+                if (epNum == null || seasonNum == null) continue;
+                ep.episodeNumber    = epNum;
+                ep.seasonNumber     = seasonNum;
+                ep.title            = str(content, "title");
+                ep.airDate          = str(content, "originalReleaseDate");
+                ep.runtime          = intOrNull(content, "runtime");
+                ep.shortDescription = str(content, "shortDescription");
+                episodes.add(ep);
+            }
+        }
+        return episodes;
     }
 
     private static String str(JsonObject o, String key) {

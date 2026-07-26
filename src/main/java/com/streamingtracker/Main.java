@@ -55,6 +55,10 @@ public class Main {
         System.out.println("\n=== Writing to Firebase ===");
         fb.writeTitles(titles);
 
+        // ── Step 5: overwrite /episodes ────────────────────────────────────────
+        System.out.println("\n=== Writing episodes to Firebase ===");
+        fb.writeEpisodes(titles);
+
         System.out.println("\nDone.");
     }
 }

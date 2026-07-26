@@ -85,4 +85,32 @@ public class FirebaseClient {
         }
         System.out.println("Wrote " + titles.size() + " titles to Firebase /titles");
     }
+
+    /**
+     * Replaces /episodes completely with per-show episode lists.
+     * Only shows with a non-empty episode list are included.
+     */
+    public void writeEpisodes(List<Title> titles) throws IOException {
+        JsonObject map = new JsonObject();
+        for (Title t : titles) {
+            if (t.episodes == null || t.episodes.isEmpty()) continue;
+            map.add(String.valueOf(t.id), gson.toJsonTree(t.episodes));
+        }
+
+        RequestBody body = RequestBody.create(gson.toJson(map), JSON_CT);
+        Request req = new Request.Builder()
+                .url(dbUrl + "/episodes.json")
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .put(body)
+                .build();
+
+        try (Response resp = http.newCall(req).execute()) {
+            if (!resp.isSuccessful()) {
+                throw new IOException("Firebase write failed ("
+                        + resp.code() + "): " + resp.body().string());
+            }
+        }
+        System.out.println("Wrote episodes for " + map.size() + " shows to Firebase /episodes");
+    }
 }
