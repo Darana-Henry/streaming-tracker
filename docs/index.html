@@ -34,6 +34,7 @@
 
       --jhs: #8b5cf6; --prv: #0ea5e9; --lgp: #f97316;
       --snl: #ef4444; --snx: #fb923c; --zee: #a855f7; --vim: #06b6d4;
+      --nfx: #e50914;
     }
 
     body {
@@ -254,6 +255,7 @@
     .prov-snx .prov-icon { background: rgba(251,146,60,0.22);  color: #fdba74; border: 1.5px solid rgba(251,146,60,0.5); }
     .prov-zee .prov-icon { background: rgba(168,85,247,0.22);  color: #c084fc; border: 1.5px solid rgba(168,85,247,0.5); }
     .prov-vim .prov-icon { background: rgba(6,182,212,0.22);   color: #67e8f9; border: 1.5px solid rgba(6,182,212,0.5); }
+    .prov-nfx .prov-icon { background: rgba(229,9,20,0.22);    color: #f87171; border: 1.5px solid rgba(229,9,20,0.5); }
     .prov-name { font-size: 9px; color: var(--muted); font-weight: 600; text-align: center; white-space: nowrap; }
 
     /* Type buttons */
@@ -699,6 +701,7 @@
     .badge-snx-card { background: rgba(251,146,60,0.15);  color: #fdba74; border: 1px solid rgba(251,146,60,0.3); }
     .badge-zee-card { background: rgba(168,85,247,0.15);  color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
     .badge-vim-card { background: rgba(6,182,212,0.15);   color: #67e8f9; border: 1px solid rgba(6,182,212,0.3); }
+    .badge-nfx-card { background: rgba(229,9,20,0.15);    color: #f87171; border: 1px solid rgba(229,9,20,0.3); }
     .badge-other    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
 
     /* ── Loading / empty ── */
@@ -1350,6 +1353,10 @@
               </div>
               <span class="prov-name">Voot</span>
             </button>
+            <button class="prov-btn prov-nfx active" data-prov="nfx" title="Netflix">
+              <div class="prov-icon">NF</div>
+              <span class="prov-name">Netflix</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1541,6 +1548,7 @@
         <option value="snx">Sun NXT</option>
         <option value="zee">ZEE5</option>
         <option value="vim">Voot</option>
+        <option value="nfx">Netflix</option>
       </select>
       <select class="wl-sel" id="wl-sort-select">
         <option value="manual">Custom order</option>
@@ -1581,6 +1589,7 @@
         <option value="snx">Sun NXT</option>
         <option value="zee">ZEE5</option>
         <option value="vim">Voot</option>
+        <option value="nfx">Netflix</option>
       </select>
       <select class="wl-sel" id="hist-sort-select">
         <option value="newest">Newest first</option>
@@ -1790,7 +1799,7 @@ let watchedEpisodesMap = {};
 let episodesCache      = {};   // titleId -> episode array, populated lazily via fetchEpisodesFor
 
 const filters = {
-  providers:        new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
+  providers:        new Set(['jhs','prv','lgp','snl','snx','zee','vim','nfx']),
   type:             'both',
   yearFrom:         1900,
   yearTo:           2025,
@@ -2097,6 +2106,7 @@ const PROV_COLORS = {
   snx: { bg: 'rgba(251,146,60,0.18)',  color: '#fdba74', border: 'rgba(251,146,60,0.5)' },
   zee: { bg: 'rgba(168,85,247,0.18)',  color: '#c084fc', border: 'rgba(168,85,247,0.5)' },
   vim: { bg: 'rgba(6,182,212,0.18)',   color: '#67e8f9', border: 'rgba(6,182,212,0.5)'  },
+  nfx: { bg: 'rgba(229,9,20,0.18)',    color: '#f87171', border: 'rgba(229,9,20,0.5)'   },
 };
 
 function renderTopPicks() {
@@ -4776,7 +4786,7 @@ function updateResetLink() {
 }
 
 function resetAllFilters() {
-  filters.providers = new Set(['jhs','prv','lgp','snl','snx','zee','vim']);
+  filters.providers = new Set(['jhs','prv','lgp','snl','snx','zee','vim','nfx']);
   document.querySelectorAll('.prov-btn').forEach(btn => btn.classList.add('active'));
 
   filters.type = 'both';
@@ -4922,10 +4932,10 @@ function escHtml(str) {
 }
 function provLabel(code) {
   if (!code) return '';
-  return { jhs:'JioHotstar', prv:'Prime', lgp:'Lionsgate', snl:'SonyLIV', snx:'Sun NXT', zee:'ZEE5', vim:'Voot' }[code] || code.toUpperCase();
+  return { jhs:'JioHotstar', prv:'Prime', lgp:'Lionsgate', snl:'SonyLIV', snx:'Sun NXT', zee:'ZEE5', vim:'Voot', nfx:'Netflix' }[code] || code.toUpperCase();
 }
 function provBadgeClass(code) {
-  return { jhs:'badge-jhs-card', prv:'badge-prv-card', lgp:'badge-lgp-card', snl:'badge-snl-card', snx:'badge-snx-card', zee:'badge-zee-card', vim:'badge-vim-card' }[code] || 'badge-other';
+  return { jhs:'badge-jhs-card', prv:'badge-prv-card', lgp:'badge-lgp-card', snl:'badge-snl-card', snx:'badge-snx-card', zee:'badge-zee-card', vim:'badge-vim-card', nfx:'badge-nfx-card' }[code] || 'badge-other';
 }
 function toTitleCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 const _langDisplay = new Intl.DisplayNames(['en'], { type: 'language' });

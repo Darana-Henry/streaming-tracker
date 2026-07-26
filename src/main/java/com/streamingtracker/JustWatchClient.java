@@ -119,10 +119,26 @@ public class JustWatchClient {
             throws IOException, InterruptedException {
         int offset     = 0;
         int totalCount = Integer.MAX_VALUE;
+        int pageSize   = PAGE_SIZE;
 
         while (offset < totalCount) {
             System.out.printf("  Offset %d — total merged so far: %d%n", offset, merged.size());
-            JsonObject data = fetchPage(offset, provider);
+            JsonObject data;
+            while (true) {
+                try {
+                    data = fetchPage(offset, provider, pageSize);
+                    break;
+                } catch (IOException e) {
+                    // Shows with many seasons/episodes can push a page's query complexity over
+                    // JustWatch's limit; shrink the page size and retry the same offset.
+                    if (pageSize > 1 && e.getMessage() != null && e.getMessage().contains("exceeds the limit")) {
+                        pageSize = Math.max(1, pageSize / 2);
+                        System.out.printf("  Query too complex — retrying offset %d with page size %d%n", offset, pageSize);
+                    } else {
+                        throw e;
+                    }
+                }
+            }
 
             JsonObject popularTitles = data.getAsJsonObject("popularTitles");
             totalCount = popularTitles.get("totalCount").getAsInt();
@@ -150,11 +166,11 @@ public class JustWatchClient {
         }
     }
 
-    private JsonObject fetchPage(int offset, String provider) throws IOException {
+    private JsonObject fetchPage(int offset, String provider, int first) throws IOException {
         JsonObject variables = new JsonObject();
         variables.addProperty("country",  COUNTRY);
         variables.addProperty("language", LANGUAGE);
-        variables.addProperty("first",    PAGE_SIZE);
+        variables.addProperty("first",    first);
         variables.addProperty("offset",   offset);
 
         JsonObject titleFilter = new JsonObject();

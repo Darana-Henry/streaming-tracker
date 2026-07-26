@@ -30,6 +30,7 @@ In Firebase Console → Realtime Database → Rules, paste:
 {
   "rules": {
     "titles":    { ".read": true,          ".write": false         },
+    "episodes":  { ".read": true,          ".write": false         },
     "seen":      { ".read": "auth != null", ".write": "auth != null" },
     "watchlist": { ".read": "auth != null", ".write": "auth != null" },
     "dismissed": { ".read": "auth != null", ".write": "auth != null" },
@@ -97,7 +98,7 @@ gradle run
 
 | Flag | Values | Default |
 |------|--------|---------|
-| `--providers` | `jhs`, `prv`, `lgp`, `snl`, `snx`, `zee`, `vim` (comma-separated) | all seven |
+| `--providers` | `jhs`, `prv`, `lgp`, `snl`, `snx`, `zee`, `vim`, `nfx` (comma-separated) | all eight |
 | `--year-from` | any year integer | `1900` |
 | `--year-to` | any year integer | current year |
 | `--content-type` | `movies` · `shows` · `both` | `both` |
@@ -130,7 +131,7 @@ java -jar build/libs/streaming-tracker-1.0.jar --providers=jhs
 
 ### Filters (sidebar)
 
-- **Provider icon toggles** — JioHotstar, Prime Video, Lionsgate Play, SonyLIV, Sun NXT, ZEE5, Voot.
+- **Provider icon toggles** — JioHotstar, Prime Video, Lionsgate Play, SonyLIV, Sun NXT, ZEE5, Voot, Netflix.
 - **Content type** — Movies / Shows / Both segmented button.
 - **Year range** — min/max number inputs, bounded to data range.
 - **Genre multi-select** — live search, dynamically built from data.
@@ -189,7 +190,7 @@ Google Sign-In required to write `/seen`, `/watchlist`, `/tracking`, `/dismissed
 | `contentType` | string | `"movie"` or `"show"` |
 | `providers` | string[] | e.g. `["jhs","prv"]` — see provider codes below |
 
-**Provider codes:** `jhs` JioHotstar · `prv` Prime Video · `lgp` Lionsgate Play · `snl` SonyLIV · `snx` Sun NXT · `zee` ZEE5 · `vim` Voot
+**Provider codes:** `jhs` JioHotstar · `prv` Prime Video · `lgp` Lionsgate Play · `snl` SonyLIV · `snx` Sun NXT · `zee` ZEE5 · `vim` Voot · `nfx` Netflix
 
 ### `/seen/{id}` — written by frontend
 
