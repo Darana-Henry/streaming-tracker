@@ -666,10 +666,12 @@
     .action-btn.seen-btn:hover       { background: #16a34a; border-color: #4ade80; color: #fff; box-shadow: 0 0 14px rgba(74,222,128,0.5); }
     .action-btn.watch-btn:hover      { background: var(--accent); border-color: var(--accent-light); color: #fff; box-shadow: 0 0 14px var(--accent-glow); }
     .action-btn.dismiss-btn:hover    { background: #dc2626; border-color: #f87171; color: #fff; box-shadow: 0 0 14px rgba(239,68,68,0.5); }
+    .action-btn.track-btn:hover      { background: #7c3aed; border-color: #a78bfa; color: #fff; box-shadow: 0 0 14px rgba(124,58,237,0.5); }
 
     .action-btn.seen-btn.is-seen     { background: rgba(74,222,128,0.22); border-color: #4ade80; color: #4ade80; }
     .action-btn.watch-btn.is-watchlisted { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-light); }
     .action-btn.dismiss-btn.is-dismissed { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #f87171; }
+    .action-btn.track-btn.is-tracked { background: rgba(124,58,237,0.22); border-color: #a78bfa; color: #a78bfa; }
 
     /* Card body */
     .card-body {
@@ -1171,8 +1173,92 @@
     .seen-badge.season-badge { width:auto;border-radius:20px;padding:0 7px;font-size:11px;font-weight:700;min-width:28px; }
     .pending-badge { position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;pointer-events:none; }
     .pending-seasons-sub { font-size:11px;color:var(--muted);margin-top:2px;margin-bottom:4px; }
+
+    .episode-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+    .episode-chip {
+      display:flex; align-items:center; gap:6px;
+      padding:5px 8px 5px 12px; border-radius:20px;
+      background:rgba(124,58,237,0.15); border:1px solid rgba(167,139,250,0.4);
+      color:#a78bfa; font-size:12px; font-weight:600;
+    }
+    .episode-chip-remove {
+      display:flex; align-items:center; justify-content:center;
+      width:18px; height:18px; border-radius:50%; border:none;
+      background:rgba(167,139,250,0.25); color:#a78bfa; cursor:pointer; font-size:13px; line-height:1;
+    }
+    .episode-chip-remove:hover { background:#7c3aed; color:#fff; }
+
+    .episode-row {
+      display:flex; align-items:center; gap:14px;
+      padding:10px 12px; border-radius:10px;
+      background:var(--card-bg,rgba(255,255,255,0.03)); border:1px solid rgba(255,255,255,0.06);
+      margin-bottom:8px;
+    }
+    .episode-row-thumb { width:56px; height:56px; border-radius:8px; object-fit:cover; flex-shrink:0; background:rgba(255,255,255,0.08); }
+    .episode-row-thumb-fallback {
+      width:56px; height:56px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,0.08); color:var(--muted); font-weight:700;
+    }
+    .episode-row-body { flex:1; min-width:0; }
+    .episode-row-show { font-size:12px; color:var(--accent-light); font-weight:600; }
+    .episode-row-title { font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .episode-row-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+    .episode-mark-btn {
+      flex-shrink:0; width:34px; height:34px; border-radius:50%;
+      border:1.5px solid rgba(255,255,255,0.25); background:rgba(6,15,26,0.65); color:var(--text);
+      display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s;
+    }
+    .episode-mark-btn:hover { background:#16a34a; border-color:#4ade80; color:#fff; box-shadow:0 0 14px rgba(74,222,128,0.5); }
+
+    #episodes-pane { padding: 24px 28px; }
+    #episodes-layout { display: flex; gap: 28px; align-items: flex-start; }
+    #episodes-list-col { flex: 1 1 380px; min-width: 300px; max-width: 460px; }
+    #episodes-cal-col {
+      flex: 2 1 620px; min-width: 340px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 20px;
+    }
+    @media (max-width: 900px) {
+      #episodes-layout { flex-direction: column; }
+      #episodes-list-col { max-width: 100%; }
+      #episodes-cal-col { width: 100%; }
+    }
+
+    .episode-day-popover {
+      position: fixed; z-index: 50; min-width: 220px; max-width: 300px;
+      background: var(--surface3); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45); padding: 12px;
+    }
+    .episode-day-popover-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .03em; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border2);
+    }
+    .episode-day-popover-close {
+      display:flex; align-items:center; justify-content:center; width:20px; height:20px;
+      border-radius:50%; border:none; background:transparent; color:var(--muted); cursor:pointer;
+    }
+    .episode-day-popover-close:hover { background: rgba(255,255,255,.08); color: var(--text); }
+    .episode-day-popover-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; border-top: 1px solid var(--border2);
+    }
+    .episode-day-popover-row:first-of-type { border-top: none; }
+    .episode-day-popover-row-main { flex: 1; min-width: 0; }
+    .episode-day-popover-show { font-size:12px; color:var(--accent-light); font-weight:600; }
+    .episode-day-popover-title { font-size:13px; color:var(--text); }
+    .episode-day-popover-undo {
+      flex-shrink: 0; display:flex; align-items:center; justify-content:center;
+      width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface3); color: var(--muted); cursor: pointer;
+    }
+    .episode-day-popover-undo:hover { background: rgba(255,255,255,.08); color: var(--text); }
     .update-seasons-btn { display:block;width:calc(100% - 16px);margin:4px 8px 8px;padding:7px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
     .update-seasons-btn:hover { background:var(--accent);color:#fff; }
+    .track-episodes-btn { display:block;width:calc(100% - 16px);margin:0 8px 8px;padding:7px;background:rgba(124,58,237,0.15);border:1px solid rgba(167,139,250,0.5);color:#a78bfa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
+    .track-episodes-btn:hover { background:#7c3aed;border-color:#a78bfa;color:#fff; }
+    .track-episodes-btn.is-tracked { background:rgba(124,58,237,0.28); }
 
     /* ── Responsive ── */
     @media (max-width: 900px) { #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
@@ -1190,7 +1276,8 @@
     <button class="tab active" data-tab="discover">Discover</button>
     <button class="tab" data-tab="mylists">My Library<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
     <button class="tab" data-tab="pending">Pending<span id="pending-count" class="tab-badge" hidden>0</span></button>
-    <button class="tab" data-tab="diary">Diary</button>
+    <button class="tab" data-tab="episodes">Now Watching<span id="episodes-count" class="tab-badge" hidden>0</span></button>
+    <button class="tab" data-tab="diary">Movie Log</button>
     <button class="tab" data-tab="stats">Analytics</button>
   </div>
   <input type="search" id="search-input" placeholder="Search titles, cast, director…">
@@ -1535,6 +1622,46 @@
   <div id="pending-grid" class="mylist-grid" style="padding:0 28px 32px"></div>
 </div>
 
+<!-- ── Episodes pane ── -->
+<div id="episodes-pane" hidden>
+  <div>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Now Watching</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Every unwatched episode from the shows you're tracking, oldest air date first.</p>
+  </div>
+  <div id="episodes-layout">
+
+    <!-- Left: unwatched queue -->
+    <div id="episodes-list-col">
+      <div id="episodes-tracked-chips" class="episode-chip-row"></div>
+      <p id="episodes-empty" class="empty-state"></p>
+      <div id="episodes-feed"></div>
+    </div>
+
+    <!-- Right: watched-episode calendar -->
+    <div id="episodes-cal-col">
+      <div class="diary-cal-nav">
+        <button id="episodes-cal-prev" class="diary-cal-nav-btn" type="button" aria-label="Previous year">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <div id="episodes-cal-label" class="diary-cal-label"></div>
+        <button id="episodes-cal-next" class="diary-cal-nav-btn" type="button" aria-label="Next year">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
+      <div id="episodes-cal-grid" class="diary-cal-year-grid"></div>
+      <div class="diary-cal-legend">
+        <span class="diary-cal-swatch"></span>
+        <span>Watched</span>
+        <span class="diary-cal-legend-dots">
+          <span class="diary-cal-dot"></span><span class="diary-cal-dot"></span><span class="diary-cal-dot"></span>
+        </span>
+        <span>= episodes that day</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── Diary pane ── -->
 <div id="diary-pane" hidden>
   <div id="diary-layout">
@@ -1542,7 +1669,7 @@
     <!-- Left: watched list -->
     <div id="diary-list-col">
       <div class="diary-list-header">
-        <h2 class="diary-heading">Watch Diary</h2>
+        <h2 class="diary-heading">Movie Log</h2>
         <button id="diary-clear-filter" class="wl-reset-link hidden" type="button">Clear date filter</button>
       </div>
       <p id="diary-empty" class="empty-state"></p>
@@ -1658,6 +1785,9 @@ let dismissedMap      = {};
 let watchedSeasonsMap = {};
 let customTitlesMap   = {};
 let watchedDatesMap   = {};
+let trackedShowsMap   = {};
+let watchedEpisodesMap = {};
+let episodesCache      = {};   // titleId -> episode array, populated lazily via fetchEpisodesFor
 
 const filters = {
   providers:        new Set(['jhs','prv','lgp','snl','snx','zee','vim']),
@@ -1676,6 +1806,15 @@ const filters = {
 
 function uRef(path) { return db.ref('/users/' + currentUid + '/' + path); }
 function titleById(id) { return allTitles[id] || customTitlesMap[id]; }
+
+async function fetchEpisodesFor(id) {
+  const key = String(id);
+  if (episodesCache[key]) return episodesCache[key];
+  const snap = await db.ref('/episodes/' + key).once('value');
+  const episodes = snap.val() || [];
+  episodesCache[key] = episodes;
+  return episodes;
+}
 function todayLocalISO() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -1743,6 +1882,19 @@ auth.onAuthStateChanged(user => {
       watchedDatesMap = snap.val() || {};
       if (!document.getElementById('diary-pane').hidden) renderDiary();
     });
+    uRef('trackedShows').on('value', snap => {
+      trackedShowsMap = snap.val() || {};
+      if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'watchlist') renderWatchlistGrid();
+      if (!document.getElementById('pending-pane').hidden) renderPendingSeasons();
+      if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+      refreshEpisodesBadge();
+    });
+    uRef('watchedEpisodes').on('value', snap => {
+      watchedEpisodesMap = snap.val() || {};
+      if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+      if (!document.getElementById('diary-pane').hidden) renderDiary();
+      updateEpisodesBadge();
+    });
   } else {
     if (currentUid) {
       db.ref('/users/' + currentUid + '/seen').off();
@@ -1752,9 +1904,12 @@ auth.onAuthStateChanged(user => {
       db.ref('/users/' + currentUid + '/watchedSeasons').off();
       db.ref('/users/' + currentUid + '/customTitles').off();
       db.ref('/users/' + currentUid + '/watchedDates').off();
+      db.ref('/users/' + currentUid + '/trackedShows').off();
+      db.ref('/users/' + currentUid + '/watchedEpisodes').off();
       currentUid = null;
     }
     seenMap = {}; watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {}; customTitlesMap = {}; watchedDatesMap = {};
+    trackedShowsMap = {}; watchedEpisodesMap = {}; episodesCache = {};
     updatePendingBadge();
     updateMyListsBadge();
     renderDiscoverStats();
@@ -2197,13 +2352,22 @@ function makeCard(t, opts = {}) {
     ? `<div class="card-overlay-desc">${escHtml(t.shortDescription)}</div>`
     : '';
 
+  const isTracked      = t.contentType === 'show' && !!trackedShowsMap[String(t.id)];
+
   let seenBtnClass   = 'action-btn seen-btn'   + (isSeen        ? ' is-seen'        : '');
   let watchBtnClass  = 'action-btn watch-btn'  + (isWatchlisted ? ' is-watchlisted' : '');
   let dismissBtnClass = 'action-btn dismiss-btn' + (isDismissed   ? ' is-dismissed'   : '');
+  let trackBtnClass  = 'action-btn track-btn'  + (isTracked     ? ' is-tracked'     : '');
 
   const seenTitle    = isSeen        ? 'Undo seen'          : 'Mark as seen';
   const watchTitle   = isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist';
   const dismissTitle = isDismissed   ? 'Undo dismiss'       : 'Not interested';
+  const trackTitle   = isTracked     ? 'Stop tracking episodes' : 'Track episodes';
+  const trackBtnHtml = t.contentType === 'show'
+    ? `<button class="${trackBtnClass}" ${disabled} title="${trackTitle}">
+         <span class="material-symbols-outlined">playlist_add_check</span>
+       </button>`
+    : '';
 
   let actionsHtml;
   if (opts.watchlistView) {
@@ -2211,6 +2375,7 @@ function makeCard(t, opts = {}) {
       <button class="${seenBtnClass}" ${disabled} title="${seenTitle}">
         <span class="material-symbols-outlined">done</span>
       </button>
+      ${trackBtnHtml}
       <button class="action-btn dismiss-btn" ${disabled} title="Not interested">
         <span class="material-symbols-outlined">close</span>
       </button>`;
@@ -2248,6 +2413,8 @@ function makeCard(t, opts = {}) {
   div.querySelector('.seen-btn').addEventListener('click', () => toggleSeen(t.id, !isSeen));
   const wBtn = div.querySelector('.watch-btn');
   if (wBtn) wBtn.addEventListener('click', () => toggleWatchlist(t.id, !isWatchlisted));
+  const tBtn = div.querySelector('.track-btn');
+  if (tBtn) tBtn.addEventListener('click', () => toggleTrackedShow(t.id, !isTracked));
   const dBtn = div.querySelector('.dismiss-btn');
   if (dBtn) {
     if (opts.watchlistView) {
@@ -2386,6 +2553,29 @@ async function deleteDiaryEntry(id) {
     if (!document.getElementById('diary-pane').hidden) renderDiary();
     console.error('Failed to delete diary entry', err);
     alert('Could not delete: ' + err.message);
+  }
+}
+
+async function unmarkEpisodeWatched(titleId, episodeId) {
+  if (!currentUser) return;
+  const key  = String(titleId);
+  const prev = watchedEpisodesMap[key];
+
+  const updated = { ...(watchedEpisodesMap[key] || {}) };
+  delete updated[episodeId];
+  watchedEpisodesMap[key] = updated;
+
+  if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+  updateEpisodesBadge();
+
+  try {
+    await uRef('watchedEpisodes/' + key + '/' + episodeId).remove();
+  } catch (err) {
+    watchedEpisodesMap[key] = prev;
+    if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+    updateEpisodesBadge();
+    console.error('Failed to unmark episode watched', err);
+    alert('Could not undo: ' + err.message);
   }
 }
 
@@ -2531,6 +2721,42 @@ async function toggleDismissed(id, dismiss) {
   }
 }
 
+// ── Episode tracking opt-in ──────────────────────────────────────────────────────
+async function toggleTrackedShow(id, add) {
+  if (!currentUser) return;
+  const key  = String(id);
+  const prev = trackedShowsMap[key];
+  if (add) trackedShowsMap[key] = true; else delete trackedShowsMap[key];
+
+  const t = titleById(key);
+  document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => {
+    if (c.closest('#watchlist-grid')) c.replaceWith(makeCard(t, { watchlistView: true }));
+  });
+  if (!document.getElementById('pending-pane').hidden) renderPendingSeasons();
+  if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+  updateEpisodesBadge();
+
+  try {
+    if (add) {
+      await uRef('trackedShows/' + key).set(true);
+      fetchEpisodesFor(key).then(updateEpisodesBadge).catch(err => console.error('Episode prefetch failed', err));
+    } else {
+      await uRef('trackedShows/' + key).remove();
+      updateEpisodesBadge();
+    }
+  } catch (err) {
+    if (prev) trackedShowsMap[key] = true; else delete trackedShowsMap[key];
+    document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => {
+      if (c.closest('#watchlist-grid')) c.replaceWith(makeCard(t, { watchlistView: true }));
+    });
+    if (!document.getElementById('pending-pane').hidden) renderPendingSeasons();
+    if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+    updateEpisodesBadge();
+    console.error('Track episodes toggle failed', err);
+    alert('Could not save: ' + err.message);
+  }
+}
+
 function updateMyListsBadge() {
   const total = Object.keys(watchlistMap).length + Object.keys(trackingMap).length;
   const badge = document.getElementById('my-lists-count');
@@ -2600,6 +2826,8 @@ function makePendingCard(t) {
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
   const watchedLabel = ws.length > 0 ? ws.map(s => `S${s}`).join(', ') + ' watched' : 'None watched yet';
+  const isTracked    = !!trackedShowsMap[key];
+  const trackBtnLabel = isTracked ? 'Stop tracking episodes' : 'Track episodes';
 
   div.innerHTML = `
     <div class="card-poster-wrap">
@@ -2613,7 +2841,8 @@ function makePendingCard(t) {
       <div class="pending-seasons-sub">${escHtml(watchedLabel)}</div>
       <div class="provider-badges">${(t.providers||[]).map(p=>`<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}</div>
     </div>
-    <button class="update-seasons-btn">Update watched seasons</button>`;
+    <button class="update-seasons-btn">Update watched seasons</button>
+    <button class="track-episodes-btn${isTracked ? ' is-tracked' : ''}">${trackBtnLabel}</button>`;
 
   div.querySelector('.update-seasons-btn').addEventListener('click', () => {
     openSeasonModal(t, async (selectedSeasons) => {
@@ -2635,7 +2864,151 @@ function makePendingCard(t) {
     });
   });
 
+  div.querySelector('.track-episodes-btn').addEventListener('click', () => toggleTrackedShow(t.id, !isTracked));
+
   return div;
+}
+
+// ── Episode tracking feed ────────────────────────────────────────────────────────
+function updateEpisodesBadge() {
+  const badge = document.getElementById('episodes-count');
+  if (!badge) return;
+  let count = 0;
+  Object.keys(trackedShowsMap).forEach(id => {
+    const eps = episodesCache[id];
+    if (!eps) return;
+    const watched = watchedEpisodesMap[id] || {};
+    count += eps.filter(ep => !watched[ep.id]).length;
+  });
+  badge.textContent = count;
+  badge.hidden = count === 0;
+}
+
+async function refreshEpisodesBadge() {
+  const trackedIds = Object.keys(trackedShowsMap).filter(id => titleById(id));
+  await Promise.all(trackedIds.map(fetchEpisodesFor));
+  updateEpisodesBadge();
+}
+
+async function renderEpisodesFeed() {
+  renderEpisodesCalendar();
+
+  const chipsEl = document.getElementById('episodes-tracked-chips');
+  const emptyEl = document.getElementById('episodes-empty');
+  const feedEl  = document.getElementById('episodes-feed');
+  if (!feedEl) return;
+
+  if (!currentUser) {
+    chipsEl.innerHTML = '';
+    feedEl.innerHTML  = '';
+    emptyEl.textContent = 'Sign in to see what you\'re watching.';
+    return;
+  }
+
+  const trackedIds = Object.keys(trackedShowsMap).filter(id => titleById(id));
+
+  chipsEl.innerHTML = '';
+  trackedIds
+    .map(id => titleById(id))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .forEach(t => {
+      const chip = document.createElement('div');
+      chip.className = 'episode-chip';
+      chip.innerHTML = `<span>${escHtml(t.name || 'Unknown')}</span>
+        <button class="episode-chip-remove" type="button" title="Stop tracking episodes" aria-label="Stop tracking ${escHtml(t.name || 'this show')}">×</button>`;
+      chip.querySelector('.episode-chip-remove').addEventListener('click', () => toggleTrackedShow(t.id, false));
+      chipsEl.appendChild(chip);
+    });
+
+  if (!trackedIds.length) {
+    emptyEl.textContent = 'Track a show from your Watchlist or Pending list to see its episodes here.';
+    feedEl.innerHTML = '';
+    updateEpisodesBadge();
+    return;
+  }
+
+  await Promise.all(trackedIds.map(fetchEpisodesFor));
+
+  const rows = [];
+  trackedIds.forEach(id => {
+    const t       = titleById(id);
+    const eps     = episodesCache[id] || [];
+    const watched = watchedEpisodesMap[id] || {};
+    eps.forEach(ep => {
+      if (watched[ep.id]) return;
+      rows.push({ show: t, episode: ep });
+    });
+  });
+
+  rows.sort((a, b) => {
+    const da = a.episode.airDate, db_ = b.episode.airDate;
+    if (!da && !db_) return 0;
+    if (!da) return 1;
+    if (!db_) return -1;
+    return da.localeCompare(db_);
+  });
+
+  updateEpisodesBadge();
+
+  if (!rows.length) {
+    emptyEl.textContent = "You're all caught up on your tracked shows!";
+    feedEl.innerHTML = '';
+    return;
+  }
+  emptyEl.textContent = '';
+  feedEl.innerHTML = '';
+  rows.forEach(r => feedEl.appendChild(makeEpisodeRow(r.show, r.episode)));
+}
+
+function makeEpisodeRow(t, ep) {
+  const div = document.createElement('div');
+  div.className = 'episode-row';
+
+  const initial   = escHtml((t.name || '?')[0].toUpperCase());
+  const thumbHtml = t.posterUrl
+    ? `<img class="episode-row-thumb" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const airLabel = ep.airDate
+    ? new Date(ep.airDate + 'T00:00:00').toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+    : 'Air date unknown';
+
+  div.innerHTML = `
+    ${thumbHtml}
+    <div class="episode-row-thumb-fallback" style="${t.posterUrl ? 'display:none' : 'display:flex'}">${initial}</div>
+    <div class="episode-row-body">
+      <div class="episode-row-show">${escHtml(t.name || 'Unknown')}</div>
+      <div class="episode-row-title">S${ep.seasonNumber}E${ep.episodeNumber}${ep.title ? ' · ' + escHtml(ep.title) : ''}</div>
+      <div class="episode-row-sub">${escHtml(airLabel)}</div>
+    </div>
+    <button class="episode-mark-btn" type="button" title="Mark episode watched" aria-label="Mark episode watched">
+      <span class="material-symbols-outlined">done</span>
+    </button>`;
+
+  div.querySelector('.episode-mark-btn').addEventListener('click', () => toggleEpisodeWatched(t.id, ep));
+
+  return div;
+}
+
+async function toggleEpisodeWatched(titleId, episode) {
+  if (!currentUser) return;
+  const key         = String(titleId);
+  const prevForShow = watchedEpisodesMap[key];
+  const date        = todayLocalISO();
+
+  watchedEpisodesMap[key] = { ...(watchedEpisodesMap[key] || {}), [episode.id]: date };
+  renderEpisodesFeed();
+  if (!document.getElementById('diary-pane').hidden) renderDiary();
+
+  try {
+    await uRef('watchedEpisodes/' + key + '/' + episode.id).set(date);
+  } catch (err) {
+    if (prevForShow !== undefined) watchedEpisodesMap[key] = prevForShow; else delete watchedEpisodesMap[key];
+    renderEpisodesFeed();
+    if (!document.getElementById('diary-pane').hidden) renderDiary();
+    console.error('Mark episode watched failed', err);
+    alert('Could not save: ' + err.message);
+  }
 }
 
 // ── My Library ─────────────────────────────────────────────────────────────────
@@ -3257,21 +3630,56 @@ function createDiaryDateCombo(initialISO) {
 function getDiaryEntries() {
   return Object.entries(watchedDatesMap)
     .map(([id, date]) => ({ id, date, t: titleById(id) }))
-    .filter(e => e.t && e.date && e.date !== UNKNOWN_DATE);
+    .filter(e => e.t && e.t.contentType !== 'show' && e.date && e.date !== UNKNOWN_DATE);
+}
+
+function getWatchedEpisodeEntries() {
+  const episodeEntries  = [];
+  const uncachedShowIds = [];
+  Object.entries(watchedEpisodesMap).forEach(([titleId, byEpisode]) => {
+    const t = titleById(titleId);
+    if (!t) return;
+    const eps = episodesCache[titleId];
+    if (!eps) { uncachedShowIds.push(titleId); return; }
+    Object.entries(byEpisode).forEach(([episodeId, date]) => {
+      if (!date) return;
+      const episode = eps.find(ep => ep.id === episodeId);
+      if (!episode) return;
+      episodeEntries.push({ id: titleId + '::' + episodeId, date, t, episode });
+    });
+  });
+  if (uncachedShowIds.length) warmEpisodeCacheAndRerender(uncachedShowIds);
+  return episodeEntries;
+}
+
+const _episodeCacheWarmupInFlight = new Set();
+function warmEpisodeCacheAndRerender(showIds) {
+  const toFetch = showIds.filter(id => !_episodeCacheWarmupInFlight.has(id));
+  if (!toFetch.length) return;
+  toFetch.forEach(id => _episodeCacheWarmupInFlight.add(id));
+  Promise.all(toFetch.map(fetchEpisodesFor))
+    .then(() => {
+      toFetch.forEach(id => _episodeCacheWarmupInFlight.delete(id));
+      if (!document.getElementById('episodes-pane').hidden) renderEpisodesCalendar();
+    })
+    .catch(err => {
+      toFetch.forEach(id => _episodeCacheWarmupInFlight.delete(id));
+      console.error('Failed to warm episode cache', err);
+    });
 }
 
 function getUnknownDateEntries() {
   return Object.entries(watchedDatesMap)
     .filter(([, date]) => date === UNKNOWN_DATE)
     .map(([id, date]) => ({ id, date, t: titleById(id) }))
-    .filter(e => e.t);
+    .filter(e => e.t && e.t.contentType !== 'show');
 }
 
 function getUndatedSeenTitles() {
   return Object.keys(seenMap)
     .filter(id => !watchedDatesMap[id])
     .map(id => ({ id, t: titleById(id) }))
-    .filter(e => e.t);
+    .filter(e => e.t && e.t.contentType !== 'show');
 }
 
 function renderDiary() {
@@ -3284,7 +3692,7 @@ function renderDiary() {
 
   if (!currentUser) {
     listEl.innerHTML = '';
-    emptyEl.textContent = 'Sign in to see your watch diary.';
+    emptyEl.textContent = 'Sign in to see your movie log.';
     clearBtn.classList.add('hidden');
     banner.hidden = true; banner.innerHTML = '';
     calLabel.textContent = ''; calGrid.innerHTML = '';
@@ -3370,7 +3778,7 @@ function renderDiaryList() {
 
   if (!entries.length && !unknownEntries.length) {
     listEl.innerHTML = '';
-    emptyEl.textContent = 'Nothing logged yet — mark a title as watched to start your diary.';
+    emptyEl.textContent = 'Nothing logged yet — mark a movie as watched to start your movie log.';
     clearBtn.classList.add('hidden');
     return;
   }
@@ -3465,19 +3873,21 @@ function makeDiaryItem(e) {
 
   div.querySelector('.diary-item-date').addEventListener('click', ev => {
     ev.stopPropagation();
-    startDiaryDateEdit(div, e.id, e.date);
+    startDiaryDateEdit(div, e);
   });
 
   div.querySelector('.diary-item-delete').addEventListener('click', ev => {
     ev.stopPropagation();
-    if (!confirm(`Remove "${t.name || 'this title'}" from your diary? This un-marks it as seen.`)) return;
+    if (!confirm(`Remove "${t.name || 'this title'}" from your movie log? This un-marks it as seen.`)) return;
     deleteDiaryEntry(e.id);
   });
 
   return div;
 }
 
-function startDiaryDateEdit(rowDiv, id, currentDate) {
+function startDiaryDateEdit(rowDiv, e) {
+  const id          = e.id;
+  const currentDate = e.date;
   const btn = rowDiv.querySelector('.diary-item-date');
 
   const wrap = document.createElement('div');
@@ -3628,6 +4038,198 @@ document.getElementById('diary-clear-filter').addEventListener('click', () => {
   diarySelectedDate = null;
   renderDiary();
 });
+
+// ── Episodes calendar ────────────────────────────────────────────────────────────
+let episodesCalYear         = null;
+let episodesCalSelectedDate = null;
+
+function renderEpisodesCalendar() {
+  const labelEl = document.getElementById('episodes-cal-label');
+  const gridEl  = document.getElementById('episodes-cal-grid');
+  if (!labelEl || !gridEl) return;
+
+  if (!currentUser) {
+    labelEl.textContent = '';
+    gridEl.innerHTML = '';
+    closeEpisodeDayPopover();
+    return;
+  }
+
+  closeEpisodeDayPopover();
+
+  const entries = getWatchedEpisodeEntries();
+
+  if (!episodesCalYear) {
+    const sorted = entries.slice().sort((a, b) => b.date.localeCompare(a.date));
+    episodesCalYear = sorted.length ? parseISODateLocal(sorted[0].date).getFullYear() : new Date().getFullYear();
+  }
+
+  labelEl.textContent = String(episodesCalYear);
+
+  const counts = {};
+  entries.forEach(e => { counts[e.date] = (counts[e.date] || 0) + 1; });
+  const today = todayLocalISO();
+
+  gridEl.innerHTML = '';
+
+  for (let m = 0; m < 12; m++) {
+    const monthBlock = document.createElement('div');
+    monthBlock.className = 'diary-month-block';
+
+    const title = document.createElement('div');
+    title.className = 'diary-month-title';
+    title.textContent = DIARY_MONTH_NAMES[m];
+    monthBlock.appendChild(title);
+
+    const wk = document.createElement('div');
+    wk.className = 'diary-month-weekdays';
+    wk.innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div>${d}</div>`).join('');
+    monthBlock.appendChild(wk);
+
+    const dayGrid = document.createElement('div');
+    dayGrid.className = 'diary-month-grid';
+
+    const startOffset = new Date(episodesCalYear, m, 1).getDay();
+    const daysInMonth  = new Date(episodesCalYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startOffset; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'diary-cal-day diary-cal-empty';
+      dayGrid.appendChild(cell);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${episodesCalYear}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const count   = counts[dateStr] || 0;
+      const cell    = document.createElement('div');
+      cell.className = 'diary-cal-day';
+
+      const num = document.createElement('div');
+      num.textContent = day;
+      cell.appendChild(num);
+
+      if (dateStr === today) cell.classList.add('diary-cal-today');
+      if (count > 0) {
+        const dots = document.createElement('div');
+        dots.className = 'diary-cal-dots';
+        for (let i = 0; i < Math.min(count, 3); i++) {
+          const dot = document.createElement('span');
+          dot.className = 'diary-cal-dot';
+          dots.appendChild(dot);
+        }
+        cell.appendChild(dots);
+
+        cell.classList.add('diary-cal-has-watch');
+        cell.title = `${count} episode${count !== 1 ? 's' : ''} watched`;
+        cell.addEventListener('click', () => {
+          if (episodesCalSelectedDate === dateStr) {
+            closeEpisodeDayPopover();
+          } else {
+            const dayEntries = entries.filter(e => e.date === dateStr);
+            showEpisodeDayPopover(dateStr, cell, dayEntries);
+          }
+        });
+      }
+      if (dateStr === episodesCalSelectedDate) cell.classList.add('diary-cal-selected');
+      dayGrid.appendChild(cell);
+    }
+
+    monthBlock.appendChild(dayGrid);
+    gridEl.appendChild(monthBlock);
+  }
+}
+
+document.getElementById('episodes-cal-prev').addEventListener('click', () => {
+  episodesCalYear = (episodesCalYear || new Date().getFullYear()) - 1;
+  closeEpisodeDayPopover();
+  renderEpisodesCalendar();
+});
+document.getElementById('episodes-cal-next').addEventListener('click', () => {
+  episodesCalYear = (episodesCalYear || new Date().getFullYear()) + 1;
+  closeEpisodeDayPopover();
+  renderEpisodesCalendar();
+});
+
+// ── Episode day-detail popover ───────────────────────────────────────────────────
+let _episodeDayPopoverEl = null;
+
+function closeEpisodeDayPopover() {
+  if (_episodeDayPopoverEl) {
+    _episodeDayPopoverEl.remove();
+    _episodeDayPopoverEl = null;
+  }
+  if (episodesCalSelectedDate) {
+    episodesCalSelectedDate = null;
+    document.querySelectorAll('#episodes-cal-grid .diary-cal-selected').forEach(c => c.classList.remove('diary-cal-selected'));
+  }
+  document.removeEventListener('mousedown', _episodeDayPopoverOutsideHandler, true);
+  document.removeEventListener('keydown', _episodeDayPopoverEscHandler, true);
+}
+
+function _episodeDayPopoverOutsideHandler(ev) {
+  if (!_episodeDayPopoverEl || _episodeDayPopoverEl.contains(ev.target)) return;
+  // Let a calendar day cell's own click handler manage open/close/switch —
+  // this listener fires on mousedown (capture), before that click handler runs.
+  if (ev.target.closest('.diary-cal-day')) return;
+  closeEpisodeDayPopover();
+}
+function _episodeDayPopoverEscHandler(ev) {
+  if (ev.key === 'Escape') closeEpisodeDayPopover();
+}
+
+function showEpisodeDayPopover(dateStr, anchorEl, dayEntries) {
+  closeEpisodeDayPopover();
+  episodesCalSelectedDate = dateStr;
+  anchorEl.classList.add('diary-cal-selected');
+
+  const pop = document.createElement('div');
+  pop.className = 'episode-day-popover';
+  pop.innerHTML = `
+    <div class="episode-day-popover-header">
+      <span>${escHtml(fmtDiaryDateLong(dateStr))}</span>
+      <button class="episode-day-popover-close" type="button" aria-label="Close">
+        <span class="material-symbols-outlined" style="font-size:16px">close</span>
+      </button>
+    </div>
+    <div class="episode-day-popover-body"></div>`;
+
+  const body = pop.querySelector('.episode-day-popover-body');
+  dayEntries
+    .slice()
+    .sort((a, b) => (a.t.name || '').localeCompare(b.t.name || '') || a.episode.seasonNumber - b.episode.seasonNumber || a.episode.episodeNumber - b.episode.episodeNumber)
+    .forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'episode-day-popover-row';
+      row.innerHTML = `
+        <div class="episode-day-popover-row-main">
+          <div class="episode-day-popover-show">${escHtml(e.t.name || 'Unknown')}</div>
+          <div class="episode-day-popover-title">S${e.episode.seasonNumber}E${e.episode.episodeNumber}${e.episode.title ? ' · ' + escHtml(e.episode.title) : ''}</div>
+        </div>
+        <button class="episode-day-popover-undo" type="button" title="Undo — mark as unwatched" aria-label="Undo — mark ${escHtml(e.t.name || 'this episode')} as unwatched">
+          <span class="material-symbols-outlined" style="font-size:15px">undo</span>
+        </button>`;
+      row.querySelector('.episode-day-popover-undo').addEventListener('click', () => unmarkEpisodeWatched(e.t.id, e.episode.id));
+      body.appendChild(row);
+    });
+
+  document.body.appendChild(pop);
+  _episodeDayPopoverEl = pop;
+
+  const anchorRect = anchorEl.getBoundingClientRect();
+  const popRect     = pop.getBoundingClientRect();
+  let left = anchorRect.left + anchorRect.width / 2 - popRect.width / 2;
+  let top  = anchorRect.bottom + 8;
+  left = Math.max(8, Math.min(left, window.innerWidth - popRect.width - 8));
+  if (top + popRect.height > window.innerHeight - 8) top = anchorRect.top - popRect.height - 8;
+  pop.style.left = left + 'px';
+  pop.style.top  = top + 'px';
+
+  pop.querySelector('.episode-day-popover-close').addEventListener('click', closeEpisodeDayPopover);
+  setTimeout(() => {
+    document.addEventListener('mousedown', _episodeDayPopoverOutsideHandler, true);
+    document.addEventListener('keydown', _episodeDayPopoverEscHandler, true);
+  }, 0);
+}
 
 // ── Analytics ──────────────────────────────────────────────────────────────────
 function renderStats() {
@@ -4134,11 +4736,14 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.getElementById('mylists-pane').hidden  = (tab !== 'mylists');
     document.getElementById('stats-pane').hidden    = (tab !== 'stats');
     document.getElementById('pending-pane').hidden  = (tab !== 'pending');
+    document.getElementById('episodes-pane').hidden = (tab !== 'episodes');
     document.getElementById('diary-pane').hidden    = (tab !== 'diary');
-    if (tab === 'mylists') renderMyLists();
-    if (tab === 'stats')   renderStats();
-    if (tab === 'pending') renderPendingSeasons();
-    if (tab === 'diary')   renderDiary();
+    if (tab !== 'episodes') closeEpisodeDayPopover();
+    if (tab === 'mylists')  renderMyLists();
+    if (tab === 'stats')    renderStats();
+    if (tab === 'pending')  renderPendingSeasons();
+    if (tab === 'episodes') renderEpisodesFeed();
+    if (tab === 'diary')    renderDiary();
   });
 });
 

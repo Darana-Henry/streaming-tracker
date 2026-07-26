@@ -25,4 +25,7 @@ public class Title {
     public Integer numberOfSeasons;    // shows only; null for movies
     public List<String> providers;
     public List<String> audioLanguages; // language codes available across streaming offers
+
+    // shows only; excluded from /titles Gson serialization (transient), written separately to /episodes
+    public transient List<Episode> episodes;
 }
