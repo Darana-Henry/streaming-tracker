@@ -1279,7 +1279,7 @@
     <button class="tab active" data-tab="discover">Discover</button>
     <button class="tab" data-tab="mylists">My Library<span id="my-lists-count" class="tab-badge" hidden>0</span></button>
     <button class="tab" data-tab="pending">Pending<span id="pending-count" class="tab-badge" hidden>0</span></button>
-    <button class="tab" data-tab="episodes">Now Watching<span id="episodes-count" class="tab-badge" hidden>0</span></button>
+    <button class="tab" data-tab="episodes">Episode Log<span id="episodes-count" class="tab-badge" hidden>0</span></button>
     <button class="tab" data-tab="diary">Movie Log</button>
     <button class="tab" data-tab="stats">Analytics</button>
   </div>
@@ -1637,7 +1637,7 @@
 <!-- ── Episodes pane ── -->
 <div id="episodes-pane" hidden>
   <div>
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Now Watching</h2>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Episode Log</h2>
     <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Every unwatched episode from the shows you're tracking, oldest air date first.</p>
   </div>
   <div id="episodes-layout">
@@ -2735,13 +2735,46 @@ async function toggleDismissed(id, dismiss) {
 }
 
 // ── Episode tracking opt-in ──────────────────────────────────────────────────────
+// Bulk-marks every episode of the given season numbers as watched (date "unknown", same
+// sentinel Movie Log uses), so newly-tracked shows don't dump their whole back catalog into
+// the Episode Log feed just because per-episode watch state was never recorded before.
+async function seedWatchedEpisodesFromSeasons(id, seasons) {
+  if (!seasons.length) return;
+  const key = String(id);
+  const eps = await fetchEpisodesFor(key);
+  const updates = {};
+  eps.forEach(ep => { if (seasons.includes(ep.seasonNumber)) updates[ep.id] = 'unknown'; });
+  if (!Object.keys(updates).length) return;
+  await uRef('watchedEpisodes/' + key).update(updates);
+  watchedEpisodesMap[key] = { ...(watchedEpisodesMap[key] || {}), ...updates };
+}
+
 async function toggleTrackedShow(id, add) {
   if (!currentUser) return;
+  const key = String(id);
+  const t   = titleById(key);
+
+  if (add && t) {
+    let eps = [];
+    try { eps = await fetchEpisodesFor(key); } catch (err) { console.error('Episode prefetch failed', err); }
+    openSeasonModal(t, (selectedSeasons) => {
+      const seasons = selectedSeasons === null
+        ? [...new Set(eps.map(ep => ep.seasonNumber))]
+        : selectedSeasons;
+      applyTrackedShow(id, t, seasons);
+    });
+    return;
+  }
+
+  applyTrackedShow(id, t, null);
+}
+
+async function applyTrackedShow(id, t, seasonsAlreadyWatched) {
   const key  = String(id);
+  const add  = seasonsAlreadyWatched !== null;
   const prev = trackedShowsMap[key];
   if (add) trackedShowsMap[key] = true; else delete trackedShowsMap[key];
 
-  const t = titleById(key);
   document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => {
     if (c.closest('#watchlist-grid')) c.replaceWith(makeCard(t, { watchlistView: true }));
   });
@@ -2752,7 +2785,9 @@ async function toggleTrackedShow(id, add) {
   try {
     if (add) {
       await uRef('trackedShows/' + key).set(true);
-      fetchEpisodesFor(key).then(updateEpisodesBadge).catch(err => console.error('Episode prefetch failed', err));
+      await seedWatchedEpisodesFromSeasons(key, seasonsAlreadyWatched);
+      if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+      updateEpisodesBadge();
     } else {
       await uRef('trackedShows/' + key).remove();
       updateEpisodesBadge();
@@ -2864,6 +2899,11 @@ function makePendingCard(t) {
       watchedSeasonsMap[key] = selectedSeasons;
       try {
         await uRef('watchedSeasons/' + key).set(selectedSeasons);
+        if (isTracked) {
+          await seedWatchedEpisodesFromSeasons(key, selectedSeasons);
+          if (!document.getElementById('episodes-pane').hidden) renderEpisodesFeed();
+          updateEpisodesBadge();
+        }
         renderPendingSeasons();
         document.querySelectorAll(`.card[data-id="${t.id}"]`).forEach(c => {
           if (c.closest('#pending-grid')) return;
