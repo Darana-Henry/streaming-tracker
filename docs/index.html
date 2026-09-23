@@ -1175,6 +1175,7 @@
     /* ── Pending Seasons ── */
     .seen-badge.season-badge { width:auto;border-radius:20px;padding:0 7px;font-size:11px;font-weight:700;min-width:28px; }
     .pending-badge { position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;pointer-events:none; }
+    .coming-soon-badge { background:var(--surface2);color:var(--muted);border:1px solid var(--border); }
     .pending-seasons-sub { font-size:11px;color:var(--muted);margin-top:2px;margin-bottom:4px; }
 
     .episode-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
@@ -1632,6 +1633,12 @@
   </div>
   <p id="pending-empty" class="empty-state" style="padding:0 28px 48px"></p>
   <div id="pending-grid" class="mylist-grid" style="padding:0 28px 32px"></div>
+
+  <div id="coming-soon-section" hidden style="padding:8px 28px 0;border-top:1px solid var(--border)">
+    <h2 style="font-size:18px;font-weight:700;margin:20px 0 4px">Coming Soon</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">You're caught up — these are renewed for another season that hasn't come out yet.</p>
+    <div id="coming-soon-grid" class="mylist-grid" style="padding-bottom:32px"></div>
+  </div>
 </div>
 
 <!-- ── Episodes pane ── -->
@@ -2834,6 +2841,7 @@ function renderPendingSeasons() {
     empty.textContent = 'Sign in to see pending seasons.';
     grid.innerHTML    = '';
     updatePendingBadge();
+    renderComingSoon();
     return;
   }
 
@@ -2855,11 +2863,39 @@ function renderPendingSeasons() {
   if (pendingShows.length === 0) {
     empty.textContent = 'All caught up — no pending seasons!';
     grid.innerHTML    = '';
+  } else {
+    empty.textContent = '';
+    grid.innerHTML    = '';
+    pendingShows.forEach(t => grid.appendChild(makePendingCard(t)));
+  }
+
+  renderComingSoon();
+}
+
+function renderComingSoon() {
+  const section = document.getElementById('coming-soon-section');
+  const grid    = document.getElementById('coming-soon-grid');
+  if (!section || !grid) return;
+
+  if (!currentUser) {
+    section.hidden = true;
+    grid.innerHTML = '';
     return;
   }
-  empty.textContent = '';
-  grid.innerHTML    = '';
-  pendingShows.forEach(t => grid.appendChild(makePendingCard(t)));
+
+  const comingSoonShows = Object.keys(seenMap)
+    .filter(key => {
+      const t  = allTitles[key];
+      const ws = watchedSeasonsMap[key];
+      return t && t.contentType === 'show' && t.nextSeasonAnnounced &&
+             Array.isArray(ws) && t.numberOfSeasons && ws.length >= t.numberOfSeasons;
+    })
+    .map(key => allTitles[key])
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  section.hidden = comingSoonShows.length === 0;
+  grid.innerHTML = '';
+  comingSoonShows.forEach(t => grid.appendChild(makeComingSoonCard(t)));
 }
 
 function makePendingCard(t) {
@@ -2920,6 +2956,41 @@ function makePendingCard(t) {
       }
     });
   });
+
+  div.querySelector('.track-episodes-btn').addEventListener('click', () => toggleTrackedShow(t.id, !isTracked));
+
+  return div;
+}
+
+function makeComingSoonCard(t) {
+  const key            = String(t.id);
+  const isTracked      = !!trackedShowsMap[key];
+  const trackBtnLabel  = isTracked ? 'Stop tracking episodes' : 'Track episodes';
+  const n              = t.numberOfSeasons;
+
+  const div      = document.createElement('div');
+  div.className  = 'card';
+  div.dataset.id = t.id;
+
+  const initial    = escHtml((t.name || '?')[0].toUpperCase());
+  const posterHtml = t.posterUrl
+    ? `<img class="card-poster" src="${escHtml(t.posterUrl)}" alt="" loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+
+  div.innerHTML = `
+    <div class="card-poster-wrap">
+      ${posterHtml}
+      <div class="card-poster-fallback" style="${t.posterUrl ? '' : 'display:flex'}">${initial}</div>
+      <div class="pending-badge coming-soon-badge">Coming soon</div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
+      <div class="card-sub">${t.year || '—'} · Show · ${n} season${n !== 1 ? 's' : ''} out</div>
+      <div class="pending-seasons-sub">Renewed — next season not released yet</div>
+      <div class="provider-badges">${(t.providers||[]).map(p=>`<span class="badge ${provBadgeClass(p)}">${provLabel(p)}</span>`).join('')}</div>
+    </div>
+    <button class="track-episodes-btn${isTracked ? ' is-tracked' : ''}">${trackBtnLabel}</button>`;
 
   div.querySelector('.track-episodes-btn').addEventListener('click', () => toggleTrackedShow(t.id, !isTracked));
 

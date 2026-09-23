@@ -293,8 +293,18 @@ public class JustWatchClient {
         }
 
         if ("show".equals(t.contentType) && hasArray(node, "seasons")) {
-            t.numberOfSeasons = node.getAsJsonArray("seasons").size();
-            t.episodes = parseEpisodes(node.getAsJsonArray("seasons"));
+            JsonArray seasonsArr = node.getAsJsonArray("seasons");
+            t.episodes = parseEpisodes(seasonsArr);
+
+            // JustWatch lists a season the moment a show is renewed, often as a single
+            // placeholder episode with no real airDate — long before anything actually
+            // releases. Only count seasons that have at least one aired episode.
+            Set<Integer> airedSeasons = new LinkedHashSet<>();
+            for (Episode ep : t.episodes) {
+                if (ep.airDate != null) airedSeasons.add(ep.seasonNumber);
+            }
+            t.numberOfSeasons = airedSeasons.isEmpty() ? null : airedSeasons.size();
+            t.nextSeasonAnnounced = seasonsArr.size() > airedSeasons.size();
         }
 
         t.providers = new ArrayList<>();
