@@ -54,7 +54,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 
 | Flag | Values | Default |
 |---|---|---|
-| `--providers` | comma-separated: `jhs` `prv` `lgp` `snl` `snx` `zee` `vim` `nfx` | all eight |
+| `--providers` | comma-separated: `jhs` `prv` `lgp` `snl` `snx` `zee` `atp` `nfx` | all eight |
 | `--year-from` | integer year | `1900` |
 | `--year-to` | integer year | current year |
 | `--content-type` | `movies` \| `shows` \| `both` | `both` |
@@ -92,7 +92,7 @@ java -jar build/libs/streaming-tracker-1.0.jar
 /users/{uid}/watchedEpisodes/{justwatch_id}/{episodeId}: "YYYY-MM-DD"  ← written by frontend only; presence means that episode is watched, and the value doubles as the date shown in the Now Watching tab's calendar/day-popover. Deliberately kept separate from watchedDates — episode watches never appear in the Movie Log.
 ```
 
-Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `vim` Voot, `nfx` Netflix
+Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `atp` Apple TV, `nfx` Netflix
 
 ## GitHub Pages deployment
 
