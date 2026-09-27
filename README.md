@@ -30,7 +30,6 @@ In Firebase Console → Realtime Database → Rules, paste:
 {
   "rules": {
     "titles":    { ".read": true,          ".write": false         },
-    "episodes":  { ".read": true,          ".write": false         },
     "seen":      { ".read": "auth != null", ".write": "auth != null" },
     "watchlist": { ".read": "auth != null", ".write": "auth != null" },
     "dismissed": { ".read": "auth != null", ".write": "auth != null" },

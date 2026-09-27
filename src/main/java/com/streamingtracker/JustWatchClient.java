@@ -5,7 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.streamingtracker.model.Episode;
 import com.streamingtracker.model.Title;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -14,6 +13,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -52,9 +52,10 @@ public class JustWatchClient {
         "      node {" +
         "        objectId" +
         "        objectType" +
-        "        ... on Show { seasons { id episodes { id content(country: $country, language: $language) {" +
-        "          title episodeNumber seasonNumber originalReleaseDate shortDescription runtime" +
-        "        } } } }" +
+        "        ... on Show { seasons {" +
+        "          content(country: $country, language: $language) { originalReleaseDate }" +
+        "          offerCount(country: $country, platform: WEB)" +
+        "        } }" +
         "        content(country: $country, language: $language) {" +
         "          title" +
         "          posterUrl" +
@@ -294,17 +295,26 @@ public class JustWatchClient {
 
         if ("show".equals(t.contentType) && hasArray(node, "seasons")) {
             JsonArray seasonsArr = node.getAsJsonArray("seasons");
-            t.episodes = parseEpisodes(seasonsArr);
 
-            // JustWatch lists a season the moment a show is renewed, often as a single
-            // placeholder episode with no real airDate — long before anything actually
-            // releases. Only count seasons that have at least one aired episode.
-            Set<Integer> airedSeasons = new LinkedHashSet<>();
-            for (Episode ep : t.episodes) {
-                if (ep.airDate != null) airedSeasons.add(ep.seasonNumber);
+            // JustWatch lists a season as soon as a show is renewed, long before it releases.
+            // Per-episode air dates can't tell the two apart (JustWatch often leaves them blank
+            // for recent, fully released seasons), so a season counts as out once it has any
+            // offer in the country or a release date that has already passed. Everything up to
+            // the last such season is treated as released.
+            String today = LocalDate.now().toString();
+            int released = 0;
+            for (int i = 0; i < seasonsArr.size(); i++) {
+                JsonObject season = seasonsArr.get(i).getAsJsonObject();
+                Integer offerCount = intOrNull(season, "offerCount");
+                String releaseDate = null;
+                if (season.has("content") && !season.get("content").isJsonNull())
+                    releaseDate = str(season.getAsJsonObject("content"), "originalReleaseDate");
+                boolean isOut = (offerCount != null && offerCount > 0)
+                        || (releaseDate != null && releaseDate.compareTo(today) <= 0);
+                if (isOut) released = i + 1;
             }
-            t.numberOfSeasons = airedSeasons.isEmpty() ? null : airedSeasons.size();
-            t.nextSeasonAnnounced = seasonsArr.size() > airedSeasons.size();
+            t.numberOfSeasons = released == 0 ? null : released;
+            t.totalSeasons    = seasonsArr.size();
         }
 
         t.providers = new ArrayList<>();
@@ -341,33 +351,6 @@ public class JustWatchClient {
 
         if (t.providers.isEmpty()) return null;
         return t;
-    }
-
-    private static List<Episode> parseEpisodes(JsonArray seasons) {
-        List<Episode> episodes = new ArrayList<>();
-        for (JsonElement seasonEl : seasons) {
-            JsonObject season = seasonEl.getAsJsonObject();
-            if (!hasArray(season, "episodes")) continue;
-            for (JsonElement epEl : season.getAsJsonArray("episodes")) {
-                JsonObject epNode = epEl.getAsJsonObject();
-                if (!epNode.has("content") || epNode.get("content").isJsonNull()) continue;
-                JsonObject content = epNode.getAsJsonObject("content");
-
-                Episode ep = new Episode();
-                ep.id               = str(epNode, "id");
-                Integer epNum       = intOrNull(content, "episodeNumber");
-                Integer seasonNum   = intOrNull(content, "seasonNumber");
-                if (epNum == null || seasonNum == null) continue;
-                ep.episodeNumber    = epNum;
-                ep.seasonNumber     = seasonNum;
-                ep.title            = str(content, "title");
-                ep.airDate          = str(content, "originalReleaseDate");
-                ep.runtime          = intOrNull(content, "runtime");
-                ep.shortDescription = str(content, "shortDescription");
-                episodes.add(ep);
-            }
-        }
-        return episodes;
     }
 
     private static String str(JsonObject o, String key) {
