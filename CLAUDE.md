@@ -62,11 +62,10 @@ java -jar build/libs/streaming-tracker-1.0.jar
 ### What the scraper does
 
 1. Fetches the JustWatch genre list for `en_IN` and caches it in memory.
-2. Paginates through `/content/titles/en_IN/popular` (up to 40 per page, 400 ms delay between pages; the page size is halved and the page retried whenever a show's nested season/episode data pushes a query over JustWatch's GraphQL complexity limit).
+2. Paginates through `/content/titles/en_IN/popular` (up to 40 per page, 400 ms delay between pages; the page size is halved and the page retried whenever a show's nested season data pushes a query over JustWatch's GraphQL complexity limit).
 3. Builds a flat map of `{ titleId: titleObject }`.
 4. Authenticates with Firebase using a short-lived OAuth2 token derived from the service account private key (no external JWT library — pure JDK crypto).
 5. Overwrites `/titles` in Firebase with a single PUT.  `/seen` is never touched.
-6. Overwrites `/episodes` in Firebase with a single PUT (shows only; movies contribute nothing).
 
 ## Firebase data layout
 
@@ -77,19 +76,16 @@ java -jar build/libs/streaming-tracker-1.0.jar
   imdbRating, imdbVotes, ageRating, shortDescription,
   releaseDate, streamingDate, firstSeen,
   posterUrl, backdropUrl,
-  contentType, providers[]
-
-/episodes/{justwatch_id}: [ { id, seasonNumber, episodeNumber, title, airDate, runtime, shortDescription }, ... ]  ← written by scraper, shows only. Kept separate from /titles (rather than nested on the Title) so the main catalog payload every visitor downloads stays small; the frontend fetches a given show's episode list on demand (once()), only for shows the user opts into tracking via /users/{uid}/trackedShows.
+  contentType, providers[],
+  numberOfSeasons, totalSeasons   ← shows only. numberOfSeasons = seasons actually out (any JustWatch offer in IN, or a past release date; everything up to the last such season counts). totalSeasons = every season JustWatch lists, incl. renewed-but-unreleased ones. Episode air dates are NOT used — JustWatch often leaves them blank for fully released recent seasons.
 
 /users/{uid}/seen/{justwatch_id}: true          ← written by frontend only
 /users/{uid}/watchlist/{justwatch_id}: { order }  ← written by frontend only; order is a sortable float used by "My order"
 /users/{uid}/dismissed/{justwatch_id}: true     ← written by frontend only
-/users/{uid}/watchedSeasons/{justwatch_id}: []  ← written by frontend only
+/users/{uid}/watchedSeasons/{justwatch_id}: []  ← written by frontend only. May include announced seasons (> numberOfSeasons) the user ticked by hand. Pending tab = some released season unwatched; Coming Soon = all released seasons watched but an announced one isn't; otherwise the show appears in neither.
 /users/{uid}/tracking/{id}: { name, year, posterUrl, contentType, addedAt, fullPath, backdropUrl, genres, director, actors, shortDescription, runtime, ageRating, imdbRating, imdbVotes }  ← written by frontend only. fullPath is the JustWatch URL path (e.g. "/in/movie/some-title"), kept so the entry can be reliably re-fetched later; the rest are optional JustWatch metadata fetched at add-time so "Coming to Streaming" cards can look like Discover cards even pre-release. Entries tracked before this metadata existed are missing these fields and get opportunistically backfilled client-side (best-effort slug guess + name/year sanity check) the next time the tracking tab renders.
 /users/{uid}/customTitles/{id}: { id, name, year, contentType, posterUrl, addedAt, source }  ← written by frontend only; denormalized copy for titles marked seen that aren't in /titles (e.g. watched in a theater, or on an untracked service). id is either the JustWatch objectId (if resolved via URL) or "custom_<timestamp>"
-/users/{uid}/watchedDates/{id}: "YYYY-MM-DD" | "unknown"    ← written by frontend only; local-date a title was watched, powers the Movie Log tab (reverse-chronological list + calendar heatmap). Set to today when a title is marked seen (editable after the fact); removed when a title is un-marked seen. Titles marked seen before this feature existed have no entry until backfilled via the Movie Log tab's prompt, and are excluded from the Movie Log view until then. The sentinel value "unknown" means "I know I watched it, but not when" — set via the Movie Log tab's backfill prompt or by editing an entry's date; these titles appear in the Movie Log list under a "Date unknown" group below the dated entries, but are excluded from the calendar heatmap. Movie Log only ever shows contentType "movie" entries — shows are written here too when marked seen, but are filtered out of every Movie Log view (list, backfill prompt, calendar); their watch history lives in the Now Watching tab instead.
-/users/{uid}/trackedShows/{justwatch_id}: true  ← written by frontend only; opt-in flag set via the "Track episodes" button on Watchlist/Pending cards. Presence means the show's episodes appear in the Now Watching tab's chronological unwatched feed.
-/users/{uid}/watchedEpisodes/{justwatch_id}/{episodeId}: "YYYY-MM-DD"  ← written by frontend only; presence means that episode is watched, and the value doubles as the date shown in the Now Watching tab's calendar/day-popover. Deliberately kept separate from watchedDates — episode watches never appear in the Movie Log.
+/users/{uid}/watchedDates/{id}: "YYYY-MM-DD" | "unknown"    ← written by frontend only; local-date a title was watched, powers the Movie Log tab (reverse-chronological list + calendar heatmap). Set to today when a title is marked seen (editable after the fact); removed when a title is un-marked seen. Titles marked seen before this feature existed have no entry until backfilled via the Movie Log tab's prompt, and are excluded from the Movie Log view until then. The sentinel value "unknown" means "I know I watched it, but not when" — set via the Movie Log tab's backfill prompt or by editing an entry's date; these titles appear in the Movie Log list under a "Date unknown" group below the dated entries, but are excluded from the calendar heatmap. Movie Log only ever shows contentType "movie" entries — shows are written here too when marked seen, but are filtered out of every Movie Log view (list, backfill prompt, calendar); their watch history lives in watchedSeasons / the Pending tab instead.
 ```
 
 Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl` SonyLIV, `snx` Sun NXT, `zee` ZEE5, `atp` Apple TV, `nfx` Netflix
@@ -107,7 +103,6 @@ Provider codes: `jhs` JioHotstar, `prv` Prime Video, `lgp` Lionsgate Play, `snl`
 {
   "rules": {
     "titles": { ".read": true, ".write": false },
-    "episodes": { ".read": true, ".write": false },
     "users": {
       "$uid": {
         ".read":  "auth != null && auth.uid === $uid",
