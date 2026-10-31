@@ -1181,6 +1181,34 @@
     .update-seasons-btn { display:block;width:calc(100% - 16px);margin:4px 8px 8px;padding:7px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s; }
     .update-seasons-btn:hover { background:var(--accent);color:#fff; }
 
+    /* ── Discover sub-tabs / New Releases ── */
+    .discover-subtabs { padding: 10px 24px 0; margin-bottom: 0; background: var(--bg, transparent); }
+    #releases-pane { padding: 20px 28px 40px; }
+    .rel-fetch-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 14px; }
+    .rel-fetch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rel-fetch-group label { font-size: 12px; color: var(--muted); }
+    .rel-fetch-group input[type="number"] {
+      width: 84px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 10px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+    }
+    .rel-fetch-group input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+    .rel-btn {
+      background: var(--surface3); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 14px; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;
+    }
+    .rel-btn:hover { border-color: var(--accent); }
+    .rel-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .rel-btn-primary:hover { background: #7275f5; }
+    .rel-btn:disabled { opacity: .5; cursor: default; }
+    .rel-status { font-size: 12px; color: var(--muted); }
+    .rel-status.is-error { color: #f87171; }
+    .rel-check { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+    .rel-check input { accent-color: var(--accent); cursor: pointer; }
+    .rel-pop { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .rel-pop span.rel-pop-item { display: inline-flex; align-items: center; gap: 2px; }
+    .rel-pop .material-symbols-outlined { font-size: 14px; }
+    .rel-pop .rel-pop-dl .material-symbols-outlined { color: #fb923c; font-variation-settings: 'FILL' 1; }
+
     /* ── Responsive ── */
     @media (max-width: 900px) { #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
     @media (max-width: 640px) {
@@ -1208,6 +1236,10 @@
 </header>
 
 <div id="discover-pane">
+<div class="lib-tabs discover-subtabs">
+  <button class="lib-tab disc-subtab active" data-discsub="streaming">On Streaming</button>
+  <button class="lib-tab disc-subtab" data-discsub="releases">New Releases<span id="rel-tab-badge" class="lib-tab-badge hidden">0</span></button>
+</div>
 <div id="layout">
 
   <!-- ── Sidebar ── -->
@@ -1425,6 +1457,46 @@
     <div id="grid" style="display:none"></div>
   </div>
 
+</div>
+
+<!-- ── New Releases sub-tab ── -->
+<div id="releases-pane" style="display:none">
+  <div class="rel-fetch-bar">
+    <div class="rel-fetch-group">
+      <label for="rel-fetch-year">Year</label>
+      <input type="number" id="rel-fetch-year" min="1900" max="2099">
+      <button id="rel-fetch-btn" class="rel-btn rel-btn-primary" type="button">Fetch</button>
+      <button id="rel-import-btn" class="rel-btn" type="button" title="Import the CSV/TSV produced by your notebook script">Import CSV</button>
+      <input type="file" id="rel-import-file" accept=".csv,.tsv,text/csv,text/tab-separated-values" hidden>
+    </div>
+    <span id="rel-status" class="rel-status"></span>
+  </div>
+  <div class="wl-filter-bar">
+    <select class="wl-sel" id="rel-year-select"><option value="">All years</option></select>
+    <select class="wl-sel" id="rel-genre-select"><option value="">Genre</option></select>
+    <select class="wl-sel" id="rel-lang-select"><option value="">Language</option></select>
+    <select class="wl-sel" id="rel-avail-select">
+      <option value="">Streaming: any</option>
+      <option value="streaming">Also on my services</option>
+      <option value="only">Not on my services</option>
+    </select>
+    <select class="wl-sel" id="rel-sort-select">
+      <option value="popular">Most popular</option>
+      <option value="liked">Most liked</option>
+      <option value="rating">Top rated</option>
+      <option value="added">Recently added</option>
+      <option value="az">A – Z</option>
+    </select>
+    <div class="wl-vdivider"></div>
+    <label class="rel-check"><input type="checkbox" id="rel-hide-seen" checked> Hide watched</label>
+    <label class="rel-check"><input type="checkbox" id="rel-hide-saved" checked> Hide saved</label>
+    <label class="rel-check"><input type="checkbox" id="rel-hide-dismissed" checked> Hide dismissed</label>
+    <div class="wl-spacer"></div>
+    <span class="wl-count" id="rel-count"></span>
+    <button class="wl-reset-link hidden" id="rel-reset-btn" type="button">Reset</button>
+  </div>
+  <p id="releases-empty" class="empty-state"></p>
+  <div id="releases-grid" class="mylist-grid"></div>
 </div>
 </div>
 
@@ -1680,6 +1752,8 @@ let dismissedMap      = {};
 let watchedSeasonsMap = {};
 let customTitlesMap   = {};
 let watchedDatesMap   = {};
+let releasesMap       = {};   // /users/{uid}/releases/{imdbId} — New Releases catalog
+let activeDiscoverSub = 'streaming';
 
 const filters = {
   providers:        new Set(['jhs','prv','lgp','snl','snx','zee','atp','nfx']),
@@ -1697,7 +1771,17 @@ const filters = {
 };
 
 function uRef(path) { return db.ref('/users/' + currentUid + '/' + path); }
-function titleById(id) { return allTitles[id] || customTitlesMap[id]; }
+function titleById(id) {
+  const t = allTitles[id] || customTitlesMap[id];
+  if (t) return t;
+  // Release-only titles (not in /titles) use the key "imdb_<imdbId>".
+  const k = String(id);
+  if (k.startsWith('imdb_')) {
+    const r = releasesMap[k.slice(5)];
+    if (r) return releaseAsTitle(k.slice(5), r);
+  }
+  return undefined;
+}
 
 function todayLocalISO() {
   const d = new Date();
@@ -1719,12 +1803,14 @@ auth.onAuthStateChanged(user => {
     uRef('seen').on('value', snap => {
       seenMap = snap.val() || {};
       renderGrid(getFiltered());
+      renderReleasesIfVisible();
       if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
     });
     uRef('watchlist').on('value', snap => {
       watchlistMap = snap.val() || {};
       migrateLegacyWatchlistOrders();
       renderGrid(getFiltered());
+      renderReleasesIfVisible();
       if (!document.getElementById('mylists-pane').hidden) {
         renderLibraryStats();
         renderLibraryCarousel();
@@ -1746,6 +1832,7 @@ auth.onAuthStateChanged(user => {
     uRef('dismissed').on('value', snap => {
       dismissedMap = snap.val() || {};
       renderGrid(getFiltered());
+      renderReleasesIfVisible();
       if (!document.getElementById('mylists-pane').hidden) renderLibraryCarousel();
     });
     uRef('customTitles').on('value', snap => {
@@ -1766,6 +1853,11 @@ auth.onAuthStateChanged(user => {
       watchedDatesMap = snap.val() || {};
       if (!document.getElementById('diary-pane').hidden) renderDiary();
     });
+    uRef('releases').on('value', snap => {
+      releasesMap = snap.val() || {};
+      buildReleaseFilterOptions();
+      renderReleasesIfVisible();
+    });
   } else {
     if (currentUid) {
       db.ref('/users/' + currentUid + '/seen').off();
@@ -1775,15 +1867,18 @@ auth.onAuthStateChanged(user => {
       db.ref('/users/' + currentUid + '/watchedSeasons').off();
       db.ref('/users/' + currentUid + '/customTitles').off();
       db.ref('/users/' + currentUid + '/watchedDates').off();
+      db.ref('/users/' + currentUid + '/releases').off();
       currentUid = null;
     }
-    seenMap = {}; watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {}; customTitlesMap = {}; watchedDatesMap = {};
+    seenMap = {}; watchlistMap = {}; dismissedMap = {}; trackingMap = {}; watchedSeasonsMap = {}; customTitlesMap = {}; watchedDatesMap = {}; releasesMap = {};
+    buildReleaseFilterOptions();
     updatePendingBadge();
     updateMyListsBadge();
     renderDiscoverStats();
     if (!document.getElementById('diary-pane').hidden) renderDiary();
   }
   renderGrid(getFiltered());
+  renderReleasesIfVisible();
 });
 
 authBtn.addEventListener('click', () => {
@@ -1798,6 +1893,7 @@ async function loadData() {
     allTitles = titlesSnap.val() || {};
     buildFiltersUI();
     applyAndRender();
+    renderReleasesIfVisible();
   } catch (err) {
     document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
     console.error(err);
@@ -2221,7 +2317,16 @@ function makeCard(t, opts = {}) {
     ? `<div class="card-overlay-desc">${escHtml(t.shortDescription)}</div>`
     : '';
 
-  let seenBtnClass   = 'action-btn seen-btn'   + (isSeen        ? ' is-seen'        : '');
+  // Popularity line — only on the New Releases sub-tab for now.
+  const rel = activeDiscoverSub === 'releases' && t.imdbId ? releasesMap[t.imdbId] : null;
+  const popHtml = rel && (rel.downloads || rel.likes)
+    ? `<div class="rel-pop" title="Popularity: ${(rel.downloads || 0).toLocaleString()} · Likes: ${(rel.likes || 0).toLocaleString()}">
+         ${rel.downloads ? `<span class="rel-pop-item rel-pop-dl"><span class="material-symbols-outlined">local_fire_department</span>${fmtVotes(rel.downloads)}</span>` : ''}
+         ${rel.likes ? `<span class="rel-pop-item"><span class="material-symbols-outlined">thumb_up</span>${fmtVotes(rel.likes)}</span>` : ''}
+       </div>`
+    : '';
+
+  let seenBtnClass  = 'action-btn seen-btn'   + (isSeen        ? ' is-seen'        : '');
   let watchBtnClass  = 'action-btn watch-btn'  + (isWatchlisted ? ' is-watchlisted' : '');
   let dismissBtnClass = 'action-btn dismiss-btn' + (isDismissed   ? ' is-dismissed'   : '');
 
@@ -2265,6 +2370,7 @@ function makeCard(t, opts = {}) {
     <div class="card-body">
       <div class="card-title">${escHtml(t.name || 'Unknown')}</div>
       <div class="card-sub">${relLabel} · ${t.contentType === 'show' ? 'Show' : 'Movie'}</div>
+      ${popHtml}
       <div class="provider-badges">${provBadges}</div>
     </div>
   `;
@@ -2355,6 +2461,15 @@ async function toggleSeen(id, markSeen) {
 
   try {
     if (markSeen) {
+      // Release-only titles aren't in /titles — keep a denormalized copy so
+      // History and Movie Log still resolve them later.
+      if (key.startsWith('imdb_') && !customTitlesMap[key]) {
+        const rt = titleById(key);
+        if (rt) await uRef('customTitles/' + key).set({
+          id: key, name: rt.name || 'Unknown', year: rt.year || null, contentType: 'movie',
+          posterUrl: rt.posterUrl || null, addedAt: Date.now(), source: 'releases',
+        });
+      }
       await uRef('seen/' + key).set(true);
       await uRef('watchedDates/' + key).set(newDate);
       if (prevWl) await uRef('watchlist/' + key).remove();
@@ -2547,7 +2662,7 @@ async function toggleDismissed(id, dismiss) {
     document.getElementById('stats').textContent =
       `${getFiltered().length.toLocaleString()} of ${total.toLocaleString()} · ${Object.keys(seenMap).length.toLocaleString()} seen`;
   } else {
-    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(titleById(key)));
   }
 
   try {
@@ -2555,7 +2670,7 @@ async function toggleDismissed(id, dismiss) {
     else         await uRef('dismissed/' + key).remove();
   } catch (err) {
     if (prev) dismissedMap[key] = true; else delete dismissedMap[key];
-    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(allTitles[key] || allTitles[id]));
+    document.querySelector(`.card[data-id="${id}"]`)?.replaceWith(makeCard(titleById(key)));
     console.error('Dismiss toggle failed', err);
     alert('Could not save: ' + err.message);
   }
@@ -4256,7 +4371,376 @@ document.querySelectorAll('.tab').forEach(btn => {
     if (tab === 'stats')    renderStats();
     if (tab === 'pending')  renderPendingSeasons();
     if (tab === 'diary')    renderDiary();
+    if (tab === 'discover') renderReleasesIfVisible();
   });
+});
+
+// ── New Releases (Discover sub-tab) ────────────────────────────────────────────
+// Catalog of recently released movies, stored per user at /users/{uid}/releases/{imdbId}.
+// Metadata only — no source links are stored or shown. Titles that also exist in /titles
+// (matched on imdbId) use their JustWatch id, so seen/saved/dismissed is shared with
+// Discover; the rest use "imdb_<imdbId>".
+const RELEASES_API      = 'https://yts.bz/api/v2';
+const RELEASES_PAGE     = 50;
+const relFilters = { year: '', genre: '', lang: '', avail: '', sort: 'popular', hideSeen: true, hideSaved: true, hideDismissed: true };
+
+let _imdbIndex = {}, _imdbIndexSrc = null;
+function imdbToTitleId() {
+  if (_imdbIndexSrc !== allTitles) {
+    _imdbIndex = {};
+    for (const [id, t] of Object.entries(allTitles)) if (t && t.imdbId) _imdbIndex[t.imdbId] = id;
+    _imdbIndexSrc = allTitles;
+  }
+  return _imdbIndex;
+}
+
+function releaseAsTitle(code, r) {
+  return {
+    id: 'imdb_' + code, imdbId: code, name: r.name, year: r.year, runtime: r.runtime || null,
+    genres: r.genres || [], imdbRating: typeof r.rating === 'number' && r.rating > 0 ? r.rating : undefined,
+    shortDescription: r.summary || '', ageRating: r.mpaRating || null, posterUrl: r.posterUrl || null,
+    contentType: 'movie', providers: [], originalLanguage: r.language || null,
+    audioLanguages: r.language ? [r.language] : [],
+  };
+}
+
+function releasesVisible() {
+  return activeDiscoverSub === 'releases' && !document.getElementById('discover-pane').hidden;
+}
+function renderReleasesIfVisible() { if (releasesVisible()) renderReleases(); }
+
+function setRelStatus(msg, isError = false) {
+  const el = document.getElementById('rel-status');
+  el.textContent = msg;
+  el.classList.toggle('is-error', isError);
+}
+
+function stripEmpty(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) continue;
+    if (Array.isArray(v) && !v.length) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+function releaseRecordFromApi(m) {
+  return stripEmpty({
+    imdbId:    m.imdb_code,
+    srcId:     m.id,
+    name:      m.title_english || m.title,
+    year:      m.year,
+    rating:    m.rating || null,
+    runtime:   m.runtime || null,
+    genres:    m.genres || [],
+    language:  m.language || null,
+    mpaRating: m.mpa_rating || null,
+    summary:   (m.summary || m.description_full || '').replace(/\s+/g, ' ').trim(),
+    posterUrl: m.large_cover_image || m.medium_cover_image || null,
+    downloads: m.download_count ?? null,
+    likes:     m.like_count ?? null,
+    addedAt:   m.date_uploaded_unix ? m.date_uploaded_unix * 1000 : null,
+    fetchedAt: Date.now(),
+  });
+}
+
+async function relApi(path) {
+  const res = await fetch(RELEASES_API + path);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if (json.status !== 'ok') throw new Error(json.status_message || 'Bad response');
+  return json.data || {};
+}
+const relSleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function relListPage(page) {
+  const d = await relApi(`/list_movies.json?limit=${RELEASES_PAGE}&page=${page}&sort_by=year&order_by=desc`);
+  return { movies: d.movies || [], count: d.movie_count || 0 };
+}
+
+// Saves records in chunks so a huge year doesn't become one giant write.
+async function saveReleaseRecords(records) {
+  const codes = Object.keys(records);
+  for (let i = 0; i < codes.length; i += 200) {
+    const chunk = {};
+    codes.slice(i, i + 200).forEach(c => { chunk[c] = records[c]; });
+    await uRef('releases').update(chunk);
+  }
+}
+
+async function fetchReleasesForYear(year) {
+  // The list is sorted by year (desc), so binary-search for the first page that reaches `year`
+  // instead of paging through every newer year first.
+  setRelStatus(`Looking up ${year}…`);
+  const first = await relListPage(1);
+  const totalPages = Math.ceil(first.count / RELEASES_PAGE);
+  if (!totalPages) return {};
+  const lastYear = p => p.movies.length ? p.movies[p.movies.length - 1].year : -Infinity;
+
+  let lo = 1, hi = totalPages, startPage = totalPages + 1;
+  const cache = { 1: first };
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const p = cache[mid] || (cache[mid] = await relListPage(mid));
+    if (lastYear(p) <= year) { startPage = mid; hi = mid - 1; } else lo = mid + 1;
+    await relSleep(150);
+  }
+
+  const out = {};
+  for (let page = startPage; page <= totalPages; page++) {
+    const p = cache[page] || await relListPage(page);
+    if (!p.movies.length) break;
+    p.movies.forEach(m => { if (m.year === year && m.imdb_code) out[m.imdb_code] = releaseRecordFromApi(m); });
+    setRelStatus(`Fetching ${year}: page ${page - startPage + 1} · ${Object.keys(out).length} found…`);
+    if (lastYear(p) < year) break;
+    await relSleep(300);
+  }
+  return out;
+}
+
+// The list endpoint may not include download/like counts; the per-movie details endpoint does.
+async function backfillReleasePopularity(records) {
+  const todo = Object.values(records).filter(r => r.srcId && r.downloads === undefined);
+  if (!todo.length) return;
+  let done = 0, pending = {};
+  const flush = async () => {
+    if (Object.keys(pending).length) { await uRef('releases').update(pending); pending = {}; }
+  };
+  const worker = async () => {
+    while (todo.length) {
+      const r = todo.shift();
+      try {
+        const d = await relApi(`/movie_details.json?movie_id=${r.srcId}`);
+        const m = d.movie || {};
+        if (m.download_count != null) pending[r.imdbId + '/downloads'] = m.download_count;
+        if (m.like_count     != null) pending[r.imdbId + '/likes']     = m.like_count;
+      } catch (err) { console.warn('Popularity lookup failed for', r.imdbId, err); }
+      done++;
+      if (done % 25 === 0) { setRelStatus(`Popularity: ${done} / ${done + todo.length}…`); await flush(); }
+      await relSleep(150);
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  await flush();
+}
+
+async function onFetchReleases() {
+  if (!currentUser) { setRelStatus('Sign in to fetch releases.', true); return; }
+  const year = parseInt(document.getElementById('rel-fetch-year').value, 10);
+  if (!year || year < 1900 || year > 2100) { setRelStatus('Enter a valid year.', true); return; }
+  const btn = document.getElementById('rel-fetch-btn');
+  btn.disabled = true;
+  try {
+    const records = await fetchReleasesForYear(year);
+    const n = Object.keys(records).length;
+    if (!n) { setRelStatus(`No ${year} titles found.`); return; }
+    await saveReleaseRecords(records);
+    await backfillReleasePopularity(records);
+    setRelStatus(`Saved ${n} titles from ${year}.`);
+  } catch (err) {
+    console.error('Release fetch failed', err);
+    setRelStatus(`Couldn't reach the source from this browser (${err.message}). Use Import CSV instead.`, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// RFC-4180-ish parser; handles quoted fields, embedded commas/quotes, CSV or TSV.
+function parseDelimited(text) {
+  text = text.replace(/^﻿/, '');
+  const delim = (text.split('\n', 1)[0] || '').includes('\t') ? '\t' : ',';
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"') inQ = true;
+    else if (c === delim) { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c !== '\r') field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function releaseRecordsFromCsv(text) {
+  const rows = parseDelimited(text);
+  if (rows.length < 2) return {};
+  const hdr = rows[0].map(h => h.trim());
+  const col = name => hdr.indexOf(name);
+  const get = (row, name) => { const i = col(name); return i >= 0 ? (row[i] || '').trim() : ''; };
+  const num = s => { const v = parseFloat(s); return isNaN(v) ? null : v; };
+  const int = s => { const v = num(s); return v === null ? null : Math.round(v); };
+  if (col('IMDB_Code') < 0) throw new Error('No IMDB_Code column found');
+
+  const out = {};
+  rows.slice(1).forEach(row => {
+    const code = get(row, 'IMDB_Code');
+    if (!/^tt\d+$/.test(code)) return;
+    const uploaded = get(row, 'Date_Uploaded');
+    const addedAt  = uploaded ? Date.parse(uploaded.replace(' ', 'T')) : NaN;
+    out[code] = stripEmpty({
+      imdbId:    code,
+      srcId:     int(get(row, 'ID')),
+      name:      get(row, 'Title') || get(row, 'Title_Long'),
+      year:      int(get(row, 'Year')),
+      rating:    num(get(row, 'Rating')) || null,
+      runtime:   int(get(row, 'Runtime_mins')) || null,
+      genres:    get(row, 'Genres').split(',').map(g => g.trim()).filter(Boolean),
+      language:  get(row, 'Language'),
+      mpaRating: get(row, 'MPA_Rating'),
+      summary:   get(row, 'Summary'),
+      posterUrl: get(row, 'Cover_Image'),
+      downloads: int(get(row, 'Download_Count')),
+      likes:     int(get(row, 'Like_Count')),
+      addedAt:   isNaN(addedAt) ? null : addedAt,
+      fetchedAt: Date.now(),
+    });
+  });
+  return out;
+}
+
+async function onImportReleasesFile(file) {
+  if (!currentUser) { setRelStatus('Sign in to import releases.', true); return; }
+  try {
+    setRelStatus(`Reading ${file.name}…`);
+    const records = releaseRecordsFromCsv(await file.text());
+    const n = Object.keys(records).length;
+    if (!n) { setRelStatus('No rows with an IMDb code found in that file.', true); return; }
+    await saveReleaseRecords(records);
+    setRelStatus(`Imported ${n} titles from ${file.name}.`);
+  } catch (err) {
+    console.error('Release import failed', err);
+    setRelStatus('Import failed: ' + err.message, true);
+  }
+}
+
+function fillRelSelect(id, placeholder, values, labelFn, current) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    values.map(v => `<option value="${escHtml(v)}">${escHtml(labelFn(v))}</option>`).join('');
+  sel.value = values.map(String).includes(String(current)) ? current : '';
+  return sel.value;
+}
+
+function buildReleaseFilterOptions() {
+  const years = new Set(), genres = new Set(), langs = new Set();
+  Object.values(releasesMap).forEach(r => {
+    if (r.year) years.add(r.year);
+    (r.genres || []).forEach(g => genres.add(g));
+    if (r.language) langs.add(r.language);
+  });
+  relFilters.year  = fillRelSelect('rel-year-select', 'All years', [...years].sort((a, b) => b - a), String, relFilters.year);
+  relFilters.genre = fillRelSelect('rel-genre-select', 'Genre', [...genres].sort(), g => g, relFilters.genre);
+  relFilters.lang  = fillRelSelect('rel-lang-select', 'Language',
+    [...langs].sort((a, b) => langLabel(a).localeCompare(langLabel(b))), langLabel, relFilters.lang);
+
+  const n = Object.keys(releasesMap).length;
+  const badge = document.getElementById('rel-tab-badge');
+  badge.textContent = n.toLocaleString();
+  badge.classList.toggle('hidden', n === 0);
+}
+
+function getReleaseItems() {
+  const idx = imdbToTitleId();
+  const q   = (filters.searchQuery || '').toLowerCase();
+  const items = [];
+  for (const [code, r] of Object.entries(releasesMap)) {
+    const jwId = idx[code];
+    const ids  = jwId ? [jwId, 'imdb_' + code] : ['imdb_' + code];
+    const t    = jwId ? allTitles[jwId] : releaseAsTitle(code, r);
+
+    if (relFilters.year  && String(r.year) !== String(relFilters.year)) continue;
+    if (relFilters.genre && !(r.genres || []).includes(relFilters.genre)) continue;
+    if (relFilters.lang  && r.language !== relFilters.lang) continue;
+    if (relFilters.avail === 'streaming' && !jwId) continue;
+    if (relFilters.avail === 'only'      &&  jwId) continue;
+    if (relFilters.hideSeen      && ids.some(i => seenMap[i]))      continue;
+    if (relFilters.hideSaved     && ids.some(i => watchlistMap[i])) continue;
+    if (relFilters.hideDismissed && ids.some(i => dismissedMap[i])) continue;
+    if (q && !(r.name || '').toLowerCase().includes(q) &&
+        !(t.director || '').toLowerCase().includes(q) &&
+        !(t.actors || []).some(a => a.toLowerCase().includes(q))) continue;
+    items.push({ code, r, t });
+  }
+
+  const by = fn => (a, b) => (fn(b) ?? -1) - (fn(a) ?? -1);
+  switch (relFilters.sort) {
+    case 'popular': items.sort(by(i => i.r.downloads)); break;
+    case 'liked':   items.sort(by(i => i.r.likes)); break;
+    case 'rating':  items.sort(by(i => i.r.rating)); break;
+    case 'added':   items.sort(by(i => i.r.addedAt)); break;
+    case 'az':      items.sort((a, b) => (a.r.name || '').localeCompare(b.r.name || '')); break;
+  }
+  return items;
+}
+
+function isRelFiltersActive() {
+  return !!(relFilters.year || relFilters.genre || relFilters.lang || relFilters.avail) ||
+    relFilters.sort !== 'popular' || !relFilters.hideSeen || !relFilters.hideSaved || !relFilters.hideDismissed;
+}
+
+function renderReleases() {
+  const grid  = document.getElementById('releases-grid');
+  const empty = document.getElementById('releases-empty');
+  const count = document.getElementById('rel-count');
+  document.getElementById('rel-reset-btn').classList.toggle('hidden', !isRelFiltersActive());
+
+  if (!currentUser) {
+    grid.innerHTML = ''; count.textContent = '';
+    empty.textContent = 'Sign in to build your New Releases list.';
+    return;
+  }
+  const total = Object.keys(releasesMap).length;
+  if (!total) {
+    grid.innerHTML = ''; count.textContent = '';
+    empty.textContent = 'Nothing here yet. Pick a year and press Fetch (or import your CSV).';
+    return;
+  }
+
+  const items = getReleaseItems();
+  count.textContent = `${items.length.toLocaleString()} of ${total.toLocaleString()}`;
+  empty.textContent = items.length ? '' : 'No titles match these filters.';
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  items.forEach(i => frag.appendChild(makeCard(i.t)));
+  grid.appendChild(frag);
+}
+
+function setDiscoverSub(sub) {
+  activeDiscoverSub = sub;
+  document.querySelectorAll('.disc-subtab').forEach(b => b.classList.toggle('active', b.dataset.discsub === sub));
+  document.getElementById('layout').style.display        = sub === 'streaming' ? '' : 'none';
+  document.getElementById('releases-pane').style.display = sub === 'releases'  ? '' : 'none';
+  if (sub === 'releases') renderReleases(); else applyAndRender();
+}
+
+document.querySelectorAll('.disc-subtab').forEach(btn =>
+  btn.addEventListener('click', () => setDiscoverSub(btn.dataset.discsub)));
+
+document.getElementById('rel-fetch-year').value = new Date().getFullYear();
+document.getElementById('rel-fetch-btn').addEventListener('click', onFetchReleases);
+document.getElementById('rel-fetch-year').addEventListener('keydown', e => { if (e.key === 'Enter') onFetchReleases(); });
+document.getElementById('rel-import-btn').addEventListener('click', () => document.getElementById('rel-import-file').click());
+document.getElementById('rel-import-file').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) onImportReleasesFile(f);
+  e.target.value = '';
+});
+[['rel-year-select', 'year'], ['rel-genre-select', 'genre'], ['rel-lang-select', 'lang'],
+ ['rel-avail-select', 'avail'], ['rel-sort-select', 'sort']].forEach(([id, key]) =>
+  document.getElementById(id).addEventListener('change', e => { relFilters[key] = e.target.value; renderReleases(); }));
+[['rel-hide-seen', 'hideSeen'], ['rel-hide-saved', 'hideSaved'], ['rel-hide-dismissed', 'hideDismissed']].forEach(([id, key]) =>
+  document.getElementById(id).addEventListener('change', e => { relFilters[key] = e.target.checked; renderReleases(); }));
+document.getElementById('rel-reset-btn').addEventListener('click', () => {
+  Object.assign(relFilters, { year: '', genre: '', lang: '', avail: '', sort: 'popular', hideSeen: true, hideSaved: true, hideDismissed: true });
+  ['rel-year-select', 'rel-genre-select', 'rel-lang-select', 'rel-avail-select'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('rel-sort-select').value = 'popular';
+  ['rel-hide-seen', 'rel-hide-saved', 'rel-hide-dismissed'].forEach(id => { document.getElementById(id).checked = true; });
+  renderReleases();
 });
 
 // ── Accordion ──────────────────────────────────────────────────────────────────
@@ -4391,7 +4875,7 @@ document.getElementById('wl-reset-btn').addEventListener('click', () => {
   renderWatchlistGrid();
 });
 
-document.getElementById('search-input').addEventListener('input', e => { filters.searchQuery = e.target.value.trim(); applyAndRender(); });
+document.getElementById('search-input').addEventListener('input', e => { filters.searchQuery = e.target.value.trim(); applyAndRender(); renderReleasesIfVisible(); });
 
 // ── Library sub-tab switching ──────────────────────────────────────────────────
 document.querySelectorAll('.lib-tab').forEach(btn => {
