@@ -1184,15 +1184,15 @@
     /* ── Discover sub-tabs / New Releases ── */
     .discover-subtabs { padding: 10px 24px 0; margin-bottom: 0; background: var(--bg, transparent); }
     #releases-pane { padding: 20px 28px 40px; }
-    .rel-fetch-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 14px; }
-    .rel-fetch-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .rel-fetch-group label { font-size: 12px; color: var(--muted); }
-    .rel-fetch-group input[type="number"] {
-      width: 84px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-      padding: 6px 10px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+    .rel-import-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 14px; }
+    .rel-votes { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .rel-votes input {
+      width: 58px; background: var(--surface3); border: 1px solid var(--border2); border-radius: 8px;
+      padding: 5px 8px; color: var(--text); font-size: 12px; font-family: inherit; outline: none;
     }
-    .rel-fetch-group input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+    .rel-votes input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
     .rel-btn {
+      display: inline-flex; align-items: center; gap: 4px;
       background: var(--surface3); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
       padding: 6px 14px; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;
     }
@@ -1208,6 +1208,8 @@
     .rel-pop span.rel-pop-item { display: inline-flex; align-items: center; gap: 2px; }
     .rel-pop .material-symbols-outlined { font-size: 14px; }
     .rel-pop .rel-pop-dl .material-symbols-outlined { color: #fb923c; font-variation-settings: 'FILL' 1; }
+    .rel-pop .rel-pop-money { color: #86efac; font-weight: 600; }
+    .rel-pop .rel-pop-money .material-symbols-outlined { color: #4ade80; }
 
     /* ── Responsive ── */
     @media (max-width: 900px) { #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
@@ -1461,15 +1463,12 @@
 
 <!-- ── New Releases sub-tab ── -->
 <div id="releases-pane" style="display:none">
-  <div class="rel-fetch-bar">
-    <div class="rel-fetch-group">
-      <label for="rel-fetch-year">Year</label>
-      <input type="number" id="rel-fetch-year" min="1900" max="2099">
-      <button id="rel-fetch-btn" class="rel-btn rel-btn-primary" type="button">Fetch</button>
-      <button id="rel-import-btn" class="rel-btn" type="button" title="Import the CSV/TSV produced by your notebook script">Import CSV</button>
-      <input type="file" id="rel-import-file" accept=".csv,.tsv,text/csv,text/tab-separated-values" hidden>
-    </div>
-    <span id="rel-status" class="rel-status"></span>
+  <div class="rel-import-bar">
+    <button id="rel-import-btn" class="rel-btn rel-btn-primary" type="button" title="Import the CSV/TSV produced by the Colab notebook">
+      <span class="material-symbols-outlined" style="font-size:16px">upload_file</span> Import CSV
+    </button>
+    <input type="file" id="rel-import-file" accept=".csv,.tsv,text/csv,text/tab-separated-values" hidden>
+    <span id="rel-status" class="rel-status">Run the Colab notebook for a year, then import its CSV. Re-importing updates titles in place.</span>
   </div>
   <div class="wl-filter-bar">
     <select class="wl-sel" id="rel-year-select"><option value="">All years</option></select>
@@ -1480,7 +1479,22 @@
       <option value="streaming">Also on my services</option>
       <option value="only">Not on my services</option>
     </select>
+    <select class="wl-sel" id="rel-money-select" title="Hides titles whose budget and box office are both below this (or unknown)">
+      <option value="">Budget / box office: any</option>
+      <option value="10000000">≥ $10M</option>
+      <option value="20000000">≥ $20M</option>
+      <option value="30000000">≥ $30M</option>
+      <option value="50000000">≥ $50M</option>
+      <option value="100000000">≥ $100M</option>
+      <option value="200000000">≥ $200M</option>
+    </select>
+    <label class="rel-votes" title="Minimum IMDb votes, in thousands — 10 means 10,000">
+      IMDb votes ≥ <input type="number" id="rel-votes-min" min="0" step="1" placeholder="0"> K
+    </label>
     <select class="wl-sel" id="rel-sort-select">
+      <option value="boxoffice">Box office</option>
+      <option value="budget">Budget</option>
+      <option value="votes">IMDb votes</option>
       <option value="popular">Most popular</option>
       <option value="liked">Most liked</option>
       <option value="rating">Top rated</option>
@@ -1802,12 +1816,14 @@ auth.onAuthStateChanged(user => {
 
     uRef('seen').on('value', snap => {
       seenMap = snap.val() || {};
+      migrateReleaseKeysToTitles();
       renderGrid(getFiltered());
       renderReleasesIfVisible();
       if (!document.getElementById('mylists-pane').hidden && activeLibTab === 'history') renderHistory();
     });
     uRef('watchlist').on('value', snap => {
       watchlistMap = snap.val() || {};
+      migrateReleaseKeysToTitles();
       migrateLegacyWatchlistOrders();
       renderGrid(getFiltered());
       renderReleasesIfVisible();
@@ -1831,12 +1847,14 @@ auth.onAuthStateChanged(user => {
     });
     uRef('dismissed').on('value', snap => {
       dismissedMap = snap.val() || {};
+      migrateReleaseKeysToTitles();
       renderGrid(getFiltered());
       renderReleasesIfVisible();
       if (!document.getElementById('mylists-pane').hidden) renderLibraryCarousel();
     });
     uRef('customTitles').on('value', snap => {
       customTitlesMap = snap.val() || {};
+      migrateReleaseKeysToTitles();
       if (!document.getElementById('mylists-pane').hidden) {
         if (activeLibTab === 'history')   renderHistory();
         if (activeLibTab === 'watchlist') renderWatchlistGrid();
@@ -1851,6 +1869,7 @@ auth.onAuthStateChanged(user => {
     });
     uRef('watchedDates').on('value', snap => {
       watchedDatesMap = snap.val() || {};
+      migrateReleaseKeysToTitles();
       if (!document.getElementById('diary-pane').hidden) renderDiary();
     });
     uRef('releases').on('value', snap => {
@@ -1894,6 +1913,7 @@ async function loadData() {
     buildFiltersUI();
     applyAndRender();
     renderReleasesIfVisible();
+    migrateReleaseKeysToTitles();
   } catch (err) {
     document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
     console.error(err);
@@ -2317,14 +2337,20 @@ function makeCard(t, opts = {}) {
     ? `<div class="card-overlay-desc">${escHtml(t.shortDescription)}</div>`
     : '';
 
-  // Popularity line — only on the New Releases sub-tab for now.
+  // Box office / budget + popularity line — only on the New Releases sub-tab for now.
   const rel = activeDiscoverSub === 'releases' && t.imdbId ? releasesMap[t.imdbId] : null;
-  const popHtml = rel && (rel.downloads || rel.likes)
-    ? `<div class="rel-pop" title="Popularity: ${(rel.downloads || 0).toLocaleString()} · Likes: ${(rel.likes || 0).toLocaleString()}">
-         ${rel.downloads ? `<span class="rel-pop-item rel-pop-dl"><span class="material-symbols-outlined">local_fire_department</span>${fmtVotes(rel.downloads)}</span>` : ''}
-         ${rel.likes ? `<span class="rel-pop-item"><span class="material-symbols-outlined">thumb_up</span>${fmtVotes(rel.likes)}</span>` : ''}
-       </div>`
-    : '';
+  let popHtml = '';
+  if (rel) {
+    const src   = rel.moneySource ? ` (${rel.moneySource})` : '';
+    const money = rel.boxOffice
+      ? `<span class="rel-pop-item rel-pop-money" title="Worldwide box office${escHtml(src)}${rel.budget ? ' · Budget ' + fmtMoney(rel.budget) : ''}"><span class="material-symbols-outlined">payments</span>${fmtMoney(rel.boxOffice)}</span>`
+      : rel.budget
+        ? `<span class="rel-pop-item rel-pop-money" title="Budget${escHtml(src)} — box office unknown"><span class="material-symbols-outlined">savings</span>${fmtMoney(rel.budget)}</span>`
+        : '';
+    const dl    = rel.downloads ? `<span class="rel-pop-item rel-pop-dl" title="Popularity: ${rel.downloads.toLocaleString()}"><span class="material-symbols-outlined">local_fire_department</span>${fmtVotes(rel.downloads)}</span>` : '';
+    const likes = rel.likes ? `<span class="rel-pop-item" title="Likes: ${rel.likes.toLocaleString()}"><span class="material-symbols-outlined">thumb_up</span>${fmtVotes(rel.likes)}</span>` : '';
+    if (money || dl || likes) popHtml = `<div class="rel-pop">${money}${dl}${likes}</div>`;
+  }
 
   let seenBtnClass  = 'action-btn seen-btn'   + (isSeen        ? ' is-seen'        : '');
   let watchBtnClass  = 'action-btn watch-btn'  + (isWatchlisted ? ' is-watchlisted' : '');
@@ -4377,12 +4403,15 @@ document.querySelectorAll('.tab').forEach(btn => {
 
 // ── New Releases (Discover sub-tab) ────────────────────────────────────────────
 // Catalog of recently released movies, stored per user at /users/{uid}/releases/{imdbId}.
-// Metadata only — no source links are stored or shown. Titles that also exist in /titles
-// (matched on imdbId) use their JustWatch id, so seen/saved/dismissed is shared with
-// Discover; the rest use "imdb_<imdbId>".
-const RELEASES_API      = 'https://yts.bz/api/v2';
-const RELEASES_PAGE     = 50;
-const relFilters = { year: '', genre: '', lang: '', avail: '', sort: 'popular', hideSeen: true, hideSaved: true, hideDismissed: true };
+// Filled only by importing the Colab notebook's CSV/TSV (the source site is blocked in India,
+// so there is no in-browser fetch). Metadata only — no source links are stored or shown.
+// Titles that also exist in /titles (matched on imdbId) use their JustWatch id, so
+// seen/saved/dismissed is shared with Discover; the rest use "imdb_<imdbId>".
+const REL_DEFAULT_FILTERS = {
+  year: '', genre: '', lang: '', avail: '', money: '', votesK: '', sort: 'boxoffice',
+  hideSeen: true, hideSaved: true, hideDismissed: true,
+};
+const relFilters = { ...REL_DEFAULT_FILTERS };
 
 let _imdbIndex = {}, _imdbIndexSrc = null;
 function imdbToTitleId() {
@@ -4395,13 +4424,55 @@ function imdbToTitleId() {
 }
 
 function releaseAsTitle(code, r) {
+  const rating = r.imdbRating || r.rating;
   return {
     id: 'imdb_' + code, imdbId: code, name: r.name, year: r.year, runtime: r.runtime || null,
-    genres: r.genres || [], imdbRating: typeof r.rating === 'number' && r.rating > 0 ? r.rating : undefined,
+    genres: r.genres || [], imdbRating: typeof rating === 'number' && rating > 0 ? rating : undefined,
+    imdbVotes: r.imdbVotes || undefined,
     shortDescription: r.summary || '', ageRating: r.mpaRating || null, posterUrl: r.posterUrl || null,
     contentType: 'movie', providers: [], originalLanguage: r.language || null,
     audioLanguages: r.language ? [r.language] : [],
   };
+}
+
+// Bigger of budget / box office — the "how big is this film" number the money filter uses.
+function releaseMoney(r) {
+  const v = Math.max(r.budget || 0, r.boxOffice || 0);
+  return v > 0 ? v : null;
+}
+function fmtMoney(n) {
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(n >= 1e10 ? 0 : 1) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(n >= 1e8 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+  return '$' + n;
+}
+
+// A movie marked seen/saved/dismissed while it was release-only is keyed "imdb_<imdbId>".
+// Once the scraper adds it to /titles, move those marks onto its JustWatch id so Discover
+// and New Releases share one key again. Idempotent; runs whenever titles or marks load.
+let _releaseKeyMigrationInFlight = false;
+function migrateReleaseKeysToTitles() {
+  if (_releaseKeyMigrationInFlight || !currentUid || !Object.keys(allTitles).length) return;
+  const idx  = imdbToTitleId();
+  const maps = { seen: seenMap, watchlist: watchlistMap, dismissed: dismissedMap, watchedDates: watchedDatesMap };
+  const updates = {};
+  for (const [node, map] of Object.entries(maps)) {
+    for (const key of Object.keys(map)) {
+      if (!key.startsWith('imdb_')) continue;
+      const jwId = idx[key.slice(5)];
+      if (!jwId) continue;
+      if (map[jwId] === undefined) updates[node + '/' + jwId] = map[key];   // keep any existing JustWatch mark
+      updates[node + '/' + key] = null;
+    }
+  }
+  for (const key of Object.keys(customTitlesMap)) {
+    if (key.startsWith('imdb_') && idx[key.slice(5)]) updates['customTitles/' + key] = null;  // now resolvable from /titles
+  }
+  if (!Object.keys(updates).length) return;
+  _releaseKeyMigrationInFlight = true;
+  db.ref('/users/' + currentUid).update(updates)
+    .catch(err => console.error('Release key migration failed', err))
+    .finally(() => { _releaseKeyMigrationInFlight = false; });
 }
 
 function releasesVisible() {
@@ -4425,124 +4496,17 @@ function stripEmpty(obj) {
   return out;
 }
 
-function releaseRecordFromApi(m) {
-  return stripEmpty({
-    imdbId:    m.imdb_code,
-    srcId:     m.id,
-    name:      m.title_english || m.title,
-    year:      m.year,
-    rating:    m.rating || null,
-    runtime:   m.runtime || null,
-    genres:    m.genres || [],
-    language:  m.language || null,
-    mpaRating: m.mpa_rating || null,
-    summary:   (m.summary || m.description_full || '').replace(/\s+/g, ' ').trim(),
-    posterUrl: m.large_cover_image || m.medium_cover_image || null,
-    downloads: m.download_count ?? null,
-    likes:     m.like_count ?? null,
-    addedAt:   m.date_uploaded_unix ? m.date_uploaded_unix * 1000 : null,
-    fetchedAt: Date.now(),
-  });
-}
-
-async function relApi(path) {
-  const res = await fetch(RELEASES_API + path);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const json = await res.json();
-  if (json.status !== 'ok') throw new Error(json.status_message || 'Bad response');
-  return json.data || {};
-}
-const relSleep = ms => new Promise(r => setTimeout(r, ms));
-
-async function relListPage(page) {
-  const d = await relApi(`/list_movies.json?limit=${RELEASES_PAGE}&page=${page}&sort_by=year&order_by=desc`);
-  return { movies: d.movies || [], count: d.movie_count || 0 };
-}
-
-// Saves records in chunks so a huge year doesn't become one giant write.
+// Field-level merge: only fields that have a value in the new import are written, so a blank
+// column in a later CSV never wipes a value an earlier import provided. Records are keyed by
+// IMDb code, so re-importing a year updates in place instead of duplicating.
 async function saveReleaseRecords(records) {
   const codes = Object.keys(records);
   for (let i = 0; i < codes.length; i += 200) {
-    const chunk = {};
-    codes.slice(i, i + 200).forEach(c => { chunk[c] = records[c]; });
-    await uRef('releases').update(chunk);
-  }
-}
-
-async function fetchReleasesForYear(year) {
-  // The list is sorted by year (desc), so binary-search for the first page that reaches `year`
-  // instead of paging through every newer year first.
-  setRelStatus(`Looking up ${year}…`);
-  const first = await relListPage(1);
-  const totalPages = Math.ceil(first.count / RELEASES_PAGE);
-  if (!totalPages) return {};
-  const lastYear = p => p.movies.length ? p.movies[p.movies.length - 1].year : -Infinity;
-
-  let lo = 1, hi = totalPages, startPage = totalPages + 1;
-  const cache = { 1: first };
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const p = cache[mid] || (cache[mid] = await relListPage(mid));
-    if (lastYear(p) <= year) { startPage = mid; hi = mid - 1; } else lo = mid + 1;
-    await relSleep(150);
-  }
-
-  const out = {};
-  for (let page = startPage; page <= totalPages; page++) {
-    const p = cache[page] || await relListPage(page);
-    if (!p.movies.length) break;
-    p.movies.forEach(m => { if (m.year === year && m.imdb_code) out[m.imdb_code] = releaseRecordFromApi(m); });
-    setRelStatus(`Fetching ${year}: page ${page - startPage + 1} · ${Object.keys(out).length} found…`);
-    if (lastYear(p) < year) break;
-    await relSleep(300);
-  }
-  return out;
-}
-
-// The list endpoint may not include download/like counts; the per-movie details endpoint does.
-async function backfillReleasePopularity(records) {
-  const todo = Object.values(records).filter(r => r.srcId && r.downloads === undefined);
-  if (!todo.length) return;
-  let done = 0, pending = {};
-  const flush = async () => {
-    if (Object.keys(pending).length) { await uRef('releases').update(pending); pending = {}; }
-  };
-  const worker = async () => {
-    while (todo.length) {
-      const r = todo.shift();
-      try {
-        const d = await relApi(`/movie_details.json?movie_id=${r.srcId}`);
-        const m = d.movie || {};
-        if (m.download_count != null) pending[r.imdbId + '/downloads'] = m.download_count;
-        if (m.like_count     != null) pending[r.imdbId + '/likes']     = m.like_count;
-      } catch (err) { console.warn('Popularity lookup failed for', r.imdbId, err); }
-      done++;
-      if (done % 25 === 0) { setRelStatus(`Popularity: ${done} / ${done + todo.length}…`); await flush(); }
-      await relSleep(150);
-    }
-  };
-  await Promise.all([worker(), worker(), worker()]);
-  await flush();
-}
-
-async function onFetchReleases() {
-  if (!currentUser) { setRelStatus('Sign in to fetch releases.', true); return; }
-  const year = parseInt(document.getElementById('rel-fetch-year').value, 10);
-  if (!year || year < 1900 || year > 2100) { setRelStatus('Enter a valid year.', true); return; }
-  const btn = document.getElementById('rel-fetch-btn');
-  btn.disabled = true;
-  try {
-    const records = await fetchReleasesForYear(year);
-    const n = Object.keys(records).length;
-    if (!n) { setRelStatus(`No ${year} titles found.`); return; }
-    await saveReleaseRecords(records);
-    await backfillReleasePopularity(records);
-    setRelStatus(`Saved ${n} titles from ${year}.`);
-  } catch (err) {
-    console.error('Release fetch failed', err);
-    setRelStatus(`Couldn't reach the source from this browser (${err.message}). Use Import CSV instead.`, true);
-  } finally {
-    btn.disabled = false;
+    const updates = {};
+    codes.slice(i, i + 200).forEach(code => {
+      for (const [field, value] of Object.entries(records[code])) updates[code + '/' + field] = value;
+    });
+    await uRef('releases').update(updates);
   }
 }
 
@@ -4574,6 +4538,7 @@ function releaseRecordsFromCsv(text) {
   const get = (row, name) => { const i = col(name); return i >= 0 ? (row[i] || '').trim() : ''; };
   const num = s => { const v = parseFloat(s); return isNaN(v) ? null : v; };
   const int = s => { const v = num(s); return v === null ? null : Math.round(v); };
+  const pos = v => (v && v > 0 ? v : null);
   if (col('IMDB_Code') < 0) throw new Error('No IMDB_Code column found');
 
   const out = {};
@@ -4583,21 +4548,26 @@ function releaseRecordsFromCsv(text) {
     const uploaded = get(row, 'Date_Uploaded');
     const addedAt  = uploaded ? Date.parse(uploaded.replace(' ', 'T')) : NaN;
     out[code] = stripEmpty({
-      imdbId:    code,
-      srcId:     int(get(row, 'ID')),
-      name:      get(row, 'Title') || get(row, 'Title_Long'),
-      year:      int(get(row, 'Year')),
-      rating:    num(get(row, 'Rating')) || null,
-      runtime:   int(get(row, 'Runtime_mins')) || null,
-      genres:    get(row, 'Genres').split(',').map(g => g.trim()).filter(Boolean),
-      language:  get(row, 'Language'),
-      mpaRating: get(row, 'MPA_Rating'),
-      summary:   get(row, 'Summary'),
-      posterUrl: get(row, 'Cover_Image'),
-      downloads: int(get(row, 'Download_Count')),
-      likes:     int(get(row, 'Like_Count')),
-      addedAt:   isNaN(addedAt) ? null : addedAt,
-      fetchedAt: Date.now(),
+      imdbId:      code,
+      srcId:       int(get(row, 'ID')),
+      name:        get(row, 'Title') || get(row, 'Title_Long'),
+      year:        int(get(row, 'Year')),
+      rating:      pos(num(get(row, 'Rating'))),
+      imdbRating:  pos(num(get(row, 'IMDb_Rating'))),
+      imdbVotes:   pos(int(get(row, 'IMDb_Votes'))),
+      budget:      pos(int(get(row, 'Budget_USD'))),
+      boxOffice:   pos(int(get(row, 'Box_Office_USD'))),
+      moneySource: get(row, 'Money_Source'),
+      runtime:     pos(int(get(row, 'Runtime_mins'))),
+      genres:      get(row, 'Genres').split(',').map(g => g.trim()).filter(Boolean),
+      language:    get(row, 'Language'),
+      mpaRating:   get(row, 'MPA_Rating'),
+      summary:     get(row, 'Summary'),
+      posterUrl:   get(row, 'Cover_Image'),
+      downloads:   int(get(row, 'Download_Count')),
+      likes:       int(get(row, 'Like_Count')),
+      addedAt:     isNaN(addedAt) ? null : addedAt,
+      fetchedAt:   Date.now(),
     });
   });
   return out;
@@ -4610,8 +4580,9 @@ async function onImportReleasesFile(file) {
     const records = releaseRecordsFromCsv(await file.text());
     const n = Object.keys(records).length;
     if (!n) { setRelStatus('No rows with an IMDb code found in that file.', true); return; }
+    const isNew = Object.keys(records).filter(c => !releasesMap[c]).length;
     await saveReleaseRecords(records);
-    setRelStatus(`Imported ${n} titles from ${file.name}.`);
+    setRelStatus(`Imported ${n} titles from ${file.name} (${isNew} new, ${n - isNew} updated).`);
   } catch (err) {
     console.error('Release import failed', err);
     setRelStatus('Import failed: ' + err.message, true);
@@ -4645,42 +4616,51 @@ function buildReleaseFilterOptions() {
 }
 
 function getReleaseItems() {
-  const idx = imdbToTitleId();
-  const q   = (filters.searchQuery || '').toLowerCase();
+  const idx      = imdbToTitleId();
+  const q        = (filters.searchQuery || '').toLowerCase();
+  const minMoney = +relFilters.money || 0;
+  const minVotes = (parseFloat(relFilters.votesK) || 0) * 1000;
   const items = [];
   for (const [code, r] of Object.entries(releasesMap)) {
-    const jwId = idx[code];
-    const ids  = jwId ? [jwId, 'imdb_' + code] : ['imdb_' + code];
-    const t    = jwId ? allTitles[jwId] : releaseAsTitle(code, r);
+    const jwId  = idx[code];
+    const ids   = jwId ? [jwId, 'imdb_' + code] : ['imdb_' + code];
+    const t     = jwId ? allTitles[jwId] : releaseAsTitle(code, r);
+    const votes = r.imdbVotes || t.imdbVotes || 0;
 
     if (relFilters.year  && String(r.year) !== String(relFilters.year)) continue;
     if (relFilters.genre && !(r.genres || []).includes(relFilters.genre)) continue;
     if (relFilters.lang  && r.language !== relFilters.lang) continue;
     if (relFilters.avail === 'streaming' && !jwId) continue;
     if (relFilters.avail === 'only'      &&  jwId) continue;
+    if (minMoney && (releaseMoney(r) || 0) < minMoney) continue;
+    if (minVotes && votes < minVotes) continue;
     if (relFilters.hideSeen      && ids.some(i => seenMap[i]))      continue;
     if (relFilters.hideSaved     && ids.some(i => watchlistMap[i])) continue;
     if (relFilters.hideDismissed && ids.some(i => dismissedMap[i])) continue;
     if (q && !(r.name || '').toLowerCase().includes(q) &&
         !(t.director || '').toLowerCase().includes(q) &&
         !(t.actors || []).some(a => a.toLowerCase().includes(q))) continue;
-    items.push({ code, r, t });
+    items.push({ code, r, t, votes });
   }
 
-  const by = fn => (a, b) => (fn(b) ?? -1) - (fn(a) ?? -1);
+  // Primary key desc (missing values last), then download count as a tie-breaker so titles
+  // without box-office data still come out roughly biggest-first.
+  const desc = fn => (a, b) => (fn(b) ?? -1) - (fn(a) ?? -1) || (b.r.downloads ?? -1) - (a.r.downloads ?? -1);
   switch (relFilters.sort) {
-    case 'popular': items.sort(by(i => i.r.downloads)); break;
-    case 'liked':   items.sort(by(i => i.r.likes)); break;
-    case 'rating':  items.sort(by(i => i.r.rating)); break;
-    case 'added':   items.sort(by(i => i.r.addedAt)); break;
-    case 'az':      items.sort((a, b) => (a.r.name || '').localeCompare(b.r.name || '')); break;
+    case 'boxoffice': items.sort(desc(i => i.r.boxOffice)); break;
+    case 'budget':    items.sort(desc(i => i.r.budget)); break;
+    case 'votes':     items.sort(desc(i => i.votes || null)); break;
+    case 'popular':   items.sort(desc(i => i.r.downloads)); break;
+    case 'liked':     items.sort(desc(i => i.r.likes)); break;
+    case 'rating':    items.sort(desc(i => i.r.imdbRating || i.r.rating)); break;
+    case 'added':     items.sort(desc(i => i.r.addedAt)); break;
+    case 'az':        items.sort((a, b) => (a.r.name || '').localeCompare(b.r.name || '')); break;
   }
   return items;
 }
 
 function isRelFiltersActive() {
-  return !!(relFilters.year || relFilters.genre || relFilters.lang || relFilters.avail) ||
-    relFilters.sort !== 'popular' || !relFilters.hideSeen || !relFilters.hideSaved || !relFilters.hideDismissed;
+  return Object.keys(REL_DEFAULT_FILTERS).some(k => relFilters[k] !== REL_DEFAULT_FILTERS[k]);
 }
 
 function renderReleases() {
@@ -4697,7 +4677,7 @@ function renderReleases() {
   const total = Object.keys(releasesMap).length;
   if (!total) {
     grid.innerHTML = ''; count.textContent = '';
-    empty.textContent = 'Nothing here yet. Pick a year and press Fetch (or import your CSV).';
+    empty.textContent = 'Nothing here yet. Run the Colab notebook for a year, then use Import CSV.';
     return;
   }
 
@@ -4718,30 +4698,38 @@ function setDiscoverSub(sub) {
   if (sub === 'releases') renderReleases(); else applyAndRender();
 }
 
+function syncRelFilterControls() {
+  ['year', 'genre', 'lang', 'avail', 'money', 'sort'].forEach(k => { document.getElementById('rel-' + k + '-select').value = relFilters[k]; });
+  document.getElementById('rel-votes-min').value = relFilters.votesK;
+  document.getElementById('rel-hide-seen').checked      = relFilters.hideSeen;
+  document.getElementById('rel-hide-saved').checked     = relFilters.hideSaved;
+  document.getElementById('rel-hide-dismissed').checked = relFilters.hideDismissed;
+}
+
 document.querySelectorAll('.disc-subtab').forEach(btn =>
   btn.addEventListener('click', () => setDiscoverSub(btn.dataset.discsub)));
 
-document.getElementById('rel-fetch-year').value = new Date().getFullYear();
-document.getElementById('rel-fetch-btn').addEventListener('click', onFetchReleases);
-document.getElementById('rel-fetch-year').addEventListener('keydown', e => { if (e.key === 'Enter') onFetchReleases(); });
 document.getElementById('rel-import-btn').addEventListener('click', () => document.getElementById('rel-import-file').click());
 document.getElementById('rel-import-file').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0];
   if (f) onImportReleasesFile(f);
   e.target.value = '';
 });
-[['rel-year-select', 'year'], ['rel-genre-select', 'genre'], ['rel-lang-select', 'lang'],
- ['rel-avail-select', 'avail'], ['rel-sort-select', 'sort']].forEach(([id, key]) =>
-  document.getElementById(id).addEventListener('change', e => { relFilters[key] = e.target.value; renderReleases(); }));
+['year', 'genre', 'lang', 'avail', 'money', 'sort'].forEach(key =>
+  document.getElementById('rel-' + key + '-select').addEventListener('change', e => { relFilters[key] = e.target.value; renderReleases(); }));
+document.getElementById('rel-votes-min').addEventListener('input', e => {
+  const v = e.target.value.trim();
+  relFilters.votesK = v && parseFloat(v) > 0 ? v : '';
+  renderReleases();
+});
 [['rel-hide-seen', 'hideSeen'], ['rel-hide-saved', 'hideSaved'], ['rel-hide-dismissed', 'hideDismissed']].forEach(([id, key]) =>
   document.getElementById(id).addEventListener('change', e => { relFilters[key] = e.target.checked; renderReleases(); }));
 document.getElementById('rel-reset-btn').addEventListener('click', () => {
-  Object.assign(relFilters, { year: '', genre: '', lang: '', avail: '', sort: 'popular', hideSeen: true, hideSaved: true, hideDismissed: true });
-  ['rel-year-select', 'rel-genre-select', 'rel-lang-select', 'rel-avail-select'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('rel-sort-select').value = 'popular';
-  ['rel-hide-seen', 'rel-hide-saved', 'rel-hide-dismissed'].forEach(id => { document.getElementById(id).checked = true; });
+  Object.assign(relFilters, REL_DEFAULT_FILTERS);
+  syncRelFilterControls();
   renderReleases();
 });
+syncRelFilterControls();
 
 // ── Accordion ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.filter-header').forEach(btn => {
